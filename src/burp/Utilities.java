@@ -435,15 +435,18 @@ class Utilities {
         return out;
     }
 
-    public static URL getURL(IHttpRequestResponse request) {
-        IHttpService service = request.getHttpService();
+    static URL getURL(byte[] request, IHttpService service) {
         URL url;
         try {
-            url = new URL(service.getProtocol(), service.getHost(), service.getPort(), getPathFromRequest(request.getRequest()));
+            url = new URL(service.getProtocol(), service.getHost(), service.getPort(), getPathFromRequest(request));
         } catch (java.net.MalformedURLException e) {
             url = null;
         }
         return url;
+    }
+
+    static URL getURL(IHttpRequestResponse request) {
+        return getURL(request.getRequest(), request.getHttpService());
     }
 
     static int parseArrayIndex(String key) {

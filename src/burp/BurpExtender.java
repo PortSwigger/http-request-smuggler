@@ -15,6 +15,11 @@ public class BurpExtender implements IBurpExtender, IExtensionStateListener {
         Utilities.callbacks.registerExtensionStateListener(this);
         Utilities.callbacks.registerScannerCheck(new SmuggleScan());
 
+
+        ZgrabLoader x = new ZgrabLoader();
+        x.launchSmugglePipeline();
+
+
         Utilities.out("Loaded " + name + " v" + version);
     }
 
