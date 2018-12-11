@@ -17,7 +17,7 @@ public class BurpExtender implements IBurpExtender, IExtensionStateListener {
 
 
         ZgrabLoader x = new ZgrabLoader();
-        x.launchSmugglePipeline();
+        //x.launchSmugglePipeline();
 
 
         Utilities.out("Loaded " + name + " v" + version);

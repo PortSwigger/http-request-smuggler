@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URL;
+import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -27,68 +28,75 @@ public class SmuggleScan implements  IScannerCheck {
     }
 
 
-    List<IScanIssue> doScan(byte[] req, IHttpService service) {
-        try {
-            //int bodySize = req.length - Utilities.getBodyStart(req);
-            req = Utilities.addOrReplaceHeader(req, "Transfer-Encoding", "chunked");
-            req = Utilities.addOrReplaceHeader(req, "Content-Length", "5");
+    List<IScanIssue> doScan(byte[] baseReq, IHttpService service) {
+        // todo handle non-zero bodies
+        //int bodySize = baseReq.length - Utilities.getBodyStart(baseReq);
+        //Utilities.out(""+bodySize);
 
-            ByteArrayOutputStream synced = new ByteArrayOutputStream();
-            synced.write(Arrays.copyOfRange(req, 0, Utilities.getBodyStart(req)));
-            synced.write("0\r\n\r\n".getBytes());
-            Response syncedResp = request(service, synced.toByteArray());
-            if (syncedResp.timedOut()) {
-                Utilities.out("Timeout on first request. Aborting.");
-                return null;
-            }
-
-            ByteArrayOutputStream badLength = new ByteArrayOutputStream();
-            byte[] badLengthArray = Utilities.addOrReplaceHeader(req, "Content-Length", "6");
-            badLength.write(Arrays.copyOfRange(badLengthArray, 0, Utilities.getBodyStart(badLengthArray)));
-            badLength.write("0\r\n\r\n".getBytes());
-            Response badLengthResp = request(service, badLength.toByteArray());
-            if (!badLengthResp.timedOut() && badLengthResp.getReq().getStatusCode() == syncedResp.getReq().getStatusCode()) {
-                Utilities.out("Overlong content length didn't cause a timeout or code-change. Aborting.");
-                return null;
-            }
-
-            ByteArrayOutputStream badChunk = new ByteArrayOutputStream();
-            badChunk.write(Arrays.copyOfRange(req, 0, Utilities.getBodyStart(req)));
-            badChunk.write("Z\r\n\r\n".getBytes());
-            Response badChunkResp = request(service, badChunk.toByteArray());
-            if (badChunkResp.timedOut()) {
-                Utilities.out("Bad chunk attack timed out. Aborting.");
-                return null;
-            }
-
-            if (badChunkResp.getInfo().getStatusCode() == syncedResp.getInfo().getStatusCode()) {
-                Utilities.out("Invalid chunk probe caused a timeout. Attempting chunk timeout instead.");
-                ByteArrayOutputStream timeoutChunk = new ByteArrayOutputStream();
-                timeoutChunk.write(Arrays.copyOfRange(req, 0, Utilities.getBodyStart(req)));
-                timeoutChunk.write("1\r\n\r\n".getBytes());
-                badChunkResp = request(service, timeoutChunk.toByteArray());
-                short badChunkCode = badChunkResp.getReq().getStatusCode();
-                if (! (badChunkResp.timedOut() || (badChunkCode != badLengthResp.getReq().getStatusCode() && badChunkCode != syncedResp.getReq().getStatusCode()))) {
-                    Utilities.out("Bad chunk didn't affect status code and chunk timeout failed. Aborting.");
-                    return null;
-                }
-            }
-
-            IHttpRequestResponse[] reqs = new IHttpRequestResponse[3];
-            reqs[0] = syncedResp.getReq();
-            reqs[1] = badChunkResp.getReq();
-            reqs[2] = badLengthResp.getReq();
-
-            //ArrayList<IScanIssue> issues = new ArrayList<>();
-            //issues.add(new CustomScanIssue(baseRequestResponse.getHttpService(), Utilities.getURL(baseRequestResponse), reqs, "Request Smuggling", "asdf", "High", "Tentative", "asdf"));
-            Utilities.callbacks.addScanIssue(new CustomScanIssue(service, Utilities.getURL(req, service), reqs, "Request Smuggling", "Status1:Status2:Timeout", "High", "Tentative", "Abandon Akamai"));
-
-            return null;
-
-        } catch (IOException e) {
+        baseReq = Utilities.addOrReplaceHeader(baseReq, "Transfer-Encoding", "chunked");
+        baseReq = Utilities.addOrReplaceHeader(baseReq, "Content-Length", "5");
+        baseReq = Utilities.setBody(baseReq, "0\r\n\r\n");
+        Response syncedResp = request(service, baseReq);
+        if (syncedResp.timedOut()) {
+            Utilities.out("Timeout on first request. Aborting.");
             return null;
         }
 
+        byte[] reverseLength = Utilities.setHeader(baseReq, "Content-Length", "4");
+        Response truncatedChunk = request(service, reverseLength);
+        if (truncatedChunk.timedOut()) {
+            Utilities.out("Reporting reverse timeout technique worked");
+            report("Request smuggling v1-b", "Status:timeout", syncedResp, truncatedChunk);
+            //return null;
+        }
+        else {
+            byte[] dualChunkTruncate = Utilities.addOrReplaceHeader(reverseLength, "Transfer-encoding", "cow");
+            Response truncatedDualChunk = request(service, dualChunkTruncate);
+            if (truncatedDualChunk.timedOut()) {
+                Utilities.out("Reverse timeout technique with dual TE header worked");
+                report("Request smuggling v2", "Status:timeout", syncedResp, truncatedDualChunk);
+            }
+        }
+
+        byte[] badLength = Utilities.setHeader(baseReq, "Content-Length", "6");
+        Response badLengthResp = request(service, badLength);
+        if (!badLengthResp.timedOut() && badLengthResp.getReq().getStatusCode() == syncedResp.getReq().getStatusCode()) {
+            Utilities.out("Overlong content length didn't cause a timeout or code-change. Aborting.");
+            return null;
+        }
+
+        byte[] badChunk = Utilities.setBody(baseReq, "Z\r\n\r\n");
+        Response badChunkResp = request(service, badChunk);
+        if (badChunkResp.timedOut()) {
+            Utilities.out("Bad chunk attack timed out. Aborting.");
+            return null;
+        }
+
+        if (badChunkResp.getInfo().getStatusCode() == syncedResp.getInfo().getStatusCode()) {
+            Utilities.out("Invalid chunk probe caused a timeout. Attempting chunk timeout instead.");
+
+            byte[] timeoutChunk = Utilities.setBody(baseReq, "1\r\n\r\n");
+            badChunkResp = request(service, timeoutChunk);
+            short badChunkCode = badChunkResp.getReq().getStatusCode();
+            if (! (badChunkResp.timedOut() || (badChunkCode != badLengthResp.getReq().getStatusCode() && badChunkCode != syncedResp.getReq().getStatusCode()))) {
+                Utilities.out("Bad chunk didn't affect status code and chunk timeout failed. Aborting.");
+                return null;
+            }
+        }
+
+        report("Request smuggling v1", "Status:BadChunkDetection:BadLengthDetected", syncedResp, badChunkResp, badLengthResp);
+        return null;
+    }
+
+    private void report(String title, String detail, Response... requests) {
+        IHttpRequestResponse base = requests[0].getReq();
+        IHttpService service = base.getHttpService();
+
+        IHttpRequestResponse[] reqs = new IHttpRequestResponse[requests.length];
+        for (int i=0; i<requests.length; i++) {
+            reqs[i] = requests[i].getReq();
+        }
+        Utilities.callbacks.addScanIssue(new CustomScanIssue(service, Utilities.getURL(base.getRequest(), service), reqs, title, "Status:timeout", "High", "Tentative", "Abandon Akamai"));
     }
 
     @Override
@@ -116,6 +124,7 @@ public class SmuggleScan implements  IScannerCheck {
                 }
 
                 Utilities.out("Couldn't find response. Sending via Burp instead");
+                Utilities.out(Utilities.helpers.bytesToString(req));
                 return new Response(Utilities.callbacks.makeHttpRequest(service, req));
                 //throw new RuntimeException("Couldn't find response");
             }

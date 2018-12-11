@@ -612,6 +612,17 @@ class Utilities {
         return replace(request, " HTTP/1.1".getBytes(), (suffix+" HTTP/1.1").getBytes());
     }
 
+    static byte[] setBody(byte[] req, String body) {
+        try {
+            ByteArrayOutputStream synced = new ByteArrayOutputStream();
+            synced.write(Arrays.copyOfRange(req, 0, Utilities.getBodyStart(req)));
+            synced.write(body.getBytes());
+            return  synced.toByteArray();
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
     static byte[] appendToQuery(byte[] request, String suffix) {
         String url = getPathFromRequest(request);
         if(url.contains("?")) {

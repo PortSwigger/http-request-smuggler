@@ -21,7 +21,7 @@ public class ZgrabLoader {
     void launchSmugglePipeline() {
         SmuggleScan scan = new SmuggleScan();
 
-        String template = "POST /cowbar HTTP/1.1\r\nHost: %d\r\nAccept: */*\r\nUser-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.110 Safari/537.36\r\nContent-Type: application/x-www-form-urlencoded\r\nConnection: close\r\n\r\n";
+        String template = "POST /cowbar?x=123 HTTP/1.1\r\nHost: %d\r\nAccept: */*\r\nUser-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.110 Safari/537.36\r\nContent-Type: application/x-www-form-urlencoded\r\nConnection: close\r\n\r\n";
 
         List<String> domains = Arrays.asList("hackxor.net", "store.unity.com", "www.redhat.com");
 
