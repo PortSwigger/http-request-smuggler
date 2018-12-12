@@ -36,7 +36,7 @@ public class ZgrabLoader {
 
     }
 
-    byte[] getResponse(String host, byte[] request) {
+    synchronized byte[] getResponse(String host, byte[] request) {
         try {
             PreparedStatement query = conn.prepareStatement("select domain, read from requests where domain = ? and write = ?");
             query.setString(1, host);

@@ -1,5 +1,6 @@
 package burp;
 
+import javax.net.ssl.SSLContext;
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -10,25 +11,27 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class SmuggleScan implements  IScannerCheck {
+
+
+public class SmuggleScan implements IScannerCheck, Scan {
 
     private ZgrabLoader loader = null;
+
+    SmuggleScan() {
+        this.loader = loader;
+    }
 
     @Override
     public List<IScanIssue> doPassiveScan(IHttpRequestResponse baseRequestResponse) {
         return null;
     }
 
-    public List<IScanIssue> doActiveScan(IHttpRequestResponse baseRequestResponse, IScannerInsertionPoint insertionPoint) {
-        return doScan(baseRequestResponse.getRequest(), baseRequestResponse.getHttpService());
-    }
 
     void setRequestMethod(ZgrabLoader loader) {
         this.loader = loader;
     }
 
-
-    List<IScanIssue> doScan(byte[] baseReq, IHttpService service) {
+    public List<IScanIssue> doScan(byte[] baseReq, IHttpService service) {
         // todo handle non-zero bodies
         //int bodySize = baseReq.length - Utilities.getBodyStart(baseReq);
         //Utilities.out(""+bodySize);
@@ -60,7 +63,7 @@ public class SmuggleScan implements  IScannerCheck {
 
         byte[] badLength = Utilities.setHeader(baseReq, "Content-Length", "6");
         Response badLengthResp = request(service, badLength);
-        if (!badLengthResp.timedOut() && badLengthResp.getReq().getStatusCode() == syncedResp.getReq().getStatusCode()) {
+        if (!badLengthResp.timedOut() && badLengthResp.getInfo().getStatusCode() == syncedResp.getInfo().getStatusCode()) {
             Utilities.out("Overlong content length didn't cause a timeout or code-change. Aborting.");
             return null;
         }
@@ -77,8 +80,8 @@ public class SmuggleScan implements  IScannerCheck {
 
             byte[] timeoutChunk = Utilities.setBody(baseReq, "1\r\n\r\n");
             badChunkResp = request(service, timeoutChunk);
-            short badChunkCode = badChunkResp.getReq().getStatusCode();
-            if (! (badChunkResp.timedOut() || (badChunkCode != badLengthResp.getReq().getStatusCode() && badChunkCode != syncedResp.getReq().getStatusCode()))) {
+            short badChunkCode = badChunkResp.getInfo().getStatusCode();
+            if (! (badChunkResp.timedOut() || (badChunkCode != badLengthResp.getInfo().getStatusCode() && badChunkCode != syncedResp.getInfo().getStatusCode()))) {
                 Utilities.out("Bad chunk didn't affect status code and chunk timeout failed. Aborting.");
                 return null;
             }
@@ -138,8 +141,6 @@ public class SmuggleScan implements  IScannerCheck {
 
         return new Response(resp);
     }
-
-
 }
 
 class Response {
@@ -236,45 +237,45 @@ class Request implements IHttpRequestResponse {
         this.service = httpService;
     }
 
-    @Override
-    public String getHost() {
-        return service.getHost();
-    }
-
-    @Override
-    public int getPort() {
-        return service.getPort();
-    }
-
-    @Override
-    public String getProtocol() {
-        return service.getProtocol();
-    }
-
-    @Override
-    public void setHost(String s) {
-
-    }
-
-    @Override
-    public void setPort(int i) {
-
-    }
-
-    @Override
-    public void setProtocol(String s) {
-
-    }
-
-    @Override
-    public URL getUrl() {
-        return Utilities.getURL(req, service);
-    }
-
-    @Override
-    public short getStatusCode() {
-        return 0;
-    }
+//    @Override
+//    public String getHost() {
+//        return service.getHost();
+//    }
+//
+//    @Override
+//    public int getPort() {
+//        return service.getPort();
+//    }
+//
+//    @Override
+//    public String getProtocol() {
+//        return service.getProtocol();
+//    }
+//
+//    @Override
+//    public void setHost(String s) {
+//
+//    }
+//
+//    @Override
+//    public void setPort(int i) {
+//
+//    }
+//
+//    @Override
+//    public void setProtocol(String s) {
+//
+//    }
+//
+//    @Override
+//    public URL getUrl() {
+//        return Utilities.getURL(req, service);
+//    }
+//
+//    @Override
+//    public short getStatusCode() {
+//        return 0;
+//    }
 }
 
 

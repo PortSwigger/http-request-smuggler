@@ -66,7 +66,9 @@ class ConfigurableSettings {
 
     ConfigurableSettings() {
         settings = new LinkedHashMap<>();
-        put("Add 'fcbz' cachebuster", false);
+        put("max one per host", false);
+        put("max one per host+status", false);
+        put("thread pool size", 8);
 
         for(String key: settings.keySet()) {
             //Utilities.callbacks.saveExtensionSetting(key, null); // purge saved settings
@@ -152,7 +154,7 @@ class ConfigurableSettings {
         else if ("false".equals(val)){
             return false;
         }
-        throw new RuntimeException();
+        throw new RuntimeException("Not boolean or not found: "+key);
     }
 
     private String getType(String key) {
