@@ -4,11 +4,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class ZgrabLoader {
+class ZgrabLoader {
 
     private Connection conn;
+    private Scan scanner;
 
-    public ZgrabLoader() {
+    ZgrabLoader(Scan scanner) {
+        this.scanner = scanner;
+
         try {
             Class.forName("org.sqlite.JDBC");
             conn = DriverManager.getConnection("jdbc:sqlite:/Users/james/PycharmProjects/zscanpipeline/requests.db");
@@ -19,18 +22,16 @@ public class ZgrabLoader {
     }
 
     void launchSmugglePipeline() {
-        SmuggleScan scan = new SmuggleScan();
-
         String template = "POST /cowbar?x=123 HTTP/1.1\r\nHost: %d\r\nAccept: */*\r\nUser-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.110 Safari/537.36\r\nContent-Type: application/x-www-form-urlencoded\r\nConnection: close\r\n\r\n";
 
         List<String> domains = Arrays.asList("hackxor.net", "store.unity.com", "www.redhat.com");
 
-        scan.setRequestMethod(this);
+        scanner.setRequestMethod(this);
 
         for (String domain: domains) {
             byte[] request = template.replace("%d", domain).getBytes();
             IHttpService service = Utilities.callbacks.getHelpers().buildHttpService(domain, 443, true);
-            scan.doScan(request, service);
+            scanner.doScan(request, service);
         }
         Utilities.out("Scan complete");
 

@@ -3,19 +3,17 @@ package burp;
 public class BurpExtender implements IBurpExtender, IExtensionStateListener {
     private static final String name = "Smuggle Scan";
     private static final String version = "0.1";
-    private ScanPool taskEngine;
 
     @Override
     public void registerExtenderCallbacks(final IBurpExtenderCallbacks callbacks) {
 
         new Utilities(callbacks);
-
         Utilities.callbacks.registerExtensionStateListener(this);
-        Utilities.callbacks.registerScannerCheck(new SmuggleScan());
 
-        new BulkScanLauncher(new SmuggleScan());
+        SmuggleScan scanner = new SmuggleScan();
+        new BulkScanLauncher(scanner);
 
-        ZgrabLoader x = new ZgrabLoader();
+        //ZgrabLoader x = new ZgrabLoader(scanner);
         //x.launchSmugglePipeline();
 
 
