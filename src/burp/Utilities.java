@@ -614,6 +614,8 @@ class Utilities {
         return replace(request, " HTTP/1.1".getBytes(), (suffix+" HTTP/1.1").getBytes());
     }
 
+
+    // does not update content length
     static byte[] setBody(byte[] req, String body) {
         try {
             ByteArrayOutputStream synced = new ByteArrayOutputStream();

