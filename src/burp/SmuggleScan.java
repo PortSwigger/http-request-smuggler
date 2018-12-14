@@ -27,6 +27,13 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
         return new Response(new Request(buf.toByteArray(), null, service));
     }
 
+    void blah(byte[] req, IHttpService service) {
+        Response poc = buildPoc(req, service);
+        Response resp = request(service, poc.getReq().getRequest());
+        resp.getReq().getResponse();
+
+    }
+
     private byte[] makeChunked(byte[] baseReq, int contentLengthOffset, int chunkOffset) {
         byte[] chunkedReq = Utilities.setHeader(baseReq, "Transfer-Encoding", "chunked");
         int bodySize = baseReq.length - Utilities.getBodyStart(baseReq);
@@ -45,8 +52,11 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
 
     public List<IScanIssue> doScan(byte[] original, IHttpService service) {
 
+        if (original[0] == 'G') {
+            original = Utilities.helpers.toggleRequestMethod(original);
+        }
+
         original = Utilities.addOrReplaceHeader(original, "Transfer-Encoding", "foo");
-        original = Utilities.addOrReplaceHeader(original, "Content-Length", "bar");
         original = Utilities.setHeader(original, "Connection", "close");
 
         byte[] baseReq = makeChunked(original, 0, 0);

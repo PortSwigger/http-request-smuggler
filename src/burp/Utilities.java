@@ -66,9 +66,13 @@ class ConfigurableSettings {
 
     ConfigurableSettings() {
         settings = new LinkedHashMap<>();
-        put("max one per host", false);
-        put("max one per host+status", false);
         put("thread pool size", 8);
+
+        put("use key", true);
+        put("key method", true);
+        put("key status", true);
+        put("key content-type", true);
+
 
         for(String key: settings.keySet()) {
             //Utilities.callbacks.saveExtensionSetting(key, null); // purge saved settings

@@ -62,6 +62,32 @@ class BulkScan implements Runnable  {
         this.config = config;
     }
 
+
+    private String getKey(IHttpRequestResponse req) {
+        IRequestInfo reqInfo = Utilities.helpers.analyzeRequest(req.getRequest());
+
+        StringBuilder key = new StringBuilder();
+        key.append(req.getHttpService().getProtocol());
+        key.append(req.getHttpService().getHost());
+
+        if(  config.getBoolean("key method")) {
+            key.append(reqInfo.getMethod());
+        }
+
+        if (req.getResponse() != null) {
+            IResponseInfo respInfo = Utilities.helpers.analyzeResponse(req.getResponse());
+            if (config.getBoolean("key status")) {
+                key.append(respInfo.getStatusCode());
+            }
+
+            if (config.getBoolean("key content-type")) {
+                key.append(respInfo.getStatedMimeType());
+            }
+        }
+
+        return key.toString();
+    }
+
     public void run() {
         ScanPool taskEngine = BulkScanLauncher.getTaskEngine();
 
@@ -73,66 +99,45 @@ class BulkScan implements Runnable  {
         ArrayList<IHttpRequestResponse> reqlist = new ArrayList<>(Arrays.asList(reqs));
         Collections.shuffle(reqlist);
 
-        int cache_size = thread_count;
-        if (config.getBoolean("max one per host")) {
-            cache_size = queueSize;
-        }
+        int cache_size = queueSize; //thread_count;
 
         Set<String> keyCache = new HashSet<>();
-        boolean useKeyCache = config.getBoolean("max one per host+status");
 
         Queue<String> cache = new CircularFifoQueue<>(cache_size);
         HashSet<String> remainingHosts = new HashSet<>();
 
         int i = 0;
         int queued = 0;
+
         // every pass adds at least one item from every host
         while(!reqlist.isEmpty()) {
             Utilities.log("Loop "+i++);
             Iterator<IHttpRequestResponse> left = reqlist.iterator();
             while (left.hasNext()) {
                 IHttpRequestResponse req = left.next();
-
                 String host = req.getHttpService().getHost();
-                String key = req.getHttpService().getProtocol()+host;
-                if (req.getResponse() != null) {
-                    IResponseInfo info = Utilities.helpers.analyzeResponse(req.getResponse());
-                    key = key + info.getStatusCode() + info.getInferredMimeType();
-                }
-
-                if (useKeyCache && keyCache.contains(key)) {
-                    left.remove();
+                if (cache.contains(host)) {
+                    remainingHosts.add(host);
                     continue;
                 }
 
-                if (!cache.contains(host)) {
-                    cache.add(host);
+                if (config.getBoolean("use key")) {
+                    String key = getKey(req);
+                    if (keyCache.contains(key)) {
+                        left.remove();
+                        continue;
+                    }
                     keyCache.add(key);
-                    left.remove();
-                    Utilities.log("Adding request on "+host+" to queue");
-                    queued++;
-
-                    taskEngine.execute(new BulkScanItem(scan, req));
-                } else {
-                    remainingHosts.add(host);
                 }
-            }
 
-            if(config.getBoolean("max one per host")) {
-                break;
+                cache.add(host);
+                left.remove();
+                Utilities.log("Adding request on "+host+" to queue");
+                queued++;
+                taskEngine.execute(new BulkScanItem(scan, req));
             }
-
-            if (remainingHosts.size() <= 1 && !useKeyCache) {
-                left = reqlist.iterator();
-                while (left.hasNext()) {
-                    queued++;
-                    taskEngine.execute(new BulkScanItem(scan, left.next()));
-                }
-                break;
-            }
-            else {
-                cache = new CircularFifoQueue<>(max(min(remainingHosts.size()-1, thread_count), 1));
-            }
+            
+            cache = new CircularFifoQueue<>(max(min(remainingHosts.size()-1, thread_count), 1));
         }
 
         Utilities.out("Queued " + queued + " attacks");
