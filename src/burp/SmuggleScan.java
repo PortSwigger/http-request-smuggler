@@ -45,9 +45,9 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
 
     public List<IScanIssue> doScan(byte[] original, IHttpService service) {
 
-
         original = Utilities.addOrReplaceHeader(original, "Transfer-Encoding", "foo");
         original = Utilities.addOrReplaceHeader(original, "Content-Length", "bar");
+        original = Utilities.setHeader(original, "Connection", "close");
 
         byte[] baseReq = makeChunked(original, 0, 0);
 //        baseReq = Utilities.setBody(baseReq, "0\r\n\r\n");
