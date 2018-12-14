@@ -2,12 +2,11 @@ package burp;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.List;
 
 public class SmuggleScan extends Scan implements IScannerCheck  {
 
-    private Response buildPoc(byte[] req, IHttpService service) {
+    private Resp buildPoc(byte[] req, IHttpService service) {
         byte[] badMethodIfChunked = Utilities.setHeader(req, "Connection", "keep-alive");
 
 
@@ -24,14 +23,22 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
             throw new RuntimeException();
         }
 
-        return new Response(new Request(buf.toByteArray(), null, service));
+        return new Resp(new Req(buf.toByteArray(), null, service));
     }
 
     void blah(byte[] req, IHttpService service) {
-        Response poc = buildPoc(req, service);
-        Response resp = request(service, poc.getReq().getRequest());
+        Resp poc = buildPoc(req, service);
+        Resp resp = request(service, poc.getReq().getRequest());
         resp.getReq().getResponse();
+        ThreadedRequestEngine engine = new ThreadedRequestEngine("https://www.tesla.com:443", 1, 10, 1, 10, this::callback, 10);
+        engine.queue(Utilities.helpers.bytesToString(req));
+        engine.start(10);
+    }
 
+    boolean callback(Request req, boolean interesting) {
+        Utilities.out("Got the callback!");
+        Utilities.out(req.getResponse());
+        return false;
     }
 
     private byte[] makeChunked(byte[] baseReq, int contentLengthOffset, int chunkOffset) {
@@ -59,36 +66,38 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
         original = Utilities.addOrReplaceHeader(original, "Transfer-Encoding", "foo");
         original = Utilities.setHeader(original, "Connection", "close");
 
+        blah(original, service);
+
         byte[] baseReq = makeChunked(original, 0, 0);
 //        baseReq = Utilities.setBody(baseReq, "0\r\n\r\n");
-        Response syncedResp = request(service, baseReq);
+        Resp syncedResp = request(service, baseReq);
         if (syncedResp.timedOut()) {
             Utilities.log("Timeout on first request. Aborting.");
             return null;
         }
 
-        Response suggestedProbe = buildPoc(original, service);
+        Resp suggestedProbe = buildPoc(original, service);
 
         byte[] reverseLength = makeChunked(original, -1, 0); //Utilities.setHeader(baseReq, "Content-Length", "4");
-        Response truncatedChunk = request(service, reverseLength);
+        Resp truncatedChunk = request(service, reverseLength);
         if (truncatedChunk.timedOut()) {
             Utilities.log("Reporting reverse timeout technique worked");
-            report("Request smuggling v1-b", "Status:timeout", syncedResp, truncatedChunk, suggestedProbe);
+            report("Req smuggling v1-b", "Status:timeout", syncedResp, truncatedChunk, suggestedProbe);
             return null;
         }
         else {
             byte[] dualChunkTruncate = Utilities.addOrReplaceHeader(reverseLength, "Transfer-encoding", "cow");
-            Response truncatedDualChunk = request(service, dualChunkTruncate);
+            Resp truncatedDualChunk = request(service, dualChunkTruncate);
             if (truncatedDualChunk.timedOut()) {
                 Utilities.log("Reverse timeout technique with dual TE header worked");
-                report("Request smuggling v2", "Status:timeout", syncedResp, truncatedDualChunk, suggestedProbe);
+                report("Req smuggling v2", "Status:timeout", syncedResp, truncatedDualChunk, suggestedProbe);
                 return null;
             }
         }
 
 
         byte[] badLength = makeChunked(original, 1, 0); //Utilities.setHeader(baseReq, "Content-Length", "6");
-        Response badLengthResp = request(service, badLength);
+        Resp badLengthResp = request(service, badLength);
         if (!badLengthResp.timedOut() && badLengthResp.getInfo().getStatusCode() == syncedResp.getInfo().getStatusCode()) {
             Utilities.log("Overlong content length didn't cause a timeout or code-change. Aborting.");
             return null;
@@ -96,7 +105,7 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
 
         byte[] badChunk = Utilities.setBody(baseReq, "Z\r\n\r\n");
         badChunk = Utilities.setHeader(badChunk,"Content-Length", "5");
-        Response badChunkResp = request(service, badChunk);
+        Resp badChunkResp = request(service, badChunk);
         if (badChunkResp.timedOut()) {
             Utilities.log("Bad chunk attack timed out. Aborting.");
             return null;
@@ -114,7 +123,7 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
             }
         }
 
-        report("Request smuggling v1", "Status:BadChunkDetection:BadLengthDetected", syncedResp, badChunkResp, badLengthResp, suggestedProbe);
+        report("Req smuggling v1", "Status:BadChunkDetection:BadLengthDetected", syncedResp, badChunkResp, badLengthResp, suggestedProbe);
         return null;
     }
 }

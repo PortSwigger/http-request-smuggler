@@ -249,7 +249,7 @@ abstract class Scan implements IScannerCheck {
         return 0;
     }
 
-    void report(String title, String detail, Response... requests) {
+    void report(String title, String detail, Resp... requests) {
         IHttpRequestResponse base = requests[0].getReq();
         IHttpService service = base.getHttpService();
 
@@ -260,7 +260,7 @@ abstract class Scan implements IScannerCheck {
         Utilities.callbacks.addScanIssue(new CustomScanIssue(service, Utilities.getURL(base.getRequest(), service), reqs, title, detail, "High", "Tentative", "."));
     }
 
-    Response request(IHttpService service, byte[] req) {
+    Resp request(IHttpService service, byte[] req) {
         IHttpRequestResponse resp;
 
         if (loader == null) {
@@ -281,7 +281,7 @@ abstract class Scan implements IScannerCheck {
 
                 Utilities.out("Couldn't find response. Sending via Burp instead");
                 Utilities.out(Utilities.helpers.bytesToString(req));
-                return new Response(Utilities.callbacks.makeHttpRequest(service, req));
+                return new Resp(Utilities.callbacks.makeHttpRequest(service, req));
                 //throw new RuntimeException("Couldn't find response");
             }
 
@@ -289,10 +289,10 @@ abstract class Scan implements IScannerCheck {
                 response = null;
             }
 
-            resp = new Request(req, response, service);
+            resp = new Req(req, response, service);
         }
 
-        return new Response(resp);
+        return new Resp(resp);
     }
 }
 
@@ -310,13 +310,13 @@ class ScanPool extends ThreadPoolExecutor implements IExtensionStateListener {
     }
 }
 
-class Response {
+class Resp {
     private IHttpRequestResponse req;
     private IResponseInfo info;
     private IResponseVariations attributes;
     private boolean timedOut;
 
-    Response(IHttpRequestResponse req) {
+    Resp(IHttpRequestResponse req) {
         this.req = req;
         this.timedOut = req.getResponse() == null;
         if (!timedOut) {
@@ -342,13 +342,13 @@ class Response {
     }
 }
 
-class Request implements IHttpRequestResponse {
+class Req implements IHttpRequestResponse {
 
     private byte[] req;
     private byte[] resp;
     private IHttpService service;
 
-    Request(byte[] req, byte[] resp, IHttpService service) {
+    Req(byte[] req, byte[] resp, IHttpService service) {
         this.req = req;
         this.resp = resp;
         this.service = service;

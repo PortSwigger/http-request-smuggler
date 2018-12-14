@@ -786,7 +786,7 @@ class Utilities {
             outputStream.write(Arrays.copyOfRange(request, offsets[2], request.length));
             return outputStream.toByteArray();
         } catch (IOException e) {
-            throw new RuntimeException("Request creation unexpectedly failed");
+            throw new RuntimeException("Req creation unexpectedly failed");
         } catch (NullPointerException e) {
             Utilities.out("header locating fail: "+header);
             Utilities.out("'"+helpers.bytesToString(request)+"'");
@@ -873,7 +873,7 @@ class Utilities {
             return outputStream.toByteArray();
 
         } catch (IOException e) {
-            throw new RuntimeException("Request creation unexpectedly failed");
+            throw new RuntimeException("Req creation unexpectedly failed");
         }
     }
 
@@ -974,7 +974,7 @@ class Utilities {
             }
 
             if (result.getResponse() == null) {
-                Utilities.log("Request failed, retrying...");
+                Utilities.log("Req failed, retrying...");
                 //requestResponse.setResponse(new byte[0]);
             }
             else {
@@ -983,7 +983,7 @@ class Utilities {
         }
 
         if (result.getResponse() == null) {
-            Utilities.log("Request failed multiple times, giving up");
+            Utilities.log("Req failed multiple times, giving up");
         }
 
         return result;
