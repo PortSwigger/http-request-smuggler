@@ -136,7 +136,7 @@ class BulkScan implements Runnable  {
                 queued++;
                 taskEngine.execute(new BulkScanItem(scan, req));
             }
-            
+
             cache = new CircularFifoQueue<>(max(min(remainingHosts.size()-1, thread_count), 1));
         }
 
@@ -215,6 +215,9 @@ class BulkScanItem implements Runnable {
 
     public void run() {
         scanner.doScan(baseReq.getRequest(), this.baseReq.getHttpService());
+        ScanPool engine = BulkScanLauncher.getTaskEngine();
+        long done = engine.getCompletedTaskCount()+1;
+        Utilities.out("Completed "+ done + " of "+(done-engine.getQueue().size()));
     }
 }
 
