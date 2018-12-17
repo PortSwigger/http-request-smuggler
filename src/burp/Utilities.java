@@ -234,7 +234,7 @@ class Utilities {
 
     private static PrintWriter stdout;
     private static PrintWriter stderr;
-    static final boolean DEBUG = false;
+    static final boolean DEBUG = true;
 
     static final byte CONFIRMATIONS = 5;
 
@@ -790,7 +790,7 @@ class Utilities {
         } catch (NullPointerException e) {
             Utilities.out("header locating fail: "+header);
             Utilities.out("'"+helpers.bytesToString(request)+"'");
-            throw new RuntimeException("Can't find the header");
+            throw new RuntimeException("Can't find the header: "+header);
         }
     }
 
