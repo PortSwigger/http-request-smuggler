@@ -217,7 +217,7 @@ class BulkScanItem implements Runnable {
         scanner.doScan(baseReq.getRequest(), this.baseReq.getHttpService());
         ScanPool engine = BulkScanLauncher.getTaskEngine();
         long done = engine.getCompletedTaskCount()+1;
-        Utilities.out("Completed "+ done + " of "+(done-engine.getQueue().size()));
+        Utilities.out("Completed "+ done + " of "+(engine.getQueue().size()-done));
     }
 }
 
