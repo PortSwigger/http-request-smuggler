@@ -57,7 +57,7 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
         }
     }
 
-    private void sendPoc(byte[] base, IHttpService service) {
+    boolean sendPoc(byte[] base, IHttpService service) {
         byte[] badMethodIfChunked = Utilities.setHeader(base, "Connection", "keep-alive");
         badMethodIfChunked = bypassContentLengthFix(makeChunked(badMethodIfChunked, 1, 0));
         SmuggleHelper helper = new SmuggleHelper(service);
@@ -72,17 +72,18 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
         short victimStatus = results.get(1).getInfo().getStatusCode();
 
         if (cleanupStatus == minerStatus && minerStatus == victimStatus) {
-            return;
+            return false;
         }
 
         if (cleanupStatus == minerStatus) {
-            report("Req smuggling confirmed (legit)", "code1:code1:code2", cleanup, results.get(0), results.get(1));
+            report("Req smuggling attack (legit)", "code1:code1:code2", cleanup, results.get(0), results.get(1));
         } else if (minerStatus == victimStatus) {
-            report("Req smuggling confirmed (risky)", "code1:code2:code2", cleanup, results.get(0), results.get(1));
+            report("Req smuggling attack (risky)", "code1:code2:code2", cleanup, results.get(0), results.get(1));
         }
         else {
-            report("Req smuggling confirmed (hazardous)", "code1:code2:code3", cleanup, results.get(0), results.get(1));
+            report("Req smuggling attack (hazardous)", "code1:code2:code3", cleanup, results.get(0), results.get(1));
         }
+        return true;
     }
 
     byte[] bypassContentLengthFix(byte[] req) {
@@ -127,8 +128,11 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
         Resp truncatedChunk = request(service, reverseLength);
         if (truncatedChunk.timedOut()) {
             Utilities.log("Reporting reverse timeout technique worked");
-            report("Req smuggling v1-b", "Status:timeout", syncedResp, truncatedChunk, suggestedProbe);
-            sendPoc(original, service);
+            String title = "Req smuggling v1-b";
+            if (!sendPoc(original, service)) {
+               title += " unconfirmed";
+            }
+            report(title, "Status:timeout", syncedResp, truncatedChunk, suggestedProbe);
             return null;
         }
         else {
@@ -136,9 +140,11 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
             Resp truncatedDualChunk = request(service, dualChunkTruncate);
             if (truncatedDualChunk.timedOut()) {
                 Utilities.log("Reverse timeout technique with dual TE header worked");
-                // todo check this actually works
-                sendPoc(Utilities.addOrReplaceHeader(original, "Transfer-encoding", "cow"), service);
-                report("Req smuggling v2", "Status:timeout", syncedResp, truncatedDualChunk, suggestedProbe);
+                String title = "Req smuggling v2";
+                if (!sendPoc(Utilities.addOrReplaceHeader(original, "Transfer-encoding", "cow"), service)) {
+                    title += " unconfirmed";
+                }
+                report(title, "Status:timeout", syncedResp, truncatedDualChunk, suggestedProbe);
                 return null;
             }
         }
@@ -171,8 +177,11 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
             }
         }
 
-        sendPoc(original, service);
-        report("Req smuggling v1", "Status:BadChunkDetection:BadLengthDetected", syncedResp, badChunkResp, badLengthResp, suggestedProbe);
+        String title = "Req smuggling v1";
+        if (!sendPoc(original, service)) {
+           title += " unconfirmed";
+        }
+        report(title, "Status:BadChunkDetection:BadLengthDetected", syncedResp, badChunkResp, badLengthResp, suggestedProbe);
         return null;
     }
 }

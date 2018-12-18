@@ -234,7 +234,7 @@ class Utilities {
 
     private static PrintWriter stdout;
     private static PrintWriter stderr;
-    static final boolean DEBUG = true;
+    static final boolean DEBUG = false;
 
     static final byte CONFIRMATIONS = 5;
 
