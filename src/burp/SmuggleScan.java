@@ -131,6 +131,11 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
         byte[] reverseLength = makeChunked(original, -1, 0); //Utilities.setHeader(baseReq, "Content-Length", "4");
         Resp truncatedChunk = request(service, reverseLength);
         if (truncatedChunk.timedOut()) {
+
+            if(request(service, baseReq).timedOut()) {
+                return null;
+            }
+
             Utilities.log("Reporting reverse timeout technique worked");
             String title = "Req smuggling v1-b";
             if (!sendPoc(original, service)) {
@@ -143,6 +148,11 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
             byte[] dualChunkTruncate = Utilities.addOrReplaceHeader(reverseLength, "Transfer-encoding", "cow");
             Resp truncatedDualChunk = request(service, dualChunkTruncate);
             if (truncatedDualChunk.timedOut()) {
+
+                if(request(service, baseReq).timedOut()) {
+                    return null;
+                }
+
                 Utilities.log("Reverse timeout technique with dual TE header worked");
                 String title = "Req smuggling v2";
                 if (!sendPoc(Utilities.addOrReplaceHeader(original, "Transfer-encoding", "cow"), service)) {
@@ -174,8 +184,11 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
 
             byte[] timeoutChunk = makeChunked(original, 0, 1); //Utilities.setBody(baseReq, "1\r\n\r\n");
             badChunkResp = request(service, timeoutChunk);
+
+            // fixme badLengthResp might have timed out, making it null around here gives nulls
+            // unsure if that should be reported...
             short badChunkCode = badChunkResp.getInfo().getStatusCode();
-            if (! (badChunkResp.timedOut() || (badChunkCode != badLengthResp.getInfo().getStatusCode() && badChunkCode != syncedResp.getInfo().getStatusCode()))) {
+            if (! (badChunkResp.timedOut() || ((badChunkResp.timedOut() || badChunkCode != badLengthResp.getInfo().getStatusCode()) && badChunkCode != syncedResp.getInfo().getStatusCode()))) {
                 Utilities.log("Bad chunk didn't affect status code and chunk timeout failed. Aborting.");
                 return null;
             }
