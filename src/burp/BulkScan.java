@@ -76,12 +76,25 @@ class BulkScan implements Runnable  {
 
         if (req.getResponse() != null) {
             IResponseInfo respInfo = Utilities.helpers.analyzeResponse(req.getResponse());
+
+            if (config.getBoolean("key header names")) {
+                StringBuilder headerNames = new StringBuilder();
+                for (String header : respInfo.getHeaders()) {
+                    headerNames.append(header.split(": ")[0]);
+                }
+                key.append(headerNames.toString());
+            }
+
             if (config.getBoolean("key status")) {
                 key.append(respInfo.getStatusCode());
             }
 
             if (config.getBoolean("key content-type")) {
                 key.append(respInfo.getStatedMimeType());
+            }
+
+            if (config.getBoolean("key server")) {
+                key.append(Utilities.getHeader(req.getRequest(), "Server"));
             }
         }
 

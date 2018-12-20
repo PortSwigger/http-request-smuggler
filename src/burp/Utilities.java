@@ -72,6 +72,8 @@ class ConfigurableSettings {
         put("key method", true);
         put("key status", true);
         put("key content-type", true);
+        put("key server", true);
+        put("key header names", false);
 
 
         for(String key: settings.keySet()) {
@@ -283,7 +285,6 @@ class Utilities {
     static boolean isBurpPro() {
         return callbacks.getBurpVersion()[0].contains("Professional");
     }
-
 
     static String getNameFromType(byte type) {
         switch (type) {
@@ -769,6 +770,9 @@ class Utilities {
 
     public static String getHeader(byte[] request, String header) {
         int[] offsets = getHeaderOffsets(request, header);
+        if (offsets == null) {
+            return "";
+        }
         String value = helpers.bytesToString(Arrays.copyOfRange(request, offsets[1], offsets[2]));
         return value;
     }
