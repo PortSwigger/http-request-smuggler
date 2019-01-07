@@ -2,7 +2,7 @@ package burp;
 
 public class BurpExtender implements IBurpExtender, IExtensionStateListener {
     private static final String name = "Smuggle Scan";
-    private static final String version = "0.1";
+    private static final String version = "0.2";
     public boolean unloaded = false;
 
     @Override
@@ -12,6 +12,7 @@ public class BurpExtender implements IBurpExtender, IExtensionStateListener {
         Utilities.callbacks.registerExtensionStateListener(this);
 
         SmuggleScan scanner = new SmuggleScan();
+        new SmuggleMenu();
         new BulkScanLauncher(scanner);
 
         Utils.setBurpPresent(callbacks);

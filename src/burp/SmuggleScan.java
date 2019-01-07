@@ -39,7 +39,7 @@ class SmuggleHelper {
 
 public class SmuggleScan extends Scan implements IScannerCheck  {
 
-    private Resp buildPoc(byte[] req, IHttpService service) {
+    static private Resp buildPoc(byte[] req, IHttpService service) {
         try {
             byte[] badMethodIfChunked = Utilities.setHeader(req, "Connection", "keep-alive");
             badMethodIfChunked = makeChunked(badMethodIfChunked, 1, 0);
@@ -55,6 +55,23 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
         catch (IOException e) {
             throw new RuntimeException();
         }
+    }
+
+    static byte[] makeChunked(byte[] baseReq, int contentLengthOffset, int chunkOffset) {
+        byte[] chunkedReq = Utilities.setHeader(baseReq, "Transfer-Encoding", "chunked");
+        int bodySize = baseReq.length - Utilities.getBodyStart(baseReq);
+        String body = Utilities.getBody(baseReq);
+        int chunkSize = bodySize+chunkOffset;
+        if (chunkSize > 0) {
+            chunkedReq = Utilities.setBody(chunkedReq, Integer.toHexString(chunkSize) + "\r\n" + body + "\r\n0\r\n\r\n");
+        }
+        else {
+            chunkedReq = Utilities.setBody(chunkedReq, "0\r\n\r\n");
+        }
+        bodySize = chunkedReq.length - Utilities.getBodyStart(chunkedReq);
+        String newContentLength = Integer.toString(bodySize+contentLengthOffset);
+        chunkedReq = Utilities.setHeader(chunkedReq, "Content-Length", newContentLength);
+        return chunkedReq;
     }
 
     boolean sendPoc(byte[] base, IHttpService service) {
@@ -92,23 +109,6 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
 
     byte[] bypassContentLengthFix(byte[] req) {
         return Utilities.replace(req, "Content-Length: ".getBytes(), "Content-length: ".getBytes());
-    }
-
-    private byte[] makeChunked(byte[] baseReq, int contentLengthOffset, int chunkOffset) {
-        byte[] chunkedReq = Utilities.setHeader(baseReq, "Transfer-Encoding", "chunked");
-        int bodySize = baseReq.length - Utilities.getBodyStart(baseReq);
-        String body = Utilities.getBody(baseReq);
-        int chunkSize = bodySize+chunkOffset;
-        if (chunkSize > 0) {
-            chunkedReq = Utilities.setBody(chunkedReq, Integer.toHexString(chunkSize) + "\r\n" + body + "\r\n0\r\n\r\n");
-        }
-        else {
-            chunkedReq = Utilities.setBody(chunkedReq, "0\r\n\r\n");
-        }
-        bodySize = chunkedReq.length - Utilities.getBodyStart(chunkedReq);
-        String newContentLength = Integer.toString(bodySize+contentLengthOffset);
-        chunkedReq = Utilities.setHeader(chunkedReq, "Content-Length", newContentLength);
-        return chunkedReq;
     }
 
     public List<IScanIssue> doScan(byte[] original, IHttpService service) {
