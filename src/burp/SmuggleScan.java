@@ -58,6 +58,10 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
     }
 
     static byte[] makeChunked(byte[] baseReq, int contentLengthOffset, int chunkOffset) {
+        if (!Utilities.containsBytes("Transfer-Encoding".getBytes(), baseReq)) {
+            baseReq = Utilities.addOrReplaceHeader(baseReq, "Transfer-Encoding", "foo");
+        }
+
         byte[] chunkedReq = Utilities.setHeader(baseReq, "Transfer-Encoding", "chunked");
         int bodySize = baseReq.length - Utilities.getBodyStart(baseReq);
         String body = Utilities.getBody(baseReq);

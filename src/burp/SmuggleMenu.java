@@ -25,7 +25,8 @@ public class SmuggleMenu implements IContextMenuFactory {
         probeButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                reqs[0].setResponse(SmuggleScan.makeChunked(reqs[0].getRequest(), 0, 0));
+                // need a handle on an IMessageEditorTab
+                reqs[0].setRequest(SmuggleScan.makeChunked(reqs[0].getRequest(), 0, 0));
             }
         });
 
