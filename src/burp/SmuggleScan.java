@@ -189,10 +189,13 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
             byte[] timeoutChunk = makeChunked(original, 0, 1); //Utilities.setBody(baseReq, "1\r\n\r\n");
             badChunkResp = request(service, timeoutChunk);
 
-            // fixme badLengthResp might have timed out, making it null around here gives nulls
-            // unsure if that should be reported...
+            short badLengthCode = 0;
+            if (!badLengthResp.timedOut()) {
+                badLengthCode = badLengthResp.getInfo().getStatusCode();
+            }
+
             short badChunkCode = badChunkResp.getInfo().getStatusCode();
-            if (! (badChunkResp.timedOut() || ((badChunkResp.timedOut() || badChunkCode != badLengthResp.getInfo().getStatusCode()) && badChunkCode != syncedResp.getInfo().getStatusCode()))) {
+            if (! (badChunkResp.timedOut() || ((badChunkResp.timedOut() || badChunkCode != badLengthCode) && badChunkCode != syncedResp.getInfo().getStatusCode()))) {
                 Utilities.log("Bad chunk didn't affect status code and chunk timeout failed. Aborting.");
                 return null;
             }
