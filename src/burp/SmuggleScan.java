@@ -147,7 +147,7 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
             if (!sendPoc(original, service)) {
                title += " unconfirmed";
             }
-            report(title, "Status:timeout", syncedResp, truncatedChunk, suggestedProbe);
+            report(title, "status:timeout", syncedResp, truncatedChunk, suggestedProbe);
             return null;
         }
         else {
@@ -164,51 +164,55 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
                 if (!sendPoc(Utilities.addOrReplaceHeader(original, "Transfer-encoding", "cow"), service)) {
                     title += " unconfirmed";
                 }
-                report(title, "Status:timeout", syncedResp, truncatedDualChunk, suggestedProbe);
+                report(title, "status:timeout", syncedResp, truncatedDualChunk, suggestedProbe);
                 return null;
             }
         }
 
 
-        byte[] badLength = makeChunked(original, 1, 0); //Utilities.setHeader(baseReq, "Content-Length", "6");
-        Resp badLengthResp = request(service, badLength);
-        if (!badLengthResp.timedOut() && badLengthResp.getInfo().getStatusCode() == syncedResp.getInfo().getStatusCode()) {
+        byte[] overlongLength = makeChunked(original, 1, 0); //Utilities.setHeader(baseReq, "Content-Length", "6");
+        Resp overlongLengthResp = request(service, overlongLength);
+        short overlongLengthCode = 0;
+        if (!overlongLengthResp.timedOut()) {
+            overlongLengthCode = overlongLengthResp.getInfo().getStatusCode();
+        }
+        if (overlongLengthCode == syncedResp.getInfo().getStatusCode()) {
             Utilities.log("Overlong content length didn't cause a timeout or code-change. Aborting.");
             return null;
         }
 
-        byte[] badChunk = Utilities.setBody(baseReq, "Z\r\n\r\n");
-        badChunk = Utilities.setHeader(badChunk,"Content-Length", "5");
-        Resp badChunkResp = request(service, badChunk);
+        byte[] invalidChunk = Utilities.setBody(baseReq, "Z\r\n\r\n");
+        invalidChunk = Utilities.setHeader(invalidChunk,"Content-Length", "5");
+        Resp badChunkResp = request(service, invalidChunk);
         if (badChunkResp.timedOut()) {
             Utilities.log("Bad chunk attack timed out. Aborting.");
             return null;
         }
 
         if (badChunkResp.getInfo().getStatusCode() == syncedResp.getInfo().getStatusCode()) {
-            Utilities.log("Invalid chunk probe caused a timeout. Attempting chunk timeout instead.");
+            Utilities.log("Invalid chunk probe didn't do anything. Attempting overlong chunk timeout instead.");
 
-            byte[] timeoutChunk = makeChunked(original, 0, 1); //Utilities.setBody(baseReq, "1\r\n\r\n");
-            badChunkResp = request(service, timeoutChunk);
+            byte[] overlongChunk = makeChunked(original, 0, 1); //Utilities.setBody(baseReq, "1\r\n\r\n");
+            Resp overlongChunkResp = request(service, overlongChunk);
 
-            short badLengthCode = 0;
-            if (!badLengthResp.timedOut()) {
-                badLengthCode = badLengthResp.getInfo().getStatusCode();
+            short overlongChunkCode = 0;
+            if (!overlongChunkResp.timedOut()) {
+                overlongChunkCode = overlongLengthResp.getInfo().getStatusCode();
             }
 
-            // fixme probably needs tweaking -
-            short badChunkCode = badChunkResp.getInfo().getStatusCode();
-            if (! (badChunkResp.timedOut() || ((badChunkResp.timedOut() || badChunkCode != badLengthCode) && badChunkCode != syncedResp.getInfo().getStatusCode()))) {
-                Utilities.log("Bad chunk didn't affect status code and chunk timeout failed. Aborting.");
+            if (overlongChunkCode == syncedResp.getInfo().getStatusCode() || overlongChunkCode == overlongLengthCode) {
+                Utilities.log("Invalid chunk and overlong chunk both had no effect. Aborting.");
                 return null;
             }
+
+            badChunkResp = overlongChunkResp;
         }
 
-        String title = "Req smuggling v1";
+        String title = "Req smuggling v1-a";
         if (!sendPoc(original, service)) {
            title += " unconfirmed";
         }
-        report(title, "Status:BadChunkDetection:BadLengthDetected", syncedResp, badChunkResp, badLengthResp, suggestedProbe);
+        report(title, "Status:BadChunkDetection:BadLengthDetected", syncedResp, badChunkResp, overlongLengthResp, suggestedProbe);
         return null;
     }
 }
