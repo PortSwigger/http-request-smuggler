@@ -143,7 +143,7 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
             }
 
             Utilities.log("Reporting reverse timeout technique worked");
-            String title = "Req smuggling v1-b";
+            String title = "Req smuggling: chunk truncate";
             if (!sendPoc(original, service)) {
                title += " unconfirmed";
             }
@@ -160,7 +160,7 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
                 }
 
                 Utilities.log("Reverse timeout technique with dual TE header worked");
-                String title = "Req smuggling v2";
+                String title = "Req smuggling: dual chunk truncate";
                 if (!sendPoc(Utilities.addOrReplaceHeader(original, "Transfer-encoding", "cow"), service)) {
                     title += " unconfirmed";
                 }
@@ -169,7 +169,7 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
             }
         }
 
-
+        // if we get to here, either they're secure or the frontend uses chunked
         byte[] overlongLength = makeChunked(original, 1, 0); //Utilities.setHeader(baseReq, "Content-Length", "6");
         Resp overlongLengthResp = request(service, overlongLength);
         short overlongLengthCode = 0;
@@ -208,7 +208,7 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
             badChunkResp = overlongChunkResp;
         }
 
-        String title = "Req smuggling v1-a";
+        String title = "Req smuggling: overlong diff";
         if (!sendPoc(original, service)) {
            title += " unconfirmed";
         }
