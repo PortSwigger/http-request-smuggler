@@ -101,6 +101,8 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
                 report("Req smuggling attack (legit)", "code1:code1:code2", cleanup, results.get(0), results.get(1));
             } else if (minerStatus == victimStatus) {
                 report("Req smuggling attack (risky)", "code1:code2:code2", cleanup, results.get(0), results.get(1));
+            } else if (cleanupStatus == victimStatus) {
+                report("Probably nothing", "code1:code2:code1", cleanup, results.get(0), results.get(1));
             } else {
                 report("Req smuggling attack (hazardous)", "code1:code2:code3", cleanup, results.get(0), results.get(1));
             }
@@ -194,6 +196,7 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
                 badLengthCode = badLengthResp.getInfo().getStatusCode();
             }
 
+            // fixme probably needs tweaking -
             short badChunkCode = badChunkResp.getInfo().getStatusCode();
             if (! (badChunkResp.timedOut() || ((badChunkResp.timedOut() || badChunkCode != badLengthCode) && badChunkCode != syncedResp.getInfo().getStatusCode()))) {
                 Utilities.log("Bad chunk didn't affect status code and chunk timeout failed. Aborting.");
