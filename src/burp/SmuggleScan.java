@@ -156,85 +156,90 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
 
         Resp suggestedProbe = buildPoc(original, service);
 
-        byte[] reverseLength = makeChunked(original, -1, 0); //Utilities.setHeader(baseReq, "Content-Length", "4");
-        Resp truncatedChunk = request(service, reverseLength);
-        if (truncatedChunk.timedOut()) {
+        if (Utilities.globalSettings.getBoolean("try chunk-truncate")) {
+            byte[] reverseLength = makeChunked(original, -1, 0); //Utilities.setHeader(baseReq, "Content-Length", "4");
+            Resp truncatedChunk = request(service, reverseLength);
+            if (truncatedChunk.timedOut()) {
 
-            if(request(service, baseReq).timedOut()) {
-                return null;
-            }
-
-            Utilities.log("Reporting reverse timeout technique worked");
-            String title = "Req smuggling: chunk truncate";
-            if (!sendPoc(original, service)) {
-               title += " unconfirmed";
-            }
-            report(title, "status:timeout", syncedResp, truncatedChunk, suggestedProbe);
-            return null;
-        }
-        else {
-            byte[] dualChunkTruncate = Utilities.addOrReplaceHeader(reverseLength, "Transfer-encoding", "cow");
-            Resp truncatedDualChunk = request(service, dualChunkTruncate);
-            if (truncatedDualChunk.timedOut()) {
-
-                if(request(service, baseReq).timedOut()) {
+                if (request(service, baseReq).timedOut()) {
                     return null;
                 }
 
-                Utilities.log("Reverse timeout technique with dual TE header worked");
-                String title = "Req smuggling: dual chunk truncate";
-                if (!sendPoc(Utilities.addOrReplaceHeader(original, "Transfer-encoding", "cow"), service)) {
+                Utilities.log("Reporting reverse timeout technique worked");
+                String title = "Req smuggling: chunk truncate";
+                if (!sendPoc(original, service)) {
                     title += " unconfirmed";
                 }
-                report(title, "status:timeout", syncedResp, truncatedDualChunk, suggestedProbe);
+                report(title, "status:timeout", syncedResp, truncatedChunk, suggestedProbe);
                 return null;
+            } else {
+                byte[] dualChunkTruncate = Utilities.addOrReplaceHeader(reverseLength, "Transfer-encoding", "cow");
+                Resp truncatedDualChunk = request(service, dualChunkTruncate);
+                if (truncatedDualChunk.timedOut()) {
+
+                    if (request(service, baseReq).timedOut()) {
+                        return null;
+                    }
+
+                    Utilities.log("Reverse timeout technique with dual TE header worked");
+                    String title = "Req smuggling: dual chunk truncate";
+                    if (!sendPoc(Utilities.addOrReplaceHeader(original, "Transfer-encoding", "cow"), service)) {
+                        title += " unconfirmed";
+                    }
+                    report(title, "status:timeout", syncedResp, truncatedDualChunk, suggestedProbe);
+                    return null;
+                }
             }
         }
 
-        // if we get to here, either they're secure or the frontend uses chunked
-        byte[] overlongLength = makeChunked(original, 1, 0); //Utilities.setHeader(baseReq, "Content-Length", "6");
-        Resp overlongLengthResp = request(service, overlongLength);
-        short overlongLengthCode = 0;
-        if (!overlongLengthResp.timedOut()) {
-            overlongLengthCode = overlongLengthResp.getInfo().getStatusCode();
-        }
-        if (overlongLengthCode == syncedResp.getInfo().getStatusCode()) {
-            Utilities.log("Overlong content length didn't cause a timeout or code-change. Aborting.");
-            return null;
-        }
+        if (Utilities.globalSettings.getBoolean("try timeout-diff")) {
 
-        byte[] invalidChunk = Utilities.setBody(baseReq, "Z\r\n\r\n");
-        invalidChunk = Utilities.setHeader(invalidChunk,"Content-Length", "5");
-        Resp badChunkResp = request(service, invalidChunk);
-        if (badChunkResp.timedOut()) {
-            Utilities.log("Bad chunk attack timed out. Aborting.");
-            return null;
-        }
-
-        if (badChunkResp.getInfo().getStatusCode() == syncedResp.getInfo().getStatusCode()) {
-            Utilities.log("Invalid chunk probe didn't do anything. Attempting overlong chunk timeout instead.");
-
-            byte[] overlongChunk = makeChunked(original, 0, 1); //Utilities.setBody(baseReq, "1\r\n\r\n");
-            Resp overlongChunkResp = request(service, overlongChunk);
-
-            short overlongChunkCode = 0;
-            if (!overlongChunkResp.timedOut()) {
-                overlongChunkCode = overlongLengthResp.getInfo().getStatusCode();
+            // if we get to here, either they're secure or the frontend uses chunked
+            byte[] overlongLength = makeChunked(original, 1, 0); //Utilities.setHeader(baseReq, "Content-Length", "6");
+            Resp overlongLengthResp = request(service, overlongLength);
+            short overlongLengthCode = 0;
+            if (!overlongLengthResp.timedOut()) {
+                overlongLengthCode = overlongLengthResp.getInfo().getStatusCode();
             }
-
-            if (overlongChunkCode == syncedResp.getInfo().getStatusCode() || overlongChunkCode == overlongLengthCode) {
-                Utilities.log("Invalid chunk and overlong chunk both had no effect. Aborting.");
+            if (overlongLengthCode == syncedResp.getInfo().getStatusCode()) {
+                Utilities.log("Overlong content length didn't cause a timeout or code-change. Aborting.");
                 return null;
             }
 
-            badChunkResp = overlongChunkResp;
+            byte[] invalidChunk = Utilities.setBody(baseReq, "Z\r\n\r\n");
+            invalidChunk = Utilities.setHeader(invalidChunk, "Content-Length", "5");
+            Resp badChunkResp = request(service, invalidChunk);
+            if (badChunkResp.timedOut()) {
+                Utilities.log("Bad chunk attack timed out. Aborting.");
+                return null;
+            }
+
+            if (badChunkResp.getInfo().getStatusCode() == syncedResp.getInfo().getStatusCode()) {
+                Utilities.log("Invalid chunk probe didn't do anything. Attempting overlong chunk timeout instead.");
+
+                byte[] overlongChunk = makeChunked(original, 0, 1); //Utilities.setBody(baseReq, "1\r\n\r\n");
+                Resp overlongChunkResp = request(service, overlongChunk);
+
+                short overlongChunkCode = 0;
+                if (!overlongChunkResp.timedOut()) {
+                    overlongChunkCode = overlongLengthResp.getInfo().getStatusCode();
+                }
+
+                if (overlongChunkCode == syncedResp.getInfo().getStatusCode() || overlongChunkCode == overlongLengthCode) {
+                    Utilities.log("Invalid chunk and overlong chunk both had no effect. Aborting.");
+                    return null;
+                }
+
+                badChunkResp = overlongChunkResp;
+            }
+
+            String title = "Req smuggling: overlong diff";
+            if (!sendPoc(original, service)) {
+                title += " unconfirmed";
+            }
+            report(title, "Status:BadChunkDetection:BadLengthDetected", syncedResp, badChunkResp, overlongLengthResp, suggestedProbe);
         }
 
-        String title = "Req smuggling: overlong diff";
-        if (!sendPoc(original, service)) {
-           title += " unconfirmed";
-        }
-        report(title, "Status:BadChunkDetection:BadLengthDetected", syncedResp, badChunkResp, overlongLengthResp, suggestedProbe);
         return null;
     }
 }

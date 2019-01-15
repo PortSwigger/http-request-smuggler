@@ -76,8 +76,9 @@ class ConfigurableSettings {
         put("key header names", false);
 
         // smuggle-scan specific
+        put("try chunk-truncate", true);
+        put("try timeout-diff", true);
         put("avoid rescanning vulnerable hosts", false);
-
 
         for(String key: settings.keySet()) {
             //Utilities.callbacks.saveExtensionSetting(key, null); // purge saved settings
