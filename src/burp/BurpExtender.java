@@ -1,9 +1,12 @@
 package burp;
 
+import java.util.concurrent.ConcurrentHashMap;
+
 public class BurpExtender implements IBurpExtender, IExtensionStateListener {
     private static final String name = "Smuggle Scan";
     private static final String version = "0.2";
     public boolean unloaded = false;
+    static ConcurrentHashMap<String, Boolean> hostsToSkip = new ConcurrentHashMap<>();
 
     @Override
     public void registerExtenderCallbacks(final IBurpExtenderCallbacks callbacks) {

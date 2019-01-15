@@ -2,8 +2,10 @@ package burp;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.zip.GZIPOutputStream;
 
 
 class SmuggleHelper {
@@ -57,6 +59,21 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
         }
     }
 
+    static byte[] gzipBody(byte[] baseReq) {
+        try {
+            byte[] req = Utilities.addOrReplaceHeader(baseReq, "Transfer-Encoding", "gzip");
+            String body = Utilities.getBody(req);
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            GZIPOutputStream gzip = new GZIPOutputStream(out);
+            gzip.write(Utilities.helpers.stringToBytes(body));
+            gzip.close();
+            return Utilities.setBody(req, Utilities.helpers.bytesToString(out.toByteArray()));
+        } catch (Exception e) {
+            Utilities.err(e.getMessage());
+            return baseReq;
+        }
+    }
+
     static byte[] makeChunked(byte[] baseReq, int contentLengthOffset, int chunkOffset) {
         if (!Utilities.containsBytes("Transfer-Encoding".getBytes(), baseReq)) {
             baseReq = Utilities.addOrReplaceHeader(baseReq, "Transfer-Encoding", "foo");
@@ -106,6 +123,7 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
             } else {
                 report("Req smuggling attack (hazardous)", "code1:code2:code3", cleanup, results.get(0), results.get(1));
             }
+            BurpExtender.hostsToSkip.putIfAbsent(service.getHost(), true);
             return true;
         }
         catch (Exception e) {
@@ -118,6 +136,10 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
     }
 
     public List<IScanIssue> doScan(byte[] original, IHttpService service) {
+        if (Utilities.globalSettings.getBoolean("avoid rescanning vulnerable hosts") && BurpExtender.hostsToSkip.containsKey(service.getHost())) {
+            return null;
+        }
+
         if (original[0] == 'G') {
             original = Utilities.helpers.toggleRequestMethod(original);
         }

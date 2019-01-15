@@ -75,6 +75,9 @@ class ConfigurableSettings {
         put("key server", true);
         put("key header names", false);
 
+        // smuggle-scan specific
+        put("avoid rescanning vulnerable hosts", false);
+
 
         for(String key: settings.keySet()) {
             //Utilities.callbacks.saveExtensionSetting(key, null); // purge saved settings

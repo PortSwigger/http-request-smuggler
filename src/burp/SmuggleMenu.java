@@ -32,6 +32,16 @@ public class SmuggleMenu implements IContextMenuFactory {
 
         options.add(probeButton);
 
+        JMenuItem gzipButton = new JMenuItem("GZIP encode body");
+        gzipButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // need a handle on an IMessageEditorTab
+                reqs[0].setRequest(SmuggleScan.gzipBody(reqs[0].getRequest()));
+            }
+        });
+        options.add(gzipButton);
+
         return options;
     }
 }
