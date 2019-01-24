@@ -107,8 +107,9 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
             byte[] badMethodIfChunked = Utilities.setHeader(base, "Connection", "keep-alive");
             badMethodIfChunked = bypassContentLengthFix(makeChunked(badMethodIfChunked, inject.length(), 0));
             SmuggleHelper helper = new SmuggleHelper(service);
-            helper.queue(Utilities.helpers.bytesToString(badMethodIfChunked) + inject);
             byte[] victim = makeChunked(base, 0, 0);
+
+            helper.queue(Utilities.helpers.bytesToString(badMethodIfChunked) + inject);
             helper.queue(Utilities.helpers.bytesToString(victim));
 
             List<Resp> results = helper.waitFor();
@@ -122,7 +123,12 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
             }
 
             if (cleanupStatus == minerStatus) {
-                report("Req smuggling attack (legit): "+name, "code1:code1:code2", cleanup, results.get(0), results.get(1));
+                if (victimStatus == 0) {
+                    report("Null victim: "+name, "code1:code1:code2", cleanup, results.get(0), results.get(1));
+                }
+                else {
+                    report("Req smuggling attack (legit): "+name, "code1:code1:code2", cleanup, results.get(0), results.get(1));
+                }
             } else if (minerStatus == victimStatus) {
                 report("Req smuggling attack (risky): "+name, "code1:code2:code2", cleanup, results.get(0), results.get(1));
             } else if (cleanupStatus == victimStatus) {
