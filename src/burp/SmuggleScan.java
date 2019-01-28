@@ -18,7 +18,7 @@ class SmuggleHelper {
     SmuggleHelper(IHttpService service) {
         this.service = service;
         String url = service.getProtocol()+"://"+service.getHost()+":"+service.getPort();
-        this.engine = new ThreadedRequestEngine(url, 1, 10, 1, 10, 0, this::callback, 10);
+        this.engine = new ThreadedRequestEngine(url, 1, 10, 1, 10, 1, this::callback, 10);
     }
 
     void queue(String req) {
@@ -109,11 +109,20 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
             SmuggleHelper helper = new SmuggleHelper(service);
             byte[] victim = makeChunked(base, 0, 0);
 
+            Resp baseline = request(service, victim);
             helper.queue(Utilities.helpers.bytesToString(badMethodIfChunked) + inject);
+            helper.queue(Utilities.helpers.bytesToString(victim));
             helper.queue(Utilities.helpers.bytesToString(victim));
 
             List<Resp> results = helper.waitFor();
-            Resp cleanup = request(service, victim);
+            Resp cleanup = null;
+            for (int i=0;i<3;i++) {
+                cleanup = request(service, victim);
+                if (cleanup.getInfo().getStatusCode() != baseline.getInfo().getStatusCode()) {
+                    request(service, victim);
+                    break;
+                }
+            }
             short cleanupStatus = cleanup.getInfo().getStatusCode();
             short minerStatus = results.get(0).getInfo().getStatusCode();
             short victimStatus = results.get(1).getInfo().getStatusCode();
@@ -130,7 +139,7 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
                     report("Req smuggling attack (legit): "+name, "code1:code1:code2", cleanup, results.get(0), results.get(1));
                 }
             } else if (minerStatus == victimStatus) {
-                report("Req smuggling attack (risky): "+name, "code1:code2:code2", cleanup, results.get(0), results.get(1));
+                report("Req smuggling attack (XCON): "+name, "code1:code2:code2", cleanup, results.get(0), results.get(1));
             } else if (cleanupStatus == victimStatus) {
                 report("Probably nothing: "+name, "code1:code2:code1", cleanup, results.get(0), results.get(1));
             } else {
