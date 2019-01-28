@@ -176,6 +176,7 @@ class RandomComparator implements Comparator<Object> {
 class TriggerBulkScan implements ActionListener {
 
     private IHttpRequestResponse[] reqs;
+    private IScanIssue[] issues;
     private Scan scan;
 
     TriggerBulkScan(Scan scan, IHttpRequestResponse[] reqs) {
@@ -183,7 +184,20 @@ class TriggerBulkScan implements ActionListener {
         this.reqs = reqs;
     }
 
+    TriggerBulkScan(Scan scan, IScanIssue[] issues) {
+        this.scan = scan;
+        this.issues = issues;
+    }
+
     public void actionPerformed(ActionEvent e) {
+        if (this.reqs == null) {
+            this.reqs = new IHttpRequestResponse[issues.length];
+            for (int i=0; i<issues.length; i++) {
+                IScanIssue issue = issues[i];
+                reqs[i] = new Req(Utilities.helpers.buildHttpRequest(issue.getUrl()), null, issue.getHttpService());
+            }
+        }
+
         ConfigurableSettings config = Utilities.globalSettings.showSettings();
         if (config != null) {
             BulkScan bulkScan = new BulkScan(scan, reqs, config);
@@ -204,13 +218,14 @@ class OfferBulkScan implements IContextMenuFactory {
         IHttpRequestResponse[] reqs = invocation.getSelectedMessages();
         List<JMenuItem> options = new ArrayList<>();
 
-        if(reqs.length == 0) {
-            return options;
-        }
-
         JMenuItem probeButton = new JMenuItem("Launch bulk scan");
-        probeButton.addActionListener(new TriggerBulkScan(scan, reqs));
-        options.add(probeButton);
+        if(reqs != null && reqs.length > 0) {
+            probeButton.addActionListener(new TriggerBulkScan(scan, reqs));
+            options.add(probeButton);
+        } else if(invocation.getSelectedIssues().length > 0) {
+            probeButton.addActionListener(new TriggerBulkScan(scan, invocation.getSelectedIssues()));
+            options.add(probeButton);
+        }
 
         return options;
     }

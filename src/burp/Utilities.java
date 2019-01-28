@@ -78,6 +78,10 @@ class ConfigurableSettings {
         // smuggle-scan specific
         put("try chunk-truncate", true);
         put("try timeout-diff", true);
+        put("poc: G", true);
+        put("poc: headerConcat", true);
+        put("poc: bodyConcat", true);
+
         put("avoid rescanning vulnerable hosts", false);
 
         for(String key: settings.keySet()) {
