@@ -327,6 +327,12 @@ class Resp {
     private IHttpRequestResponse req;
     private IResponseInfo info;
     private IResponseVariations attributes;
+
+    public short getStatus() {
+        return status;
+    }
+
+    private short status = 0;
     private boolean timedOut;
 
     Resp(IHttpRequestResponse req) {
@@ -335,6 +341,7 @@ class Resp {
         if (!timedOut) {
             this.info = Utilities.helpers.analyzeResponse(req.getResponse());
             this.attributes = Utilities.helpers.analyzeResponseVariations(req.getResponse());
+            this.status = this.info.getStatusCode();
         }
     }
 

