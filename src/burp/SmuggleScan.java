@@ -26,7 +26,7 @@ class SmuggleHelper {
     }
 
     private boolean callback(Request req, boolean interesting) {
-        reqs.add(new Resp(new Req(req.getRawRequest(), req.getRawResponse(), service)));
+        reqs.add(new Resp(new Req(req.getRequestAsBytes(), req.getResponseAsBytes(), service)));
         return false;
     }
 
@@ -110,6 +110,9 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
         }
         if (Utilities.globalSettings.getBoolean("poc: bodyConcat")) {
             cpoc3 = sendPoc(base, service, "bodyConcat", "POST /?x=z88m811soo7x6fxuo08vu4wd94fw3l/"+service.getHost()+" HTTP/1.1\r\nHost: 52.16.21.24\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: 8\r\n\r\nfoo=");
+        }
+        if (Utilities.globalSettings.getBoolean("poc: collab")) {
+            sendPoc(base, service, "collab", "GET / HTTP/1.1\r\nHost: "+service.getHost()+".pvocvroibeunt5kkbqvlhuj3wu2rqg.burpcollaborator.net\r\n\r\n");
         }
 
         return gpoc || cpoc2 || cpoc3;

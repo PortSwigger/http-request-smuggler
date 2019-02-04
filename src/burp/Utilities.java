@@ -81,6 +81,7 @@ class ConfigurableSettings {
         put("poc: G", true);
         put("poc: headerConcat", true);
         put("poc: bodyConcat", true);
+        put("poc: collab", true);
 
         put("avoid rescanning vulnerable hosts", false);
 
