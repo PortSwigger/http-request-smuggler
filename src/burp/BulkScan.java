@@ -218,7 +218,7 @@ class OfferBulkScan implements IContextMenuFactory {
         IHttpRequestResponse[] reqs = invocation.getSelectedMessages();
         List<JMenuItem> options = new ArrayList<>();
 
-        JMenuItem probeButton = new JMenuItem("Launch bulk scan");
+        JMenuItem probeButton = new JMenuItem("Launch "+scan.name);
         if(reqs != null && reqs.length > 0) {
             probeButton.addActionListener(new TriggerBulkScan(scan, reqs));
             options.add(probeButton);
@@ -251,8 +251,10 @@ class BulkScanItem implements Runnable {
 
 abstract class Scan implements IScannerCheck {
     ZgrabLoader loader = null;
+    String name = "";
 
-    Scan() {
+    Scan(String name) {
+        this.name = name;
         Utilities.callbacks.registerScannerCheck(this);
     }
 
