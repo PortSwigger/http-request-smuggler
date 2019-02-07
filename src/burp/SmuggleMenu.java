@@ -17,7 +17,7 @@ public class SmuggleMenu implements IContextMenuFactory {
         IHttpRequestResponse[] reqs = invocation.getSelectedMessages();
         List<JMenuItem> options = new ArrayList<>();
 
-        if(reqs.length != 1) {
+        if(reqs == null || reqs.length != 1) {
             return options;
         }
 
