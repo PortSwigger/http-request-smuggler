@@ -123,13 +123,12 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
 
     boolean sendPoc(byte[] base, IHttpService service, String name, String inject) {
         try {
-            byte[] badMethodIfChunked = Utilities.setHeader(base, "Connection", "keep-alive");
-            badMethodIfChunked = bypassContentLengthFix(makeChunked(badMethodIfChunked, inject.length(), 0));
-            SmuggleHelper helper = new SmuggleHelper(service);
+            String setupAttack = Utilities.helpers.bytesToString(bypassContentLengthFix(makeChunked(Utilities.setHeader(base, "Connection", "keep-alive"), inject.length(), 0)))+inject;
             byte[] victim = makeChunked(base, 0, 0);
 
             Resp baseline = request(service, victim);
-            helper.queue(Utilities.helpers.bytesToString(badMethodIfChunked) + inject);
+            SmuggleHelper helper = new SmuggleHelper(service);
+            helper.queue(setupAttack);
             helper.queue(Utilities.helpers.bytesToString(victim));
             helper.queue(Utilities.helpers.bytesToString(victim));
 
