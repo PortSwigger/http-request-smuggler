@@ -2,7 +2,7 @@ package burp;
 
 import java.util.List;
 
-public class DualContentScan extends Scan implements IScannerCheck  {
+public class DualContentScan extends SmuggleScanBox implements IScannerCheck  {
 
     DualContentScan(String name) {
         super(name);
@@ -19,7 +19,7 @@ public class DualContentScan extends Scan implements IScannerCheck  {
 
     @Override
     List<IScanIssue> doScan ( byte[] baseReq, IHttpService service){
-        if (Utilities.globalSettings.getBoolean("avoid rescanning vulnerable hosts") && BurpExtender.hostsToSkip.containsKey(service.getHost())) {
+        if (Utilities.globalSettings.getBoolean("avoid rescanning vulnerable hosts") && BurpExtender.hostsToSkip.containsKey(service.getProtocol()+service.getHost())) {
             return null;
         }
 
@@ -61,7 +61,15 @@ public class DualContentScan extends Scan implements IScannerCheck  {
             }
         }
 
-        BurpExtender.hostsToSkip.put(service.getHost(), true);
+
+//        String prefix = "GET / HTTP/1.1\r\nFoo: ba";
+//        byte[] victim = baseReq;
+//        sendPoc("", baseReq, service);
+//        dualContent(baseReq, 0, -prefix.length());
+//        dualContent(baseReq, -prefix.length(), 0);
+
+
+        BurpExtender.hostsToSkip.put(service.getProtocol()+service.getHost(), true);
         return null;
     }
 }

@@ -26,7 +26,7 @@ public class SmuggleMenu implements IContextMenuFactory {
             @Override
             public void actionPerformed(ActionEvent e) {
                 // need a handle on an IMessageEditorTab
-                reqs[0].setRequest(Utilities.makeChunked(reqs[0].getRequest(), 0, 0));
+                reqs[0].setRequest(SmuggleScanBox.makeChunked(reqs[0].getRequest(), 0, 0));
             }
         });
 
@@ -37,7 +37,7 @@ public class SmuggleMenu implements IContextMenuFactory {
             @Override
             public void actionPerformed(ActionEvent e) {
                 // need a handle on an IMessageEditorTab
-                reqs[0].setRequest(Utilities.gzipBody(reqs[0].getRequest()));
+                reqs[0].setRequest(SmuggleScanBox.gzipBody(reqs[0].getRequest()));
             }
         });
         options.add(gzipButton);

