@@ -82,6 +82,7 @@ class ConfigurableSettings {
         put("poc: headerConcat", true);
         put("poc: bodyConcat", true);
         put("poc: collab", true);
+        put("poc: collab-header", true);
 
         put("avoid rescanning vulnerable hosts", false);
 

