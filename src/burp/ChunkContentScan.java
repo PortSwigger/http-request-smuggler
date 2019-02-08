@@ -71,7 +71,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
         String setupAttack = new DualChunkCL().getAttack(base, inject);
         //setupAttack = new DualChunkTE().getAttack(base, inject);
         byte[] victim = makeChunked(base, 0, 0);
-        return sendPoc(setupAttack, victim, service);
+        return sendPoc(name, setupAttack, victim, service);
     }
 
 

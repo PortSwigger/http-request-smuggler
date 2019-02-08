@@ -295,9 +295,9 @@ abstract class Scan implements IScannerCheck {
 
         if (loader == null) {
             try {
-                // hmm
                 resp = Utilities.callbacks.makeHttpRequest(service, req);
             } catch (java.lang.RuntimeException e) {
+                Utilities.out("Recovering from request exception");
                 resp = new Req(req, null, service);
             }
         }

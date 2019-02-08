@@ -11,7 +11,11 @@ public abstract class SmuggleScanBox extends Scan {
         super(name);
     }
 
-    boolean sendPoc(String setupAttack, byte[] victim, IHttpService service) {
+    boolean sendPoc(String name, byte[] setupAttack, byte[] victim, IHttpService service) {
+        return sendPoc(name, Utilities.helpers.bytesToString(setupAttack), victim, service);
+    }
+
+    boolean sendPoc(String name, String setupAttack, byte[] victim, IHttpService service) {
         try {
             Resp baseline = request(service, victim);
             SmuggleHelper helper = new SmuggleHelper(service);

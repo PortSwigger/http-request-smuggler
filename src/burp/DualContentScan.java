@@ -1,5 +1,7 @@
 package burp;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.List;
 
 public class DualContentScan extends SmuggleScanBox implements IScannerCheck  {
@@ -10,9 +12,16 @@ public class DualContentScan extends SmuggleScanBox implements IScannerCheck  {
 
 
     byte[] dualContent(byte[] baseReq, int offset1, int offset2) {
-        int contentLength = Integer.parseInt(Utilities.getHeader(baseReq, "Content-Length"));
-        baseReq = Utilities.addOrReplaceHeader(baseReq, "content-Length", String.valueOf(contentLength+offset1));
-        baseReq = Utilities.addOrReplaceHeader(baseReq, "content-length", "0" + String.valueOf(contentLength+offset2));
+        int contentLength = baseReq.length - Utilities.getBodyStart(baseReq); // Integer.parseInt(Utilities.getHeader(baseReq, "Content-Length"));
+
+        String off1 = String.valueOf(contentLength+offset1);
+        String off2 = String.valueOf(contentLength+offset2);
+        if (offset1 == offset2) {
+            off2 = "0"+off2;
+        }
+
+        baseReq = Utilities.addOrReplaceHeader(baseReq, "content-Length", off1);
+        baseReq = Utilities.addOrReplaceHeader(baseReq, "content-length", off2);
         baseReq = Utilities.replace(baseReq, "Content-Length".getBytes(), "oldContent-Length".getBytes());
         return baseReq;
     }
@@ -26,6 +35,9 @@ public class DualContentScan extends SmuggleScanBox implements IScannerCheck  {
         if (baseReq[0] == 'G') {
             baseReq = Utilities.helpers.toggleRequestMethod(baseReq);
         }
+
+        IParameter notEmpty = burp.Utilities.helpers.buildParameter("notempty", "1", IParameter.PARAM_BODY);
+        baseReq = Utilities.helpers.addParameter(baseReq, notEmpty);
 
         byte[] noAttack = dualContent(baseReq, 0, 0);
 
@@ -62,13 +74,18 @@ public class DualContentScan extends SmuggleScanBox implements IScannerCheck  {
         }
 
 
-//        String prefix = "GET / HTTP/1.1\r\nFoo: ba";
-//        byte[] victim = baseReq;
-//        sendPoc("", baseReq, service);
-//        dualContent(baseReq, 0, -prefix.length());
-//        dualContent(baseReq, -prefix.length(), 0);
+        try {
+            byte[] prefix = "GET / HTTP/1.1\r\nFoo: ba".getBytes();
+            ByteArrayOutputStream stream = new ByteArrayOutputStream();
+            stream.write(baseReq);
+            stream.write(prefix);
+            byte[] attack = stream.toByteArray();
+            sendPoc("CL-CL-1", dualContent(attack, 0, -prefix.length), baseReq, service);
+            sendPoc("CL-CL-2", dualContent(attack, -prefix.length, 0), baseReq, service);
 
+        } catch (IOException e) {
 
+        }
         BurpExtender.hostsToSkip.put(service.getProtocol()+service.getHost(), true);
         return null;
     }
