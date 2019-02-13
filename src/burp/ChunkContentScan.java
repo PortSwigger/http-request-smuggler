@@ -81,9 +81,9 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
         return Utilities.replace(req, "Content-Length: ".getBytes(), "Content-length: ".getBytes());
     }
 
-    public List<IScanIssue> doScan(byte[] original, IHttpService service) {
+    public void doConfiguredScan(byte[] original, IHttpService service, HashMap<String, Boolean> config) {
         if (Utilities.globalSettings.getBoolean("avoid rescanning vulnerable hosts") && BurpExtender.hostsToSkip.containsKey(service.getHost())) {
-            return null;
+            return;
         }
 
         if (original[0] == 'G') {
@@ -97,7 +97,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
         Resp syncedResp = request(service, baseReq);
         if (syncedResp.timedOut()) {
             Utilities.log("Timeout on first request. Aborting.");
-            return null;
+            return;
         }
 
         Resp suggestedProbe = buildPoc(original, service);
@@ -108,7 +108,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
             if (truncatedChunk.timedOut()) {
 
                 if (request(service, baseReq).timedOut()) {
-                    return null;
+                    return;
                 }
 
                 Utilities.log("Reporting reverse timeout technique worked");
@@ -117,14 +117,14 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
                     title += " unconfirmed";
                 }
                 report(title, "status:timeout", syncedResp, truncatedChunk, suggestedProbe);
-                return null;
+                return;
             } else {
                 byte[] dualChunkTruncate = Utilities.addOrReplaceHeader(reverseLength, "Transfer-encoding", "cow");
                 Resp truncatedDualChunk = request(service, dualChunkTruncate);
                 if (truncatedDualChunk.timedOut()) {
 
                     if (request(service, baseReq).timedOut()) {
-                        return null;
+                        return;
                     }
 
                     Utilities.log("Reverse timeout technique with dual TE header worked");
@@ -133,7 +133,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
                         title += " unconfirmed";
                     }
                     report(title, "status:timeout", syncedResp, truncatedDualChunk, suggestedProbe);
-                    return null;
+                    return;
                 }
             }
         }
@@ -149,7 +149,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
             }
             if (overlongLengthCode == syncedResp.getInfo().getStatusCode()) {
                 Utilities.log("Overlong content length didn't cause a timeout or code-change. Aborting.");
-                return null;
+                return;
             }
 
             byte[] invalidChunk = Utilities.setBody(baseReq, "Z\r\n\r\n");
@@ -157,7 +157,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
             Resp badChunkResp = request(service, invalidChunk);
             if (badChunkResp.timedOut()) {
                 Utilities.log("Bad chunk attack timed out. Aborting.");
-                return null;
+                return;
             }
 
             if (badChunkResp.getStatus() == syncedResp.getStatus()) {
@@ -170,7 +170,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
 
                 if (overlongChunkCode == syncedResp.getStatus() || overlongChunkCode == overlongLengthCode) {
                     Utilities.log("Invalid chunk and overlong chunk both had no effect. Aborting.");
-                    return null;
+                    return;
                 }
 
                 badChunkResp = overlongChunkResp;
@@ -183,7 +183,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
             report(title, "Status:BadChunkDetection:BadLengthDetected", syncedResp, badChunkResp, overlongLengthResp, suggestedProbe);
         }
 
-        return null;
+        return;
     }
 }
 

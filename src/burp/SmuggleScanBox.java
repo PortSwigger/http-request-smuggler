@@ -20,10 +20,27 @@ public abstract class SmuggleScanBox extends Scan {
         registerPermutation("underscore2");
     }
 
+    @Override
+    protected List<IScanIssue> doScan(byte[] baseReq, IHttpService service) {
+        HashMap<String, Boolean> config;
+        for (String permutation: supportedPermutations) {
+            if (!Utilities.globalSettings.getBoolean(PERMUTE_PREFIX+permutation)) {
+                continue;
+            }
+            config = new HashMap<>();
+            config.put(permutation, true);
+            doConfiguredScan(baseReq, service, config);
+        }
+        return null;
+    }
+
+    abstract void doConfiguredScan(byte[] baseReq, IHttpService service, HashMap<String, Boolean> config);
+
     void registerPermutation(String permutation) {
         supportedPermutations.add(permutation);
         Utilities.globalSettings.registerSetting(PERMUTE_PREFIX+permutation, true);
     }
+
 
     boolean sendPoc(String name, byte[] setupAttack, byte[] victim, IHttpService service) {
         return sendPoc(name, Utilities.helpers.bytesToString(setupAttack), victim, service, new HashMap<>());

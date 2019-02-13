@@ -46,10 +46,9 @@ public class DualContentScan extends SmuggleScanBox implements IScannerCheck  {
         return baseReq;
     }
 
-    @Override
-    List<IScanIssue> doScan ( byte[] baseReq, IHttpService service){
+    void doConfiguredScan(byte[] baseReq, IHttpService service, HashMap<String, Boolean> config) {
         if (Utilities.globalSettings.getBoolean("avoid rescanning vulnerable hosts") && BurpExtender.hostsToSkip.containsKey(service.getProtocol()+service.getHost())) {
-            return null;
+            return;
         }
 
         if (baseReq[0] == 'G') {
@@ -60,24 +59,10 @@ public class DualContentScan extends SmuggleScanBox implements IScannerCheck  {
         baseReq = Utilities.helpers.addParameter(baseReq, notEmpty);
 
         if (request(service, baseReq).timedOut()) {
-            return null;
+            return;
         }
 
-        // todo move this into SmuggleScanBox
-        HashMap<String, Boolean> config;
-        for (String permutation: supportedPermutations) {
-            if (!Utilities.globalSettings.getBoolean(PERMUTE_PREFIX+permutation)) {
-                continue;
-            }
-            config = new HashMap<>();
-            config.put(permutation, true);
-            attack(baseReq, service, config);
-        }
 
-        return null;
-    }
-
-    void attack(byte[] baseReq, IHttpService service, HashMap<String, Boolean> config) {
         byte[] noAttack = dualContent(baseReq, 0, 0, config);
 
         Resp baseline = request(service, noAttack);
