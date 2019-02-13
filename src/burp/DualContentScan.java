@@ -104,8 +104,8 @@ public class DualContentScan extends SmuggleScanBox implements IScannerCheck  {
             stream.write(baseReq);
             stream.write(prefix);
             final byte[] attack = stream.toByteArray();
-            sendPoc("CL-CL-1", dualContent(attack, 0, -prefix.length, config), baseReq, service, config);
-            sendPoc("CL-CL-2", dualContent(attack, -prefix.length, 0, config), baseReq, service, config);
+            sendPoc("CL-CL-1", dualContent(attack, 0, -prefix.length, config), noAttack, service, config);
+            sendPoc("CL-CL-2", dualContent(attack, -prefix.length, 0, config), noAttack, service, config);
 
         } catch (IOException e) {
 
