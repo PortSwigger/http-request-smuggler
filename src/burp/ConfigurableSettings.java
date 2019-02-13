@@ -23,31 +23,23 @@ class ConfigurableSettings {
         settings = new LinkedHashMap<>();
         put("thread pool size", 8);
 
-        put("use key", true);
-        put("key method", true);
-        put("key status", true);
-        put("key content-type", true);
-        put("key server", true);
-        put("key header names", false);
+        registerSetting("use key", true);
+        registerSetting("key method", true);
+        registerSetting("key status", true);
+        registerSetting("key content-type", true);
+        registerSetting("key server", true);
+        registerSetting("key header names", false);
 
         // smuggle-scan specific
-        put("try chunk-truncate", true);
-        put("try timeout-diff", true);
-        put("poc: G", true);
-        put("poc: headerConcat", true);
-        put("poc: bodyConcat", true);
-        put("poc: collab", true);
-        put("poc: collab-header", true);
+        registerSetting("try chunk-truncate", true);
+        registerSetting("try timeout-diff", true);
+        registerSetting("poc: G", true);
+        registerSetting("poc: headerConcat", true);
+        registerSetting("poc: bodyConcat", true);
+        registerSetting("poc: collab", true);
+        registerSetting("poc: collab-header", true);
+        registerSetting("avoid rescanning vulnerable hosts", false);
 
-        put("avoid rescanning vulnerable hosts", false);
-
-        for(String key: settings.keySet()) {
-            //Utilities.callbacks.saveExtensionSetting(key, null); // purge saved settings
-            String value = Utilities.callbacks.loadExtensionSetting(key);
-            if (Utilities.callbacks.loadExtensionSetting(key) != null) {
-                putRaw(key, value);
-            }
-        }
 
         NumberFormat format = NumberFormat.getInstance();
         onlyInt = new NumberFormatter(format);
@@ -110,6 +102,13 @@ class ConfigurableSettings {
         if (settings.containsKey(key)) {
             return;
         }
+
+        String oldValue = Utilities.callbacks.loadExtensionSetting(key);
+        if (oldValue != null) {
+            putRaw(key, oldValue);
+            return;
+        }
+
         putRaw(key, encode(value));
     }
 

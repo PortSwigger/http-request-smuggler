@@ -11,6 +11,9 @@ public class DualContentScan extends SmuggleScanBox implements IScannerCheck  {
         super(name);
         registerPermutation("pad1");
         registerPermutation("pad2");
+        registerPermutation("space1");
+        registerPermutation("space2");
+        Utilities.globalSettings.registerSetting("only pad identical", true);
     }
 
 
@@ -19,7 +22,7 @@ public class DualContentScan extends SmuggleScanBox implements IScannerCheck  {
 
         String off1 = String.valueOf(contentLength+offset1);
         String off2 = String.valueOf(contentLength+offset2);
-        if (off1.equals(off2)) {
+        if (off1.equals(off2) || !Utilities.globalSettings.getBoolean("only pad identical") ) {
             if (config.containsKey("pad1")) {
                 off1 = "0" + off1;
             }
@@ -32,6 +35,13 @@ public class DualContentScan extends SmuggleScanBox implements IScannerCheck  {
 
         String name1 = "Content-length";
         String name2 = "content-length";
+
+        if(config.containsKey("space1")) {
+            name1 += " ";
+        }
+        if(config.containsKey("space2")) {
+            name2 += " ";
+        }
 
         if (config.containsKey("underscore1")) {
             name1 = name1.replace("-", "_");
