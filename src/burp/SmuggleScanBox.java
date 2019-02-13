@@ -2,20 +2,39 @@ package burp;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.zip.GZIPOutputStream;
 
 public abstract class SmuggleScanBox extends Scan {
 
+    HashSet<String> supportedPermutations;
+    static final String PERMUTE_PREFIX = "permute: ";
+
     SmuggleScanBox(String name) {
         super(name);
+        supportedPermutations = new HashSet<>();
+        registerPermutation("vanilla");
+        registerPermutation("underscore1");
+        registerPermutation("underscore2");
+    }
+
+    void registerPermutation(String permutation) {
+        supportedPermutations.add(permutation);
+        Utilities.globalSettings.registerSetting(PERMUTE_PREFIX+permutation, true);
     }
 
     boolean sendPoc(String name, byte[] setupAttack, byte[] victim, IHttpService service) {
-        return sendPoc(name, Utilities.helpers.bytesToString(setupAttack), victim, service);
+        return sendPoc(name, Utilities.helpers.bytesToString(setupAttack), victim, service, new HashMap<>());
     }
 
-    boolean sendPoc(String name, String setupAttack, byte[] victim, IHttpService service) {
+    boolean sendPoc(String name, byte[] setupAttack, byte[] victim, IHttpService service, HashMap<String, Boolean> config) {
+        return sendPoc(name, Utilities.helpers.bytesToString(setupAttack), victim, service, config);
+    }
+
+
+    boolean sendPoc(String name, String setupAttack, byte[] victim, IHttpService service, HashMap<String, Boolean> config) {
         try {
             Resp baseline = request(service, victim);
             SmuggleHelper helper = new SmuggleHelper(service);
@@ -40,20 +59,43 @@ public abstract class SmuggleScanBox extends Scan {
                 return false;
             }
 
+            String issueTitle;
+            String issueDescription = "";
+
             if (cleanupStatus == minerStatus) {
                 if (victimStatus == 0) {
-                    report("Null victim: "+name, "code1:code1:code2", cleanup, results.get(0), results.get(1));
+                    issueTitle = "Null victim";
                 }
                 else {
-                    report("Req smuggling attack (legit): "+name, "code1:code1:code2", cleanup, results.get(0), results.get(1));
+                    issueTitle = "Req smuggling attack (legit)";
                 }
             } else if (minerStatus == victimStatus) {
-                report("Req smuggling attack (XCON): "+name, "code1:code2:code2", cleanup, results.get(0), results.get(1));
+                issueTitle = "Req smuggling attack (XCON)";
             } else if (cleanupStatus == victimStatus) {
-                report("Probably nothing: "+name, "code1:code2:code1", cleanup, results.get(0), results.get(1));
+                issueTitle = "Attack timeout";
             } else {
-                report("Req smuggling attack (hazardous): "+name, "code1:code2:code3", cleanup, results.get(0), results.get(1));
+                issueTitle = "Req smuggling attack (hazardous)";
             }
+
+
+            helper = new SmuggleHelper(service);
+            final int randomCheckCount = 7;
+            for (int i=0; i<randomCheckCount;i++) {
+                helper.queue(Utilities.helpers.bytesToString(victim));
+            }
+            List<Resp> cleanResults = helper.waitFor();
+            for (int i=1; i<randomCheckCount;i++) {
+                if (cleanResults.get(i-1).getStatus() != cleanResults.get(i).getStatus()) {
+                    issueTitle += " (dodgy)";
+                    break;
+                }
+            }
+
+            issueTitle += ": "+name + " -";
+
+            issueTitle += String.join("|", config.keySet());
+
+            report(issueTitle, issueDescription, cleanup, results.get(0), results.get(1));
 
             BurpExtender.hostsToSkip.putIfAbsent(service.getHost(), true);
             return true;

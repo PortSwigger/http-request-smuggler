@@ -106,6 +106,13 @@ class ConfigurableSettings {
         }
     }
 
+    void registerSetting(String key, Object value) {
+        if (settings.containsKey(key)) {
+            return;
+        }
+        putRaw(key, encode(value));
+    }
+
     private void put(String key, Object value) {
         putRaw(key, encode(value));
     }

