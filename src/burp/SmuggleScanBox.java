@@ -18,6 +18,7 @@ public abstract class SmuggleScanBox extends Scan {
         registerPermutation("vanilla");
         registerPermutation("underscore1");
         registerPermutation("underscore2");
+        Utilities.globalSettings.registerSetting("report dodgy findings", false);
     }
 
     @Override
@@ -103,6 +104,9 @@ public abstract class SmuggleScanBox extends Scan {
             List<Resp> cleanResults = helper.waitFor();
             for (int i=1; i<randomCheckCount;i++) {
                 if (cleanResults.get(i-1).getStatus() != cleanResults.get(i).getStatus()) {
+                    if (!Utilities.globalSettings.getBoolean("report dodgy findings")) {
+                        return false;
+                    }
                     issueTitle += " (dodgy)";
                     break;
                 }

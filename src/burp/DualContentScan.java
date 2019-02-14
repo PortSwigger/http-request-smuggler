@@ -109,7 +109,7 @@ public class DualContentScan extends SmuggleScanBox implements IScannerCheck  {
 
 
         try {
-            byte[] prefix = "POST // HTTP/1.1\r\nFoo: ba".getBytes();
+            byte[] prefix = "GET /?x=o1qsus9ntuojihjermc84jkb52buzj HTTP/1.1\r\nHost: 52.16.21.24\r\nFoo: ba".getBytes();
             ByteArrayOutputStream stream = new ByteArrayOutputStream();
             stream.write(baseReq);
             stream.write(prefix);
