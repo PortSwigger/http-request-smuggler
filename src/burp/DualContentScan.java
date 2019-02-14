@@ -106,7 +106,7 @@ public class DualContentScan extends SmuggleScanBox implements IScannerCheck  {
                 //report("CL-CL: x-y-z", "X:Y:Z", baseline, firstHeader, secondHeader);
             }
         }
-        
+
         report("CL-CL: worth retargeting", "meh", baseline, firstHeader, secondHeader);
 
 

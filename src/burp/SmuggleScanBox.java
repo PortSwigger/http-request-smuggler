@@ -160,11 +160,24 @@ public abstract class SmuggleScanBox extends Scan {
     }
 
     static byte[] makeChunked(byte[] baseReq, int contentLengthOffset, int chunkOffset) {
+        return makeChunked(baseReq, contentLengthOffset, chunkOffset, new HashMap<>());
+    }
+
+    static byte[] makeChunked(byte[] baseReq, int contentLengthOffset, int chunkOffset, HashMap<String, Boolean> settings) {
         if (!Utilities.containsBytes("Transfer-Encoding".getBytes(), baseReq)) {
             baseReq = Utilities.addOrReplaceHeader(baseReq, "Transfer-Encoding", "foo");
         }
 
         byte[] chunkedReq = Utilities.setHeader(baseReq, "Transfer-Encoding", "chunked");
+
+
+        if (settings.containsKey("underscore1")) {
+            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding".getBytes(), "Transfer_Encoding".getBytes());
+        }
+        else if (settings.containsKey("space1")) {
+            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding".getBytes(), "Transfer-Encoding ".getBytes());
+        }
+
         int bodySize = baseReq.length - Utilities.getBodyStart(baseReq);
         String body = Utilities.getBody(baseReq);
         int chunkSize = bodySize+chunkOffset;
@@ -177,6 +190,14 @@ public abstract class SmuggleScanBox extends Scan {
         bodySize = chunkedReq.length - Utilities.getBodyStart(chunkedReq);
         String newContentLength = Integer.toString(bodySize+contentLengthOffset);
         chunkedReq = Utilities.setHeader(chunkedReq, "Content-Length", newContentLength);
+
+        if (settings.containsKey("underscore2")) {
+            chunkedReq = Utilities.replace(chunkedReq, "Content-Length".getBytes(), "Content_Length".getBytes());
+        }
+        else if (settings.containsKey("space2")) {
+            chunkedReq = Utilities.replace(chunkedReq, "Content-Length".getBytes(), "Content-Length ".getBytes());
+        }
+
         return chunkedReq;
     }
 }
