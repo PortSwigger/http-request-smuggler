@@ -95,21 +95,23 @@ public class DualContentScan extends SmuggleScanBox implements IScannerCheck  {
         // "HTTP Error 400. The request has an invalid header name." => microsoft doesn't like dupe headers with different values
         if (firstHeader.getStatus() == secondHeader.getStatus()) {
             if (firstHeader.timedOut()) {
-                report("CL-CL: x-T-T", "X:Y:Y", baseline, firstHeader, secondHeader);
+                //report("CL-CL: x-T-T", "X:Y:Y", baseline, firstHeader, secondHeader);
             } else {
                 return;
             }
         } else {
             if (firstHeader.timedOut() || secondHeader.timedOut()) {
-                report("CL-CL: x-y-T", "X:Y:Z", baseline, firstHeader, secondHeader);
+                //report("CL-CL: x-y-T", "X:Y:Z", baseline, firstHeader, secondHeader);
             } else {
-                report("CL-CL: x-y-z", "X:Y:Z", baseline, firstHeader, secondHeader);
+                //report("CL-CL: x-y-z", "X:Y:Z", baseline, firstHeader, secondHeader);
             }
         }
+        
+        report("CL-CL: worth retargeting", "meh", baseline, firstHeader, secondHeader);
 
 
         try {
-            byte[] prefix = "GET /?x=o1qsus9ntuojihjermc84jkb52buzj HTTP/1.1\r\nHost: 52.16.21.24\r\nFoo: ba".getBytes();
+            byte[] prefix = "G".getBytes(); // good ol' GPOST
             ByteArrayOutputStream stream = new ByteArrayOutputStream();
             stream.write(baseReq);
             stream.write(prefix);
