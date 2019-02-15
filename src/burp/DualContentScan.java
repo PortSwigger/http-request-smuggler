@@ -11,8 +11,6 @@ public class DualContentScan extends SmuggleScanBox implements IScannerCheck  {
         super(name);
         registerPermutation("pad1");
         registerPermutation("pad2");
-        registerPermutation("space1");
-        registerPermutation("space2");
         Utilities.globalSettings.registerSetting("only pad identical", true);
     }
 

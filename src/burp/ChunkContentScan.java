@@ -47,14 +47,14 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
     }
 
     class DualChunkTE {
-        String getAttack(byte[] base, String inject) {
+        String getAttack(byte[] base, String inject, HashMap<String, Boolean> config) {
             try {
                 byte[] initial = Utilities.setHeader(base, "Connection", "keep-alive");
                 ByteArrayOutputStream attackStream = new ByteArrayOutputStream();
                 attackStream.write(initial);
                 attackStream.write(inject.getBytes());
 
-                byte[] attack = makeChunked(attackStream.toByteArray(), 0, 0);
+                byte[] attack = makeChunked(attackStream.toByteArray(), 0, 0, config);
                 String attackString = Utilities.helpers.bytesToString(attack);
                 int CL = attackString.lastIndexOf(inject) - Utilities.getBodyStart(attack);
                 attack = Utilities.setHeader(attack, "Content-Length", String.valueOf(CL));
@@ -70,7 +70,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
 
     boolean prepPoc(byte[] base, IHttpService service, String name, String inject, HashMap<String, Boolean> config) {
         String setupAttack = new DualChunkCL().getAttack(base, inject, config);
-        //setupAttack = new DualChunkTE().getAttack(base, inject);
+        //setupAttack = new DualChunkTE().getAttack(base, inject, config);
         byte[] victim = makeChunked(base, 0, 0, config);
         return sendPoc(name, setupAttack, victim, service, new HashMap<>());
     }
@@ -100,7 +100,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
             return;
         }
 
-        Resp suggestedProbe = buildPoc(original, service);
+        Resp suggestedProbe = buildPoc(original, service, config);
 
         if (Utilities.globalSettings.getBoolean("try chunk-truncate")) {
             byte[] reverseLength = makeChunked(original, -1, 0, config); //Utilities.setHeader(baseReq, "Content-Length", "4");
@@ -112,13 +112,13 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
                 }
 
                 Utilities.log("Reporting reverse timeout technique worked");
-                String title = "Req smuggling: chunk truncate";
+                String title = "TE-CL " + String.join("|", config.keySet());
                 if (!sendPoc(original, service, config)) {
                     title += " unconfirmed";
                 }
                 report(title, "status:timeout", syncedResp, truncatedChunk, suggestedProbe);
                 return;
-            } else {
+            } else if (config.containsKey("vanilla")) {
                 byte[] dualChunkTruncate = Utilities.addOrReplaceHeader(reverseLength, "Transfer-encoding", "cow");
                 Resp truncatedDualChunk = request(service, dualChunkTruncate);
                 if (truncatedDualChunk.timedOut()) {

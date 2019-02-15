@@ -18,6 +18,8 @@ public abstract class SmuggleScanBox extends Scan {
         registerPermutation("vanilla");
         registerPermutation("underscore1");
         registerPermutation("underscore2");
+        registerPermutation("space1");
+        registerPermutation("space2");
         Utilities.globalSettings.registerSetting("report dodgy findings", false);
     }
 
@@ -126,17 +128,17 @@ public abstract class SmuggleScanBox extends Scan {
         }
     }
 
-    static Resp buildPoc(byte[] req, IHttpService service) {
+    static Resp buildPoc(byte[] req, IHttpService service, HashMap<String, Boolean> config) {
         try {
             byte[] badMethodIfChunked = Utilities.setHeader(req, "Connection", "keep-alive");
-            badMethodIfChunked = makeChunked(badMethodIfChunked, 1, 0);
+            badMethodIfChunked = makeChunked(badMethodIfChunked, 1, 0, config);
 
             ByteArrayOutputStream buf = new ByteArrayOutputStream();
             buf.write(badMethodIfChunked);
             buf.write("G".getBytes());
 
             // first request ends here
-            buf.write(makeChunked(req, 0, 0));
+            buf.write(makeChunked(req, 0, 0, config));
             return new Resp(new Req(buf.toByteArray(), null, service));
         }
         catch (IOException e) {
@@ -164,7 +166,7 @@ public abstract class SmuggleScanBox extends Scan {
     }
 
     static byte[] makeChunked(byte[] baseReq, int contentLengthOffset, int chunkOffset, HashMap<String, Boolean> settings) {
-        if (!Utilities.containsBytes("Transfer-Encoding".getBytes(), baseReq)) {
+        if (!Utilities.containsBytes(baseReq, "Transfer-Encoding".getBytes())) {
             baseReq = Utilities.addOrReplaceHeader(baseReq, "Transfer-Encoding", "foo");
         }
 
@@ -191,12 +193,13 @@ public abstract class SmuggleScanBox extends Scan {
         String newContentLength = Integer.toString(bodySize+contentLengthOffset);
         chunkedReq = Utilities.setHeader(chunkedReq, "Content-Length", newContentLength);
 
-        if (settings.containsKey("underscore2")) {
-            chunkedReq = Utilities.replace(chunkedReq, "Content-Length".getBytes(), "Content_Length".getBytes());
-        }
-        else if (settings.containsKey("space2")) {
-            chunkedReq = Utilities.replace(chunkedReq, "Content-Length".getBytes(), "Content-Length ".getBytes());
-        }
+        // fixme breaks stuff
+//        if (settings.containsKey("underscore2")) {
+//            chunkedReq = Utilities.replace(chunkedReq, "Content-Length".getBytes(), "Content_Length".getBytes());
+//        }
+//        else if (settings.containsKey("space2")) {
+//            chunkedReq = Utilities.replace(chunkedReq, "Content-Length".getBytes(), "Content-Length ".getBytes());
+//        }
 
         return chunkedReq;
     }
