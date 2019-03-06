@@ -38,6 +38,10 @@ class ConfigurableSettings {
         registerSetting("poc: bodyConcat", true);
         registerSetting("poc: collab", true);
         registerSetting("poc: collab-header", true);
+        registerSetting("poc: collab-XFO-header", true);
+        registerSetting("poc: collab-abs", true);
+        registerSetting("poc: collab-at", true);
+        registerSetting("poc: collab-blind", true);
         registerSetting("avoid rescanning vulnerable hosts", false);
 
 

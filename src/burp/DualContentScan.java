@@ -54,20 +54,18 @@ public class DualContentScan extends SmuggleScanBox implements IScannerCheck  {
         return baseReq;
     }
 
-    void doConfiguredScan(byte[] baseReq, IHttpService service, HashMap<String, Boolean> config) {
+    boolean doConfiguredScan(byte[] baseReq, IHttpService service, HashMap<String, Boolean> config) {
         if (Utilities.globalSettings.getBoolean("avoid rescanning vulnerable hosts") && BurpExtender.hostsToSkip.containsKey(service.getProtocol()+service.getHost())) {
-            return;
+            return false;
         }
 
-        if (baseReq[0] == 'G') {
-            baseReq = Utilities.helpers.toggleRequestMethod(baseReq);
-        }
+        baseReq = setupRequest(baseReq);
 
         IParameter notEmpty = burp.Utilities.helpers.buildParameter("notempty", "1", IParameter.PARAM_BODY);
         baseReq = Utilities.helpers.addParameter(baseReq, notEmpty);
 
         if (request(service, baseReq).timedOut()) {
-            return;
+            return false;
         }
 
 
@@ -75,17 +73,17 @@ public class DualContentScan extends SmuggleScanBox implements IScannerCheck  {
 
         Resp baseline = request(service, noAttack);
         if (baseline.timedOut()) {
-            return;
+            return false;
         }
 
         Resp firstHeader = request(service, dualContent(baseReq, 1, 0, config));
         if (firstHeader.getStatus() == baseline.getStatus()) {
-            return;
+            return false;
         }
 
         Resp secondHeader = request(service, dualContent(baseReq, 0, 1, config));
         if (secondHeader.getStatus() == baseline.getStatus()) {
-            return;
+            return false;
         }
 
         // we rely on a timeout because so many servers just reject non-matching CL
@@ -95,7 +93,7 @@ public class DualContentScan extends SmuggleScanBox implements IScannerCheck  {
             if (firstHeader.timedOut()) {
                 //report("CL-CL: x-T-T", "X:Y:Y", baseline, firstHeader, secondHeader);
             } else {
-                return;
+                return false;
             }
         } else {
             if (firstHeader.timedOut() || secondHeader.timedOut()) {
@@ -121,6 +119,6 @@ public class DualContentScan extends SmuggleScanBox implements IScannerCheck  {
 
         }
         BurpExtender.hostsToSkip.put(service.getProtocol()+service.getHost(), true);
-        return;
+        return true;
     }
 }

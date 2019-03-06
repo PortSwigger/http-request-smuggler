@@ -291,15 +291,23 @@ abstract class Scan implements IScannerCheck {
     }
 
     Resp request(IHttpService service, byte[] req) {
-        IHttpRequestResponse resp;
+        return request(service, req, 0);
+    }
+
+    Resp request(IHttpService service, byte[] req, int maxRetries) {
+        IHttpRequestResponse resp = null;
 
         if (loader == null) {
-            try {
-                resp = Utilities.callbacks.makeHttpRequest(service, req);
-            } catch (java.lang.RuntimeException e) {
-                Utilities.out("Recovering from request exception");
-                Utilities.err("Recovering from request exception");
-                resp = new Req(req, null, service);
+            int attempts = 0;
+            while (( resp == null || resp.getResponse() == null) && attempts <= maxRetries) {
+                try {
+                    resp = Utilities.callbacks.makeHttpRequest(service, req);
+                } catch (java.lang.RuntimeException e) {
+                    Utilities.out("Recovering from request exception");
+                    Utilities.err("Recovering from request exception");
+                    resp = new Req(req, null, service);
+                }
+                attempts += 1;
             }
         }
         else {

@@ -1,5 +1,8 @@
 package burp;
 
+import com.sun.deploy.uitoolkit.impl.awt.UIToolkitImpl;
+
+import javax.rmi.CORBA.Util;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.HashMap;
@@ -20,12 +23,45 @@ public abstract class SmuggleScanBox extends Scan {
         registerPermutation("underscore2");
         registerPermutation("space1");
         registerPermutation("space2");
+        registerPermutation("nameprefix1");
+        registerPermutation("valueprefix1");
+        registerPermutation("nospace1");
+        registerPermutation("tabprefix1");
+        registerPermutation("commaCow");
+        registerPermutation("cowComma");
+        registerPermutation("contentEnc");
+
+        Utilities.globalSettings.registerSetting("convert POST to GET", true);
         Utilities.globalSettings.registerSetting("report dodgy findings", false);
+    }
+
+    byte[] setupRequest(byte[] baseReq) {
+        if (baseReq[0] == 'G') {
+            if (Utilities.globalSettings.getBoolean("convert POST to GET")) {
+                baseReq = Utilities.helpers.toggleRequestMethod(baseReq);
+            }
+            else {
+                baseReq = Utilities.addOrReplaceHeader(baseReq, "Content-Type", "application/x-www-form-urlencoded");
+                baseReq = Utilities.addOrReplaceHeader(baseReq, "Content-Length", "0");
+            }
+        }
+
+        return baseReq;
     }
 
     @Override
     protected List<IScanIssue> doScan(byte[] baseReq, IHttpService service) {
         HashMap<String, Boolean> config;
+
+        // shortcut permutations if the vanilla approach works
+        if (Utilities.globalSettings.getBoolean(PERMUTE_PREFIX+"vanilla")) {
+            config = new HashMap<>();
+            config.put("vanilla", true);
+            if (doConfiguredScan(baseReq, service, config)) {
+                return null;
+            }
+        }
+
         for (String permutation: supportedPermutations) {
             if (!Utilities.globalSettings.getBoolean(PERMUTE_PREFIX+permutation)) {
                 continue;
@@ -37,7 +73,7 @@ public abstract class SmuggleScanBox extends Scan {
         return null;
     }
 
-    abstract void doConfiguredScan(byte[] baseReq, IHttpService service, HashMap<String, Boolean> config);
+    abstract boolean doConfiguredScan(byte[] baseReq, IHttpService service, HashMap<String, Boolean> config);
 
     void registerPermutation(String permutation) {
         supportedPermutations.add(permutation);
@@ -178,6 +214,27 @@ public abstract class SmuggleScanBox extends Scan {
         }
         else if (settings.containsKey("space1")) {
             chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding".getBytes(), "Transfer-Encoding ".getBytes());
+        }
+        else if (settings.containsKey("nameprefix1")) {
+            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding".getBytes(), " Transfer-Encoding".getBytes());
+        }
+        else if (settings.containsKey("valueprefix1")) {
+            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), "Transfer-Encoding:  ".getBytes());
+        }
+        else if (settings.containsKey("nospace1")) {
+            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), "Transfer-Encoding:".getBytes());
+        }
+        else if (settings.containsKey("tabprefix1")) {
+            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), "Transfer-Encoding:\t".getBytes());
+        }
+        else if (settings.containsKey("commaCow")) {
+            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked".getBytes(), "Transfer-Encoding: chunked, cow".getBytes());
+        }
+        else if (settings.containsKey("cowComma")) {
+            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), "Transfer-Encoding: cow, ".getBytes());
+        }
+        else if (settings.containsKey("contentEnc")) {
+            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), "Content-Encoding: ".getBytes());
         }
 
         int bodySize = baseReq.length - Utilities.getBodyStart(baseReq);
