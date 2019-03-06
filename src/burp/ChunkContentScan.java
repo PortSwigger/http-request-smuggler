@@ -51,19 +51,19 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
                             "X-Foo: X", config));
         }
         if (Utilities.globalSettings.getBoolean("poc: collab-XFO-header")) {
-            results.add(prepPoc(base, service, "collab-header",
+            results.add(prepPoc(base, service, "collab-xfo-header",
                     "GET / HTTP/1.1\r\n" +
                     "X-Forwarded-Host: "+collabWithHost+"\r\n" +
                     "X-Foo: X", config));
         }
         if (Utilities.globalSettings.getBoolean("poc: collab-abs")) {
-            results.add(prepPoc(base, service, "collab-header",
+            results.add(prepPoc(base, service, "collab-abs",
                       "GET http://"+collabWithHost+"/ HTTP/1.1\r\n" +
                             "X-Foo: X", config));
         }
         if (Utilities.globalSettings.getBoolean("poc: collab-at")) {
             results.add(prepPoc(base, service,
-                      "collab-header",
+                      "collab-at",
                       "GET @"+collabWithHost+"/ HTTP/1.1\r\n" +
                             "X-Foo: X", config));
         }
@@ -71,7 +71,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
             String req = String.format(
                     "GET / HTTP/1.1\r\n" +
                     "Host: %s\r\n" +
-                    "Referer: ref.%s\r\n" +
+                    "Referer: http://ref.%s/\r\n" +
                     "X-Forwarded-For: xff.%s\r\n" +
                     "True-Client-IP: tci.%s\r\n" +
                     "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:65.0) Gecko/20100101 Firefox/65.0\r\n" +
@@ -80,7 +80,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
                     "Accept-Language: en\r\n" +
                     "connection: close\r\n\r\n", service.getHost(), collabWithHost, collabWithHost, collabWithHost);
             // 'Connection: close' gets changed to keep-alive which breaks the offset
-            results.add(prepPoc(base, service, "collab-header", req, config));
+            results.add(prepPoc(base, service, "collab-blind", req, config));
         }
         return results.contains(Boolean.TRUE);
     }
