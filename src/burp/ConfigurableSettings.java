@@ -156,7 +156,7 @@ class ConfigurableSettings {
 
     ConfigurableSettings showSettings() {
         JPanel panel = new JPanel();
-        panel.setLayout(new GridLayout(0, 2));
+        panel.setLayout(new GridLayout(0, 4));
 
         HashMap<String, Object> configured = new HashMap<>();
 

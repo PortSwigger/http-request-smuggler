@@ -595,6 +595,7 @@ class Utilities {
         int end = request.length;
         while (i < end) {
             int line_start = i;
+            i+=1; // allow headers starting with whitespace
             while (i < end && request[i++] != ' ') {
             }
             byte[] header_name = Arrays.copyOfRange(request, line_start, i - 2);
