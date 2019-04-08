@@ -55,7 +55,7 @@ public class DualContentScan extends SmuggleScanBox implements IScannerCheck  {
     }
 
     boolean doConfiguredScan(byte[] baseReq, IHttpService service, HashMap<String, Boolean> config) {
-        if (Utilities.globalSettings.getBoolean("avoid rescanning vulnerable hosts") && BurpExtender.hostsToSkip.containsKey(service.getProtocol()+service.getHost())) {
+        if (Utilities.globalSettings.getBoolean("skip vulnerable hosts") && BurpExtender.hostsToSkip.containsKey(service.getProtocol()+service.getHost())) {
             return false;
         }
 

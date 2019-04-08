@@ -10,33 +10,35 @@ import java.util.zip.GZIPOutputStream;
 
 public abstract class SmuggleScanBox extends Scan {
 
-    HashSet<String> supportedPermutations;
+    ArrayList<String> supportedPermutations;
     static final String PERMUTE_PREFIX = "permute: ";
 
     SmuggleScanBox(String name) {
         super(name);
-        supportedPermutations = new HashSet<>();
+        supportedPermutations = new ArrayList<>();
+        // core techniques
         registerPermutation("vanilla");
+        registerPermutation("dualchunk");
+        registerPermutation("badwrap");
+        registerPermutation("space1");
+        registerPermutation("badsetupLF");
+        registerPermutation("gareth1");
+
+        // niche techniques
         registerPermutation("underjoin1");
         registerPermutation("spacejoin1");
         registerPermutation("underscore2");
-        registerPermutation("space1");
         registerPermutation("space2");
         registerPermutation("nameprefix1");
         registerPermutation("valueprefix1");
         registerPermutation("nospace1");
-        registerPermutation("tabprefix1");
-        registerPermutation("vertprefix1");
         registerPermutation("commaCow");
         registerPermutation("cowComma");
         registerPermutation("contentEnc");
         registerPermutation("linewrapped1");
-        registerPermutation("gareth1");
         registerPermutation("quoted");
         registerPermutation("aposed");
-        registerPermutation("badwrap");
         registerPermutation("badsetupCR");
-        registerPermutation("badsetupLF");
         registerPermutation("vertwrap");
         registerPermutation("tabwrap");
 
@@ -67,23 +69,25 @@ public abstract class SmuggleScanBox extends Scan {
     protected List<IScanIssue> doScan(byte[] baseReq, IHttpService service) {
         HashMap<String, Boolean> config;
 
-        // shortcut permutations if the vanilla approach works
-        if (Utilities.globalSettings.getBoolean(PERMUTE_PREFIX+"vanilla")) {
-            config = new HashMap<>();
-            config.put("vanilla", true);
-            if (doConfiguredScan(baseReq, service, config)) {
-                BurpExtender.hostsToSkip.putIfAbsent(service.getHost(), true);
-                return null;
+        ArrayList<String> validPermutations = new ArrayList<>();
+        for (String permutation: supportedPermutations) {
+            String key = permutation+service.getProtocol()+service.getHost();
+            if (BurpExtender.hostsToSkip.containsKey(key)) {
+                if (Utilities.globalSettings.getBoolean("skip vulnerable hosts")) {
+                    return null;
+                }
+                else if (Utilities.globalSettings.getBoolean("skip obsolete permutations")) {
+                    validPermutations.add(permutation);
+                }
             }
         }
 
-        for (String permutation: supportedPermutations) {
-            if (!Utilities.globalSettings.getBoolean(PERMUTE_PREFIX+permutation)) {
-                continue;
-            }
+        if (validPermutations.isEmpty()) {
+            validPermutations.addAll(supportedPermutations);
+        }
 
-            String key = permutation+service.getProtocol()+service.getHost();
-            if (Utilities.globalSettings.getBoolean("avoid rescanning vulnerable hosts") && BurpExtender.hostsToSkip.containsKey(key)) {
+        for (String permutation: validPermutations) {
+            if (!Utilities.globalSettings.getBoolean(PERMUTE_PREFIX+permutation)) {
                 continue;
             }
 
@@ -91,7 +95,11 @@ public abstract class SmuggleScanBox extends Scan {
             config.put(permutation, true);
             boolean worked = doConfiguredScan(baseReq, service, config);
             if (worked) {
+                String key = permutation+service.getProtocol()+service.getHost();
                 BurpExtender.hostsToSkip.putIfAbsent(key, true);
+                if (Utilities.globalSettings.getBoolean("skip obsolete permutations")) {
+                    break;
+                }
             }
         }
         return null;
@@ -271,9 +279,12 @@ public abstract class SmuggleScanBox extends Scan {
         else if (settings.containsKey("nospace1")) {
             chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), "Transfer-Encoding:".getBytes());
         }
-        else if (settings.containsKey("tabprefix1")) {
-            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), "Transfer-Encoding:\t".getBytes());
-        }
+//        else if (settings.containsKey("tabprefix1")) {
+//            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), "Transfer-Encoding:\t".getBytes());
+//        }
+//        else if (settings.containsKey("vertprefix1")) {
+//            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), "Transfer-Encoding:\u000B".getBytes());
+//        }
         else if (settings.containsKey("commaCow")) {
             chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked".getBytes(), "Transfer-Encoding: chunked, cow".getBytes());
         }
@@ -282,9 +293,9 @@ public abstract class SmuggleScanBox extends Scan {
         }
         else if (settings.containsKey("contentEnc")) {
             chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), "Content-Encoding: ".getBytes());
-        }  else if (settings.containsKey("vertprefix1")) {
-            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), "Transfer-Encoding:\u000B".getBytes());
-        } else if (settings.containsKey("linewrapped1")) {
+        }
+
+        else if (settings.containsKey("linewrapped1")) {
             chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), "Transfer-Encoding:\n ".getBytes());
         } else if (settings.containsKey("gareth1")) {
             chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), "Transfer-Encoding\n : ".getBytes());
@@ -305,6 +316,8 @@ public abstract class SmuggleScanBox extends Scan {
             chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), "Transfer-Encoding: \n\u000B".getBytes());
         } else if (settings.containsKey("tabwrap")) {
             chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), "Transfer-Encoding: \n\t".getBytes());
+        } else if (settings.containsKey("dualchunk")) {
+            chunkedReq = Utilities.addOrReplaceHeader(chunkedReq, "Transfer-encoding", "cow");
         }
 
         for (int i: getSpecialChars()) {

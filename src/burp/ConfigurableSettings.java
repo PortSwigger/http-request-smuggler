@@ -42,7 +42,8 @@ class ConfigurableSettings {
         registerSetting("poc: collab-abs", true);
         registerSetting("poc: collab-at", true);
         registerSetting("poc: collab-blind", true);
-        registerSetting("avoid rescanning vulnerable hosts", false);
+        registerSetting("skip vulnerable hosts", false);
+        registerSetting("skip obsolete permutations", false);
 
 
         NumberFormat format = NumberFormat.getInstance();
