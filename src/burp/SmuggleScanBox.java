@@ -201,6 +201,14 @@ public abstract class SmuggleScanBox extends Scan {
         return chars;
     }
 
+    boolean leftAlive(byte[] req, IHttpService service) {
+        byte[] keepalive = Utilities.setHeader(req, "Connection", "keep-alive");
+        Resp resp = request(service, keepalive);
+        String connectionType = Utilities.getHeader(resp.getReq().getResponse(), "Connection");
+        return connectionType.toLowerCase().contains("alive");
+
+    }
+
     static Resp buildPoc(byte[] req, IHttpService service, HashMap<String, Boolean> config) {
         try {
             byte[] badMethodIfChunked = Utilities.setHeader(req, "Connection", "keep-alive");

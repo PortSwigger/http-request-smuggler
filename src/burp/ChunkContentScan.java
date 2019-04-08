@@ -156,14 +156,23 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
                     return false;
                 }
 
-                Utilities.log("Reporting reverse timeout technique worked");
                 String title = "TE-CL " + String.join("|", config.keySet());
+
+                if (leftAlive(baseReq, service) ) {
+                    title += " left-alive";
+                } else {
+                    title += " closed";
+                }
+
+                Utilities.log("Reporting reverse timeout technique worked");
+
                 if (!sendPoc(original, service, config)) {
                     title += " unconfirmed";
                 }
                 report(title, "status:timeout", syncedResp, truncatedChunk, suggestedProbe);
                 return true;
             } else if (config.containsKey("vanilla")) {
+                // todo this should be a permutation like everything else
                 byte[] dualChunkTruncate = Utilities.addOrReplaceHeader(reverseLength, "Transfer-encoding", "cow");
                 Resp truncatedDualChunk = request(service, dualChunkTruncate, 3);
                 if (truncatedDualChunk.timedOut()) {
@@ -171,9 +180,17 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
                     if (request(service, baseReq).timedOut()) {
                         return false;
                     }
-
+                    
                     Utilities.log("Reverse timeout technique with dual TE header worked");
                     String title = "TE-CL: dualchunk";
+
+                    if (leftAlive(baseReq, service) ) {
+                        title += " left-alive";
+                    } else {
+                        title += " closed";
+                    }
+
+
                     if (!sendPoc(Utilities.addOrReplaceHeader(original, "Transfer-encoding", "cow"), service, config)) {
                         title += " unconfirmed";
                     }
