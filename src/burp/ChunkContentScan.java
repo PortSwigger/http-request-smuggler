@@ -139,6 +139,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
 
         original = setupRequest(original);
 
+        original = Utilities.addOrReplaceHeader(original, "User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36");
         original = Utilities.addOrReplaceHeader(original, "Transfer-Encoding", "foo");
         original = Utilities.setHeader(original, "Connection", "close");
 
@@ -161,7 +162,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
                 return false;
             }
 
-            String title = "CL^TE " + String.join("|", config.keySet());
+            String title = "CL.TE " + String.join("|", config.keySet());
 
             if (leftAlive(baseReq, service) ) {
                 title += " left-alive";
@@ -176,40 +177,39 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
         }
 
 
-//        // fixme this detects TE-CL
-//        // fixme but it's unsafe for CL-TE
-//        byte[] reverseLength = makeChunked(original, 1, 0, config); //Utilities.setHeader(baseReq, "Content-Length", "4");
-//        //reverseLength = Utilities.setHeader(reverseLength, "Content-Length", String.valueOf(Integer.parseInt(Utilities.getHeader(reverseLength, "Content-Length"))+1));
-//        ByteArrayOutputStream foo = new ByteArrayOutputStream();
-//        try {
-//            foo.write(reverseLength);
-//            foo.write('X');
-//            reverseLength = foo.toByteArray();
-//        } catch (IOException e) {
-//
-//        }
-//        Resp truncatedChunk = request(service, reverseLength, 3);
-//
-//        if (truncatedChunk.timedOut()) {
-//
-//            if (request(service, baseReq).timedOut()) {
-//                return false;
-//            }
-//
-//            String title = "CL-TE " + String.join("|", config.keySet());
-//
-//            if (leftAlive(baseReq, service) ) {
-//                title += " left-alive";
-//            } else {
-//                title += " closed";
-//            }
-//
-////                if (!sendPoc(original, service, config)) {
-////                    title += " unconfirmed";
-////                }
-//            report(title, "status:timeout", syncedResp, truncatedChunk, suggestedProbe);
-//            return true;
-//        }
+        // this is unsafe for CL-TE, so we only attempt it if CL-TE detection failed
+        reverseLength = makeChunked(original, 1, 0, config); //Utilities.setHeader(baseReq, "Content-Length", "4");
+        //reverseLength = Utilities.setHeader(reverseLength, "Content-Length", String.valueOf(Integer.parseInt(Utilities.getHeader(reverseLength, "Content-Length"))+1));
+        ByteArrayOutputStream reverseLengthBuilder = new ByteArrayOutputStream();
+        try {
+            reverseLengthBuilder.write(reverseLength);
+            reverseLengthBuilder.write('X');
+            reverseLength = reverseLengthBuilder.toByteArray();
+        } catch (IOException e) {
+
+        }
+        truncatedChunk = request(service, reverseLength, 3);
+
+        if (truncatedChunk.timedOut()) {
+
+            if (request(service, baseReq).timedOut()) {
+                return false;
+            }
+
+            String title = "TE.CL " + String.join("|", config.keySet());
+
+            if (leftAlive(baseReq, service) ) {
+                title += " left-alive";
+            } else {
+                title += " closed";
+            }
+
+//                if (!sendPoc(original, service, config)) {
+//                    title += " unconfirmed";
+//                }
+            report(title, "status:timeout", syncedResp, truncatedChunk, suggestedProbe);
+            return true;
+        }
 
 
 
