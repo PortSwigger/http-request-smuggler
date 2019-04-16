@@ -147,6 +147,8 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
 
         Resp suggestedProbe = buildPoc(original, service, config);
 
+        boolean worked = false;
+
         if (Utilities.globalSettings.getBoolean("try chunk-truncate")) {
             byte[] reverseLength = makeChunked(original, -1, 0, config); //Utilities.setHeader(baseReq, "Content-Length", "4");
             Resp truncatedChunk = request(service, reverseLength, 3);
@@ -166,13 +168,54 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
 
                 Utilities.log("Reporting reverse timeout technique worked");
 
-                if (!sendPoc(original, service, config)) {
-                    title += " unconfirmed";
-                }
+//                if (!sendPoc(original, service, config)) {
+//                    title += " unconfirmed";
+//                }
+
                 report(title, "status:timeout", syncedResp, truncatedChunk, suggestedProbe);
-                return true;
+                worked = true;
             }
         }
+
+        if (Utilities.globalSettings.getBoolean("try inverted chunk-truncate")) {
+
+            // fixme this detects TE-CL
+            // fixme but it's unsafe for CL-TE
+
+            byte[] reverseLength = makeChunked(original, 1, 0, config); //Utilities.setHeader(baseReq, "Content-Length", "4");
+            //reverseLength = Utilities.setHeader(reverseLength, "Content-Length", String.valueOf(Integer.parseInt(Utilities.getHeader(reverseLength, "Content-Length"))+1));
+            ByteArrayOutputStream foo = new ByteArrayOutputStream();
+            try {
+                foo.write(reverseLength);
+                foo.write('X');
+                reverseLength = foo.toByteArray();
+            } catch (IOException e) {
+
+            }
+            Resp truncatedChunk = request(service, reverseLength, 3);
+            if (truncatedChunk.timedOut()) {
+
+                if (request(service, baseReq).timedOut()) {
+                    return false;
+                }
+
+                String title = "CL-TE " + String.join("|", config.keySet());
+
+                if (leftAlive(baseReq, service) ) {
+                    title += " left-alive";
+                } else {
+                    title += " closed";
+                }
+
+//                if (!sendPoc(original, service, config)) {
+//                    title += " unconfirmed";
+//                }
+                report(title, "status:timeout", syncedResp, truncatedChunk, suggestedProbe);
+                worked = true;
+            }
+        }
+
+        return worked;
 
 //        if (Utilities.globalSettings.getBoolean("try timeout-diff")) {
 //
@@ -219,8 +262,6 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
 //            report(title, "Status:BadChunkDetection:BadLengthDetected", syncedResp, badChunkResp, overlongLengthResp, suggestedProbe);
 //            return true;
 //        }
-
-        return false;
     }
 }
 

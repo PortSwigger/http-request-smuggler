@@ -32,6 +32,7 @@ class ConfigurableSettings {
 
         // smuggle-scan specific
         registerSetting("try chunk-truncate", true);
+        registerSetting("try inverted chunk-truncate", true);
         registerSetting("try timeout-diff", true);
         registerSetting("poc: G", true);
         registerSetting("poc: headerConcat", true);
