@@ -129,7 +129,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
     }
 
     byte[] malformFinalChunk(byte[] req) {
-        return Utilities.replace(req, "\r\n0\r\n\r\n".getBytes(), "\r\nX\r\n\r\n".getBytes());
+        return Utilities.replace(req, "\r\n0\r\n\r\n".getBytes(), "\r\n1\r\nZ\r\nX\r\n\r\n".getBytes());
     }
 
     public boolean doConfiguredScan(byte[] original, IHttpService service, HashMap<String, Boolean> config) {
@@ -152,8 +152,8 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
 
         Resp suggestedProbe = buildPoc(original, service, config);
 
-        // fixme detects CL-TE but unsafe for TE-CL
-        byte[] reverseLength = makeChunked(original, -4, 0, config); //Utilities.setHeader(baseReq, "Content-Length", "4");
+        byte[] reverseLength = makeChunked(original, 2, 0, config); //Utilities.setHeader(baseReq, "Content-Length", "4");
+        // fixme causes a FP - we need to... add an extra chunk?
         reverseLength = malformFinalChunk(reverseLength);
         Resp truncatedChunk = request(service, reverseLength, 3);
         if (truncatedChunk.timedOut()) {

@@ -228,7 +228,7 @@ public abstract class SmuggleScanBox extends Scan {
 
             // first request ends here
             buf.write(makeChunked(req, 0, 0, config));
-            return new Resp(new Req(buf.toByteArray(), null, service));
+            return new Resp(new Req(buf.toByteArray(), null, service), System.currentTimeMillis());
         }
         catch (IOException e) {
             throw new RuntimeException();

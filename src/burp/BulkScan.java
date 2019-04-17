@@ -296,12 +296,14 @@ abstract class Scan implements IScannerCheck {
 
     Resp request(IHttpService service, byte[] req, int maxRetries) {
         IHttpRequestResponse resp = null;
-
+        long startTime = System.currentTimeMillis();
         if (loader == null) {
             int attempts = 0;
             while (( resp == null || resp.getResponse() == null) && attempts <= maxRetries) {
+                startTime = System.currentTimeMillis();
                 try {
-                    resp = Utilities.callbacks.makeHttpRequest(service, req);
+                    byte[] responseBytes = Utilities.callbacks.makeHttpRequest(service, req).getResponse();
+                    resp = new Req(req, responseBytes, service);
                 } catch (java.lang.RuntimeException e) {
                     Utilities.out("Recovering from request exception");
                     Utilities.err("Recovering from request exception");
@@ -325,7 +327,7 @@ abstract class Scan implements IScannerCheck {
 
                 Utilities.out("Couldn't find response. Sending via Burp instead");
                 Utilities.out(Utilities.helpers.bytesToString(req));
-                return new Resp(Utilities.callbacks.makeHttpRequest(service, req));
+                return new Resp(Utilities.callbacks.makeHttpRequest(service, req), startTime);
                 //throw new RuntimeException("Couldn't find response");
             }
 
@@ -336,7 +338,7 @@ abstract class Scan implements IScannerCheck {
             resp = new Req(req, response, service);
         }
 
-        return new Resp(resp);
+        return new Resp(resp, startTime);
     }
 }
 
@@ -364,12 +366,16 @@ class Resp {
     }
 
     private short status = 0;
-    private boolean timedOut;
+    private boolean timedOut = false;
 
-    Resp(IHttpRequestResponse req) {
+    Resp(IHttpRequestResponse req, long startTime) {
         this.req = req;
-        this.timedOut = req.getResponse() == null;
-        if (!timedOut) {
+        if (req.getResponse() == null) {
+            // fixme will interact badly with distribute-damage
+            if (System.currentTimeMillis() - startTime > 9000) {
+                this.timedOut = true;
+            }
+        } else {
             this.info = Utilities.helpers.analyzeResponse(req.getResponse());
             this.attributes = Utilities.helpers.analyzeResponseVariations(req.getResponse());
             this.status = this.info.getStatusCode();
@@ -404,6 +410,7 @@ class Req implements IHttpRequestResponse {
         this.resp = resp;
         this.service = service;
     }
+
 
     @Override
     public byte[] getRequest() {

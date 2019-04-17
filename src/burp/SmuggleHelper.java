@@ -20,7 +20,7 @@ class SmuggleHelper {
     }
 
     private boolean callback(Request req, boolean interesting) {
-        reqs.add(new Resp(new Req(req.getRequestAsBytes(), req.getResponseAsBytes(), service)));
+        reqs.add(new Resp(new Req(req.getRequestAsBytes(), req.getResponseAsBytes(), service), System.currentTimeMillis()));
         return false;
     }
 
