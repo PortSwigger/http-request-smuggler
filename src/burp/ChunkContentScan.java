@@ -88,7 +88,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
     class DualChunkCL {
         String getAttack(byte[] base, String inject, HashMap<String, Boolean> config) {
             byte[] prep = Utilities.setHeader(base, "Connection", "keep-alive");
-            prep = bypassContentLengthFix(makeChunked(prep, inject.length(), 0, config));
+            prep = bypassContentLengthFix(makeChunked(prep, inject.length(), 0, config, false));
             return Utilities.helpers.bytesToString(prep)+inject;
         }
     }
@@ -101,7 +101,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
                 attackStream.write(initial);
                 attackStream.write(inject.getBytes());
 
-                byte[] attack = makeChunked(attackStream.toByteArray(), 0, 0, config);
+                byte[] attack = makeChunked(attackStream.toByteArray(), 0, 0, config, false);
                 String attackString = Utilities.helpers.bytesToString(attack);
                 int CL = attackString.lastIndexOf(inject) - Utilities.getBodyStart(attack);
                 attack = Utilities.setHeader(attack, "Content-Length", String.valueOf(CL));
@@ -118,7 +118,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
     boolean prepPoc(byte[] base, IHttpService service, String name, String inject, HashMap<String, Boolean> config) {
         String setupAttack = new DualChunkCL().getAttack(base, inject, config);
         //setupAttack = new DualChunkTE().getAttack(base, inject, config);
-        byte[] victim = makeChunked(base, 0, 0, config);
+        byte[] victim = makeChunked(base, 0, 0, config, false);
         return sendPoc(name, setupAttack, victim, service, new HashMap<>());
     }
 
@@ -143,7 +143,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
         original = Utilities.addOrReplaceHeader(original, "Transfer-Encoding", "foo");
         original = Utilities.setHeader(original, "Connection", "close");
 
-        byte[] baseReq = makeChunked(original, 0, 0, config);
+        byte[] baseReq = makeChunked(original, 0, 0, config, true);
         Resp syncedResp = request(service, baseReq);
         if (syncedResp.timedOut()) {
             Utilities.log("Timeout on first request. Aborting.");
@@ -152,9 +152,8 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
 
         Resp suggestedProbe = buildPoc(original, service, config);
 
-        byte[] reverseLength = makeChunked(original, 2, 0, config); //Utilities.setHeader(baseReq, "Content-Length", "4");
-        // fixme causes a FP - we need to... add an extra chunk?
-        reverseLength = malformFinalChunk(reverseLength);
+        byte[] reverseLength = makeChunked(original, -6, 0, config, true);
+
         Resp truncatedChunk = request(service, reverseLength, 3);
         if (truncatedChunk.timedOut()) {
 
@@ -177,8 +176,15 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
         }
 
 
+        baseReq = makeChunked(original, 0, 0, config, false);
+        syncedResp = request(service, baseReq);
+        if (syncedResp.timedOut()) {
+            Utilities.log("Timeout on first request. Aborting.");
+            return false;
+        }
+
         // this is unsafe for CL-TE, so we only attempt it if CL-TE detection failed
-        reverseLength = makeChunked(original, 1, 0, config); //Utilities.setHeader(baseReq, "Content-Length", "4");
+        reverseLength = makeChunked(original, 1, 0, config, false); //Utilities.setHeader(baseReq, "Content-Length", "4");
         //reverseLength = Utilities.setHeader(reverseLength, "Content-Length", String.valueOf(Integer.parseInt(Utilities.getHeader(reverseLength, "Content-Length"))+1));
         ByteArrayOutputStream reverseLengthBuilder = new ByteArrayOutputStream();
         try {

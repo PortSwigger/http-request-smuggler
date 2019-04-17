@@ -220,14 +220,14 @@ public abstract class SmuggleScanBox extends Scan {
     static Resp buildPoc(byte[] req, IHttpService service, HashMap<String, Boolean> config) {
         try {
             byte[] badMethodIfChunked = Utilities.setHeader(req, "Connection", "keep-alive");
-            badMethodIfChunked = makeChunked(badMethodIfChunked, 1, 0, config);
+            badMethodIfChunked = makeChunked(badMethodIfChunked, 1, 0, config, false);
 
             ByteArrayOutputStream buf = new ByteArrayOutputStream();
             buf.write(badMethodIfChunked);
             buf.write("G".getBytes());
 
             // first request ends here
-            buf.write(makeChunked(req, 0, 0, config));
+            buf.write(makeChunked(req, 0, 0, config, false));
             return new Resp(new Req(buf.toByteArray(), null, service), System.currentTimeMillis());
         }
         catch (IOException e) {
@@ -251,10 +251,10 @@ public abstract class SmuggleScanBox extends Scan {
     }
 
     static byte[] makeChunked(byte[] baseReq, int contentLengthOffset, int chunkOffset) {
-        return makeChunked(baseReq, contentLengthOffset, chunkOffset, new HashMap<>());
+        return makeChunked(baseReq, contentLengthOffset, chunkOffset, new HashMap<>(), false);
     }
 
-    static byte[] makeChunked(byte[] baseReq, int contentLengthOffset, int chunkOffset, HashMap<String, Boolean> settings) {
+    static byte[] makeChunked(byte[] baseReq, int contentLengthOffset, int chunkOffset, HashMap<String, Boolean> settings, boolean malformedClose) {
         if (!Utilities.containsBytes(baseReq, "Transfer-Encoding".getBytes())) {
             baseReq = Utilities.addOrReplaceHeader(baseReq, "Transfer-Encoding", "foo");
         }
@@ -326,14 +326,19 @@ public abstract class SmuggleScanBox extends Scan {
             }
         }
 
+        String ending = "0\r\n\r\n";
+        if (malformedClose) {
+            ending = "1\r\nZ\r\nQ\r\n\r\n";
+        }
+
         int bodySize = baseReq.length - Utilities.getBodyStart(baseReq);
         String body = Utilities.getBody(baseReq);
         int chunkSize = bodySize+chunkOffset;
         if (chunkSize > 0) {
-            chunkedReq = Utilities.setBody(chunkedReq, Integer.toHexString(chunkSize) + "\r\n" + body + "\r\n0\r\n\r\n");
+            chunkedReq = Utilities.setBody(chunkedReq, Integer.toHexString(chunkSize) + "\r\n" + body + "\r\n"+ending);
         }
         else {
-            chunkedReq = Utilities.setBody(chunkedReq, "0\r\n\r\n");
+            chunkedReq = Utilities.setBody(chunkedReq, ending);
         }
         bodySize = chunkedReq.length - Utilities.getBodyStart(chunkedReq);
         String newContentLength = Integer.toString(bodySize+contentLengthOffset);
