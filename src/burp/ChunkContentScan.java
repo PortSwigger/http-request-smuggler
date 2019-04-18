@@ -128,10 +128,6 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
         return Utilities.replace(req, "Content-Length: ".getBytes(), "Content-length: ".getBytes());
     }
 
-    byte[] malformFinalChunk(byte[] req) {
-        return Utilities.replace(req, "\r\n0\r\n\r\n".getBytes(), "\r\n1\r\nZ\r\nX\r\n\r\n".getBytes());
-    }
-
     public boolean doConfiguredScan(byte[] original, IHttpService service, HashMap<String, Boolean> config) {
         if (Utilities.globalSettings.getBoolean("skip vulnerable hosts") && BurpExtender.hostsToSkip.containsKey(service.getHost())) {
             return false;
@@ -185,7 +181,6 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
 
         // this is unsafe for CL-TE, so we only attempt it if CL-TE detection failed
         reverseLength = makeChunked(original, 1, 0, config, false); //Utilities.setHeader(baseReq, "Content-Length", "4");
-        //reverseLength = Utilities.setHeader(reverseLength, "Content-Length", String.valueOf(Integer.parseInt(Utilities.getHeader(reverseLength, "Content-Length"))+1));
         ByteArrayOutputStream reverseLengthBuilder = new ByteArrayOutputStream();
         try {
             reverseLengthBuilder.write(reverseLength);
@@ -210,9 +205,6 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
                 title += " closed";
             }
 
-//                if (!sendPoc(original, service, config)) {
-//                    title += " unconfirmed";
-//                }
             report(title, "status:timeout", syncedResp, truncatedChunk, suggestedProbe);
             return true;
         }

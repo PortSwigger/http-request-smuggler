@@ -295,6 +295,11 @@ abstract class Scan implements IScannerCheck {
     }
 
     Resp request(IHttpService service, byte[] req, int maxRetries) {
+        if (Utilities.unloaded.get()) {
+            throw new RuntimeException("Aborting due to extension unload");
+        }
+
+
         IHttpRequestResponse resp = null;
         long startTime = System.currentTimeMillis();
         if (loader == null) {
@@ -305,8 +310,8 @@ abstract class Scan implements IScannerCheck {
                     byte[] responseBytes = Utilities.callbacks.makeHttpRequest(service, req).getResponse();
                     resp = new Req(req, responseBytes, service);
                 } catch (java.lang.RuntimeException e) {
-                    Utilities.out("Recovering from request exception");
-                    Utilities.err("Recovering from request exception");
+                    Utilities.out("Recovering from request exception: "+service.getHost());
+                    Utilities.err("Recovering from request exception: "+service.getHost());
                     resp = new Req(req, null, service);
                 }
                 attempts += 1;
