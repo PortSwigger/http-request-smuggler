@@ -18,7 +18,7 @@ public class BurpExtender implements IBurpExtender, IExtensionStateListener {
         new SmuggleMenu();
         new BulkScanLauncher(scanner);
 
-        new BulkScanLauncher(new DualContentScan("CL-CL"));
+        //new BulkScanLauncher(new DualContentScan("CL-CL"));
 
         Utils.setBurpPresent(callbacks);
         //ZgrabLoader x = new ZgrabLoader(scanner);

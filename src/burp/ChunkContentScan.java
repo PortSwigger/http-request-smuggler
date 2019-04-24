@@ -162,7 +162,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
             } else {
                 title += " closed";
             }
-            
+
             report(title, "status:timeout", syncedResp, truncatedChunk);
             return true;
         }
