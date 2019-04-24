@@ -146,8 +146,6 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
             return false;
         }
 
-        Resp suggestedProbe = buildPoc(original, service, config);
-
         byte[] reverseLength = makeChunked(original, -6, 0, config, true);
 
         Resp truncatedChunk = request(service, reverseLength, 3);
@@ -164,10 +162,8 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
             } else {
                 title += " closed";
             }
-
-            Utilities.log("Reporting reverse timeout technique worked");
-
-            report(title, "status:timeout", syncedResp, truncatedChunk, suggestedProbe);
+            
+            report(title, "status:timeout", syncedResp, truncatedChunk);
             return true;
         }
 
@@ -205,7 +201,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
                 title += " closed";
             }
 
-            report(title, "status:timeout", syncedResp, truncatedChunk, suggestedProbe);
+            report(title, "status:timeout", syncedResp, truncatedChunk);
             return true;
         }
 
