@@ -209,58 +209,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
             return true;
         }
 
-
-
-
-
-
         return false;
-
-//        if (Utilities.globalSettings.getBoolean("try timeout-diff")) {
-//
-//            // if we get to here, either they're secure or the frontend uses chunked
-//            byte[] overlongLength = makeChunked(original, 1, 0, config); //Utilities.setHeader(baseReq, "Content-Length", "6");
-//            Resp overlongLengthResp = request(service, overlongLength);
-//            short overlongLengthCode = 0;
-//            if (!overlongLengthResp.timedOut()) {
-//                overlongLengthCode = overlongLengthResp.getInfo().getStatusCode();
-//            }
-//            if (overlongLengthCode == syncedResp.getInfo().getStatusCode()) {
-//                Utilities.log("Overlong content length didn't cause a timeout or code-change. Aborting.");
-//                return false;
-//            }
-//
-//            byte[] invalidChunk = Utilities.setBody(baseReq, "Z\r\n\r\n");
-//            invalidChunk = Utilities.setHeader(invalidChunk, "Content-Length", "5");
-//            Resp badChunkResp = request(service, invalidChunk);
-//            if (badChunkResp.timedOut()) {
-//                Utilities.log("Bad chunk attack timed out. Aborting.");
-//                return false;
-//            }
-//
-//            if (badChunkResp.getStatus() == syncedResp.getStatus()) {
-//                Utilities.log("Invalid chunk probe didn't do anything. Attempting overlong chunk timeout instead.");
-//
-//                byte[] overlongChunk = makeChunked(original, 0, 1, config); //Utilities.setBody(baseReq, "1\r\n\r\n");
-//                Resp overlongChunkResp = request(service, overlongChunk);
-//
-//                short overlongChunkCode = overlongChunkResp.getStatus();
-//
-//                if (overlongChunkCode == syncedResp.getStatus() || overlongChunkCode == overlongLengthCode) {
-//                    Utilities.log("Invalid chunk and overlong chunk both had no effect. Aborting.");
-//                    return false;
-//                }
-//
-//                badChunkResp = overlongChunkResp;
-//            }
-//
-//            String title = "Req smuggling: overlong diff";
-//            if (!sendPoc(original, service, config)) {
-//                title += " unconfirmed";
-//            }
-//            report(title, "Status:BadChunkDetection:BadLengthDetected", syncedResp, badChunkResp, overlongLengthResp, suggestedProbe);
-//            return true;
-//        }
     }
 }
 
