@@ -25,9 +25,9 @@ public abstract class SmuggleScanBox extends Scan {
         registerPermutation("gareth1");
 
         // niche techniques
-        registerPermutation("underjoin1");
+        // registerPermutation("underjoin1");
         registerPermutation("spacejoin1");
-        registerPermutation("underscore2");
+        //registerPermutation("underscore2");
         registerPermutation("space2");
         registerPermutation("nameprefix1");
         registerPermutation("valueprefix1");
