@@ -299,6 +299,8 @@ abstract class Scan implements IScannerCheck {
             serialisedIssue.append("://");
             serialisedIssue.append(service.getHost());
             serialisedIssue.append("\n");
+            serialisedIssue.append(detail);
+            serialisedIssue.append("\n");
             serialisedIssue.append("Evidence: \n======================================\n");
             for (IHttpRequestResponse req: reqs) {
                 serialisedIssue.append(Utilities.helpers.bytesToString(req.getRequest()));
