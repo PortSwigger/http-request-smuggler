@@ -15,6 +15,8 @@ public abstract class SmuggleScanBox extends Scan {
 
     SmuggleScanBox(String name) {
         super(name);
+        Utilities.globalSettings.registerSetting("convert GET to POST", true);
+        //Utilities.globalSettings.registerSetting("report dodgy findings", false);
         supportedPermutations = new ArrayList<>();
         // core techniques
         registerPermutation("vanilla");
@@ -45,10 +47,6 @@ public abstract class SmuggleScanBox extends Scan {
         for(int i: getSpecialChars()) {
             registerPermutation("prefix1:"+i);
         }
-
-
-        Utilities.globalSettings.registerSetting("convert GET to POST", true);
-        Utilities.globalSettings.registerSetting("report dodgy findings", false);
     }
 
     byte[] setupRequest(byte[] baseReq) {
@@ -110,90 +108,6 @@ public abstract class SmuggleScanBox extends Scan {
     void registerPermutation(String permutation) {
         supportedPermutations.add(permutation);
         Utilities.globalSettings.registerSetting(PERMUTE_PREFIX+permutation, true);
-    }
-
-
-    boolean sendPoc(String name, byte[] setupAttack, byte[] victim, IHttpService service) {
-        return sendPoc(name, Utilities.helpers.bytesToString(setupAttack), victim, service, new HashMap<>());
-    }
-
-    boolean sendPoc(String name, byte[] setupAttack, byte[] victim, IHttpService service, HashMap<String, Boolean> config) {
-        return sendPoc(name, Utilities.helpers.bytesToString(setupAttack), victim, service, config);
-    }
-
-
-    boolean sendPoc(String name, String setupAttack, byte[] victim, IHttpService service, HashMap<String, Boolean> config) {
-        try {
-            Resp baseline = request(service, victim);
-            SmuggleHelper helper = new SmuggleHelper(service);
-            helper.queue(setupAttack);
-            helper.queue(Utilities.helpers.bytesToString(victim));
-            helper.queue(Utilities.helpers.bytesToString(victim));
-
-            List<Resp> results = helper.waitFor();
-            Resp cleanup = null;
-            for (int i=0;i<3;i++) {
-                cleanup = request(service, victim);
-                if (cleanup.getInfo().getStatusCode() != baseline.getInfo().getStatusCode()) {
-                    request(service, victim);
-                    break;
-                }
-            }
-            short cleanupStatus = cleanup.getStatus();
-            short minerStatus = results.get(0).getStatus();
-            short victimStatus = results.get(1).getStatus();
-
-            if (cleanupStatus == minerStatus && minerStatus == victimStatus) {
-                return false;
-            }
-
-            String issueTitle;
-            String issueDescription = "";
-
-            if (cleanupStatus == minerStatus) {
-                if (victimStatus == 0) {
-                    issueTitle = "Null victim";
-                }
-                else {
-                    issueTitle = "Req smuggling attack (legit)";
-                }
-            } else if (minerStatus == victimStatus) {
-                issueTitle = "Req smuggling attack (XCON)";
-            } else if (cleanupStatus == victimStatus) {
-                issueTitle = "Attack timeout";
-            } else {
-                issueTitle = "Req smuggling attack (hazardous)";
-            }
-
-
-            helper = new SmuggleHelper(service);
-            final int randomCheckCount = 7;
-            for (int i=0; i<randomCheckCount;i++) {
-                helper.queue(Utilities.helpers.bytesToString(victim));
-            }
-            List<Resp> cleanResults = helper.waitFor();
-            for (int i=1; i<randomCheckCount;i++) {
-                if (cleanResults.get(i-1).getStatus() != cleanResults.get(i).getStatus()) {
-                    if (!Utilities.globalSettings.getBoolean("report dodgy findings")) {
-                        return false;
-                    }
-                    issueTitle += " (dodgy)";
-                    break;
-                }
-            }
-
-            issueTitle += ": "+name + " -";
-
-            issueTitle += String.join("|", config.keySet());
-
-            report(issueTitle, issueDescription, cleanup, results.get(0), results.get(1));
-
-            BurpExtender.hostsToSkip.putIfAbsent(service.getHost(), true);
-            return true;
-        }
-        catch (Exception e) {
-            return false;
-        }
     }
 
     static ArrayList<Integer> getSpecialChars() {
@@ -354,4 +268,89 @@ public abstract class SmuggleScanBox extends Scan {
 
         return chunkedReq;
     }
+
+
+    //    boolean sendPoc(String name, byte[] setupAttack, byte[] victim, IHttpService service) {
+//        return sendPoc(name, Utilities.helpers.bytesToString(setupAttack), victim, service, new HashMap<>());
+//    }
+//
+//    boolean sendPoc(String name, byte[] setupAttack, byte[] victim, IHttpService service, HashMap<String, Boolean> config) {
+//        return sendPoc(name, Utilities.helpers.bytesToString(setupAttack), victim, service, config);
+//    }
+//
+//
+//    boolean sendPoc(String name, String setupAttack, byte[] victim, IHttpService service, HashMap<String, Boolean> config) {
+//        try {
+//            Resp baseline = request(service, victim);
+//            SmuggleHelper helper = new SmuggleHelper(service);
+//            helper.queue(setupAttack);
+//            helper.queue(Utilities.helpers.bytesToString(victim));
+//            helper.queue(Utilities.helpers.bytesToString(victim));
+//
+//            List<Resp> results = helper.waitFor();
+//            Resp cleanup = null;
+//            for (int i=0;i<3;i++) {
+//                cleanup = request(service, victim);
+//                if (cleanup.getInfo().getStatusCode() != baseline.getInfo().getStatusCode()) {
+//                    request(service, victim);
+//                    break;
+//                }
+//            }
+//            short cleanupStatus = cleanup.getStatus();
+//            short minerStatus = results.get(0).getStatus();
+//            short victimStatus = results.get(1).getStatus();
+//
+//            if (cleanupStatus == minerStatus && minerStatus == victimStatus) {
+//                return false;
+//            }
+//
+//            String issueTitle;
+//            String issueDescription = "";
+//
+//            if (cleanupStatus == minerStatus) {
+//                if (victimStatus == 0) {
+//                    issueTitle = "Null victim";
+//                }
+//                else {
+//                    issueTitle = "Req smuggling attack (legit)";
+//                }
+//            } else if (minerStatus == victimStatus) {
+//                issueTitle = "Req smuggling attack (XCON)";
+//            } else if (cleanupStatus == victimStatus) {
+//                issueTitle = "Attack timeout";
+//            } else {
+//                issueTitle = "Req smuggling attack (hazardous)";
+//            }
+//
+//
+//            helper = new SmuggleHelper(service);
+//            final int randomCheckCount = 7;
+//            for (int i=0; i<randomCheckCount;i++) {
+//                helper.queue(Utilities.helpers.bytesToString(victim));
+//            }
+//            List<Resp> cleanResults = helper.waitFor();
+//            for (int i=1; i<randomCheckCount;i++) {
+//                if (cleanResults.get(i-1).getStatus() != cleanResults.get(i).getStatus()) {
+//                    if (!Utilities.globalSettings.getBoolean("report dodgy findings")) {
+//                        return false;
+//                    }
+//                    issueTitle += " (dodgy)";
+//                    break;
+//                }
+//            }
+//
+//            issueTitle += ": "+name + " -";
+//
+//            issueTitle += String.join("|", config.keySet());
+//
+//            report(issueTitle, issueDescription, cleanup, results.get(0), results.get(1));
+//
+//            BurpExtender.hostsToSkip.putIfAbsent(service.getHost(), true);
+//            return true;
+//        }
+//        catch (Exception e) {
+//            return false;
+//        }
+//    }
+
 }

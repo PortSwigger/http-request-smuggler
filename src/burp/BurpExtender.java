@@ -14,7 +14,7 @@ public class BurpExtender implements IBurpExtender, IExtensionStateListener {
         new Utilities(callbacks);
         Utilities.callbacks.registerExtensionStateListener(this);
 
-        ChunkContentScan scanner = new ChunkContentScan("CL/TE");
+        ChunkContentScan scanner = new ChunkContentScan("Desync scan");
         new SmuggleMenu();
         new BulkScanLauncher(scanner);
 
