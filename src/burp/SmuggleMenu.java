@@ -21,26 +21,30 @@ public class SmuggleMenu implements IContextMenuFactory {
             return options;
         }
 
-        JMenuItem probeButton = new JMenuItem("Convert to chunked");
-        probeButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                // need a handle on an IMessageEditorTab
-                reqs[0].setRequest(SmuggleScanBox.makeChunked(reqs[0].getRequest(), 0, 0));
-            }
-        });
+        byte[] req = reqs[0].getRequest();
 
-        options.add(probeButton);
+        if ( Utilities.getBodyStart(req) < req.length) {
+            JMenuItem probeButton = new JMenuItem("Convert to chunked");
+            probeButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    // need a handle on an IMessageEditorTab
+                    reqs[0].setRequest(SmuggleScanBox.makeChunked(reqs[0].getRequest(), 0, 0));
+                }
+            });
 
-        JMenuItem gzipButton = new JMenuItem("GZIP encode body");
-        gzipButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                // need a handle on an IMessageEditorTab
-                reqs[0].setRequest(SmuggleScanBox.gzipBody(reqs[0].getRequest()));
-            }
-        });
-        options.add(gzipButton);
+            options.add(probeButton);
+
+            JMenuItem gzipButton = new JMenuItem("GZIP encode body");
+            gzipButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    // need a handle on an IMessageEditorTab
+                    reqs[0].setRequest(SmuggleScanBox.gzipBody(reqs[0].getRequest()));
+                }
+            });
+            options.add(gzipButton);
+        }
 
         return options;
     }

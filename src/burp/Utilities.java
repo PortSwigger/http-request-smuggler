@@ -509,6 +509,10 @@ class Utilities {
         return "wrtqva" + mangle(payload);
     }
 
+    static String getResource(String name) {
+        return new Scanner(Utilities.class.getResourceAsStream(name), "UTF-8").useDelimiter("\\A").next();
+    }
+
     public static int getBodyStart(byte[] response) {
         int i = 0;
         int newlines_seen = 0;
