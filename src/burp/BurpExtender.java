@@ -3,7 +3,7 @@ package burp;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class BurpExtender implements IBurpExtender, IExtensionStateListener {
-    private static final String name = "Smuggle Scan";
+    private static final String name = "Desynchronize";
     private static final String version = "0.2";
     public boolean unloaded = false;
     static ConcurrentHashMap<String, Boolean> hostsToSkip = new ConcurrentHashMap<>();
@@ -12,9 +12,10 @@ public class BurpExtender implements IBurpExtender, IExtensionStateListener {
     public void registerExtenderCallbacks(final IBurpExtenderCallbacks callbacks) {
 
         new Utilities(callbacks);
+        callbacks.setExtensionName("Desynchronize");
         Utilities.callbacks.registerExtensionStateListener(this);
 
-        ChunkContentScan scanner = new ChunkContentScan("Desync scan");
+        ChunkContentScan scanner = new ChunkContentScan("Desync probe");
         new SmuggleMenu();
         new BulkScanLauncher(scanner);
 
