@@ -12,7 +12,7 @@ public class BurpExtender implements IBurpExtender, IExtensionStateListener {
     public void registerExtenderCallbacks(final IBurpExtenderCallbacks callbacks) {
 
         new Utilities(callbacks);
-        callbacks.setExtensionName("Desynchronize");
+        callbacks.setExtensionName(name);
         Utilities.callbacks.registerExtensionStateListener(this);
 
         ChunkContentScan scanner = new ChunkContentScan("Desync probe");
