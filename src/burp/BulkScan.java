@@ -255,7 +255,7 @@ abstract class Scan implements IScannerCheck {
 
     Scan(String name) {
         this.name = name;
-        Utilities.callbacks.registerScannerCheck(this);
+        // Utilities.callbacks.registerScannerCheck(this);
     }
 
     abstract List<IScanIssue> doScan(byte[] baseReq, IHttpService service);
