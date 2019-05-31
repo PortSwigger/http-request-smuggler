@@ -27,8 +27,8 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
 
         byte[] baseReq = makeChunked(original, 0, 0, config, true);
         Resp syncedResp = request(service, baseReq);
-        if (syncedResp.timedOut()) {
-            Utilities.log("Timeout on first request. Aborting.");
+        if (syncedResp.failed()) {
+            Utilities.log("First request failed. Aborting.");
             return false;
         }
 

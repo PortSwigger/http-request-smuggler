@@ -23,7 +23,7 @@ public class SmuggleMenu implements IContextMenuFactory {
 
         byte[] req = reqs[0].getRequest();
 
-        if ( Utilities.getBodyStart(req) < req.length) {
+        if ( Utilities.getBodyStart(req) < req.length || Utilities.containsBytes(req, "Content-Length".getBytes())) {
             JMenuItem probeButton = new JMenuItem("Convert to chunked");
             probeButton.addActionListener(new ActionListener() {
                 @Override

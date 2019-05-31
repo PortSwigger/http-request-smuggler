@@ -1,5 +1,7 @@
 package burp;
 
+import org.apache.commons.lang3.StringUtils;
+
 import javax.swing.*;
 import javax.swing.event.MenuEvent;
 import javax.swing.event.MenuListener;
@@ -45,6 +47,8 @@ class Utilities {
 
     static ConfigurableSettings globalSettings;
 
+    static int TIMEOUT = 0;
+
     static JFrame getBurpFrame()
     {
         for(Frame f : Frame.getFrames())
@@ -65,6 +69,7 @@ class Utilities {
 
         globalSettings = new ConfigurableSettings();
         globalSettings.printSettings();
+        TIMEOUT = Integer.parseInt(Utilities.getSetting("project_options.connections.timeouts.normal_timeout"));
     }
 
     static boolean isBurpPro() {
@@ -479,6 +484,14 @@ class Utilities {
         }
 
         return matches;
+    }
+
+    // fixme currently only handles numbers
+    static String getSetting(String name) {
+        int depth = StringUtils.countMatches(name, ".") + 1;
+        String json = callbacks.saveConfigAsJson(name);
+        String value = json.split("\n")[depth].split(":", 2)[1];
+        return value;
     }
 
     public static void doActiveScan(IHttpRequestResponse req, int[] offsets) {

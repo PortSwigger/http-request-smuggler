@@ -27,6 +27,8 @@ public class BurpExtender implements IBurpExtender, IExtensionStateListener {
         //x.launchSmugglePipeline();
 
 
+
+
         Utilities.out("Loaded " + name + " v" + version);
     }
 

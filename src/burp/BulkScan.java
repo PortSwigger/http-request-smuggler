@@ -400,12 +400,15 @@ class Resp {
 
     private short status = 0;
     private boolean timedOut = false;
+    private boolean failed = false;
 
     Resp(IHttpRequestResponse req, long startTime) {
         this.req = req;
         if (req.getResponse() == null) {
+            this.failed = true;
+
             // fixme will interact badly with distribute-damage
-            if (System.currentTimeMillis() - startTime > 9000) {
+            if (System.currentTimeMillis() - startTime > (Utilities.TIMEOUT-1000)) {
                 this.timedOut = true;
             }
         } else {
@@ -425,6 +428,10 @@ class Resp {
 
     IResponseVariations getAttributes() {
         return attributes;
+    }
+
+    boolean failed() {
+        return failed;
     }
 
     boolean timedOut() {
