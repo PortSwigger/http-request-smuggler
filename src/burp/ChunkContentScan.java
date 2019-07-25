@@ -27,47 +27,43 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
 
         byte[] baseReq = makeChunked(original, 0, 0, config, true);
         Resp syncedResp = request(service, baseReq);
-        if (syncedResp.failed()) {
-            Utilities.log("First request failed. Aborting.");
-            return false;
-        }
+        if (!syncedResp.failed()) {
+            byte[] reverseLength = makeChunked(original, -6, 0, config, true);
 
-        byte[] reverseLength = makeChunked(original, -6, 0, config, true);
+            Resp truncatedChunk = request(service, reverseLength, 3);
+            if (truncatedChunk.timedOut()) {
 
-        Resp truncatedChunk = request(service, reverseLength, 3);
-        if (truncatedChunk.timedOut()) {
+                if (request(service, baseReq).timedOut()) {
+                    return false;
+                }
 
-            if (request(service, baseReq).timedOut()) {
-                return false;
+                String title = "CL.TE " + String.join("|", config.keySet());
+
+                if (leftAlive(baseReq, service) ) {
+                    title += " left-alive";
+                } else {
+                    title += " closed";
+                }
+
+                report(title,
+                        "Burp issued a request, and got a response. Burp then issued the same request, but with a shorter Content-Length, and got a timeout. " +
+                                "This suggests that the front-end system is using the Content-Length header, and the backend is using the Transfer-Encoding: chunked header. You should be able to manually verify this using the Repeater, provided you uncheck the 'Update Content-Length' setting on the top menu. " +
+                                "As such, it may be vulnerable to HTTP Desync attacks, aka Request Smuggling. " +
+                                "To attempt an actual Desync attack, ensure you have Turbo Intruder installed then right click on the attached request and choose 'Desync attack'. Please note that this is not risk-free - other genuine visitors to the site may be affected. ",
+                        syncedResp, truncatedChunk);
+                return true;
             }
-
-            String title = "CL.TE " + String.join("|", config.keySet());
-
-            if (leftAlive(baseReq, service) ) {
-                title += " left-alive";
-            } else {
-                title += " closed";
-            }
-
-            report(title,
-                    "Burp issued a request, and got a response. Burp then issued the same request, but with a shorter Content-Length, and got a timeout. " +
-                    "This suggests that the front-end system is using the Content-Length header, and the backend is using the Transfer-Encoding: chunked header. You should be able to manually verify this using the Repeater, provided you uncheck the 'Update Content-Length' setting on the top menu. " +
-                    "As such, it may be vulnerable to HTTP Desync attacks, aka Request Smuggling. " +
-                    "To attempt an actual Desync attack, ensure you have Turbo Intruder installed then right click on the attached request and choose 'Desync attack'. Please note that this is not risk-free - other genuine visitors to the site may be affected. ",
-                    syncedResp, truncatedChunk);
-            return true;
         }
-
 
         baseReq = makeChunked(original, 0, 0, config, false);
         syncedResp = request(service, baseReq);
-        if (syncedResp.timedOut()) {
+        if (syncedResp.failed()) {
             Utilities.log("Timeout on first request. Aborting.");
             return false;
         }
 
         // this is unsafe for CL-TE, so we only attempt it if CL-TE detection failed
-        reverseLength = makeChunked(original, 1, 0, config, false); //Utilities.setHeader(baseReq, "Content-Length", "4");
+        byte[] reverseLength = makeChunked(original, 1, 0, config, false); //Utilities.setHeader(baseReq, "Content-Length", "4");
         ByteArrayOutputStream reverseLengthBuilder = new ByteArrayOutputStream();
         try {
             reverseLengthBuilder.write(reverseLength);
@@ -76,7 +72,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
         } catch (IOException e) {
 
         }
-        truncatedChunk = request(service, reverseLength, 3);
+        Resp truncatedChunk = request(service, reverseLength, 3);
 
         if (truncatedChunk.timedOut()) {
 
