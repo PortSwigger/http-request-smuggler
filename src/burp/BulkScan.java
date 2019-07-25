@@ -290,6 +290,8 @@ abstract class Scan implements IScannerCheck {
         if (Utilities.isBurpPro()) {
             Utilities.callbacks.addScanIssue(new CustomScanIssue(service, Utilities.getURL(base.getRequest(), service), reqs, title, detail, "High", "Tentative", "."));
         } else {
+            detail = detail.replace("right click on the attached request", "paste the first request into the repeater (including trailing whitespace), fill in the 'target' box, then right click on the request");
+
             StringBuilder serialisedIssue = new StringBuilder();
             serialisedIssue.append("Found issue: ");
             serialisedIssue.append(title);

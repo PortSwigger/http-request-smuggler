@@ -49,7 +49,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
                         "Burp issued a request, and got a response. Burp then issued the same request, but with a shorter Content-Length, and got a timeout. " +
                                 "This suggests that the front-end system is using the Content-Length header, and the backend is using the Transfer-Encoding: chunked header. You should be able to manually verify this using the Repeater, provided you uncheck the 'Update Content-Length' setting on the top menu. " +
                                 "As such, it may be vulnerable to HTTP Desync attacks, aka Request Smuggling. " +
-                                "To attempt an actual Desync attack, ensure you have Turbo Intruder installed then right click on the attached request and choose 'Desync attack'. Please note that this is not risk-free - other genuine visitors to the site may be affected. ",
+                                "To attempt an actual Desync attack, right click on the attached request and choose 'Desync attack'. Please note that this is not risk-free - other genuine visitors to the site may be affected. ",
                         syncedResp, truncatedChunk);
                 return true;
             }
@@ -92,7 +92,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
                     "Burp issued a request, and got a response. Burp then issued the same request, but with a closing chunk in the body, and got a timeout. " +
                             "This suggests that the front-end system is using the Transfer-Encoding header, and the backend is using the Content-Length header. You should be able to manually verify this using the Repeater. " +
                             "As such, it may be vulnerable to HTTP Desync attacks, aka Request Smuggling. " +
-                            "To attempt an actual Desync attack, ensure you have Turbo Intruder installed then right click on the attached request and choose 'Desync attack'. Please note that this is not risk-free - other genuine visitors to the site may be affected. ",
+                            "To attempt an actual Desync attack, right click on the attached request and choose 'Desync attack'. Please note that this is not risk-free - other genuine visitors to the site may be affected. ",
                     syncedResp, truncatedChunk);
             return true;
         }
