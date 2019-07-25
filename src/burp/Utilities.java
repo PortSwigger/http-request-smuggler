@@ -47,8 +47,6 @@ class Utilities {
 
     static ConfigurableSettings globalSettings;
 
-    static int TIMEOUT = 0;
-
     static JFrame getBurpFrame()
     {
         for(Frame f : Frame.getFrames())
@@ -69,7 +67,6 @@ class Utilities {
 
         globalSettings = new ConfigurableSettings();
         globalSettings.printSettings();
-        TIMEOUT = Integer.parseInt(Utilities.getSetting("project_options.connections.timeouts.normal_timeout"));
     }
 
     static boolean isBurpPro() {

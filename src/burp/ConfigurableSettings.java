@@ -23,6 +23,7 @@ class ConfigurableSettings {
         settings = new LinkedHashMap<>();
         put("thread pool size", 8);
 
+        registerSetting("timeout", 10);
         registerSetting("use key", true);
         registerSetting("key method", true);
         registerSetting("key status", true);

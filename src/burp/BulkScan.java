@@ -404,13 +404,14 @@ class Resp {
 
     Resp(IHttpRequestResponse req, long startTime) {
         this.req = req;
-        if (req.getResponse() == null) {
-            this.failed = true;
 
-            // fixme will interact badly with distribute-damage
-            if (System.currentTimeMillis() - startTime > (Utilities.TIMEOUT-1000)) {
-                this.timedOut = true;
-            }
+        // fixme will interact badly with distribute-damage
+        if (System.currentTimeMillis() - startTime > ((Utilities.globalSettings.getInt("timeout")*1000-1000))) {
+            this.timedOut = true;
+            this.failed = true;
+        }
+        else if (req.getResponse() == null) {
+            this.failed = true;
         } else {
             this.info = Utilities.helpers.analyzeResponse(req.getResponse());
             this.attributes = Utilities.helpers.analyzeResponseVariations(req.getResponse());
