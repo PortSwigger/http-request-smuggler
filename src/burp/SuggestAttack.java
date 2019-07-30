@@ -19,7 +19,7 @@ public class SuggestAttack implements IContextMenuFactory {
             String headers = Utils.getHeaders(request);
 
             if (headers.contains("chunked")) {
-                JMenuItem probeButton = new JMenuItem("Desync attack");
+                JMenuItem probeButton = new JMenuItem("Smuggle attack");
                 probeButton.addActionListener(new LaunchSuggestedAttack(message));
                 options.add(probeButton);
             }

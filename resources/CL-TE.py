@@ -1,3 +1,4 @@
+# if you edit this file, ensure you keep the line endings as CRLF or you'll have a bad time
 def queueRequests(target, wordlists):
     engine = RequestEngine(endpoint=target.endpoint,
                            concurrentConnections=5,
