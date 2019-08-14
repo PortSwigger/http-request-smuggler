@@ -1,6 +1,6 @@
 # HTTP Request Smuggler
 
-This is an extension for Burp Suite designed to help you launch [HTTP Request Smuggling](https://portswigger.net/blog/http-desync-attacks) attacks. It supports scanning for Request Smuggling vulnerabilities, and also aids exploitation by handling cumbersome offset-tweaking for you.
+This is an extension for Burp Suite designed to help you launch [HTTP Request Smuggling](https://portswigger.net/web-security/request-smuggling) attacks, originally created during [HTTP Desync Attacks](https://portswigger.net/blog/http-desync-attacks-request-smuggling-reborn) research. It supports scanning for Request Smuggling vulnerabilities, and also aids exploitation by handling cumbersome offset-tweaking for you.
 
 ### Install
 The easiest way to install this is in Burp Suite, via Extender -> BApp Store.
@@ -12,7 +12,9 @@ If you prefer to load the jar manually, in Burp Suite (community or pro), use Ex
 * Build with `gradle fatJar`
 
 ### Use
-Right click on a request and click 'Launch Desync probe', then watch the extension's output pane. 
+Right click on a request and click 'Launch Desync probe', then watch the extension's output pane under `Extender->Extensions->HTTP Request Smuggler`
+
+If you're using Burp Pro, any findings will also be reported as scan issues.
 
 For more advanced use watch the [video](https://portswigger.net/blog/http-desync-attacks).
 
