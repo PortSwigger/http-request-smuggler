@@ -9,7 +9,7 @@ If you prefer to load the jar manually, in Burp Suite (community or pro), use Ex
 
 ### Compile
 * [Turbo Intruder](https://github.com/PortSwigger/turbo-intruder) is a dependency of this project, add it to the root of this source tree as `turbo-intruder-all.jar`
-* Build with `gradle build fatJar`
+* Build with `gradle fatJar`
 
 ### Use
 Right click on a request and click 'Launch Desync probe', then watch the extension's output pane. 
