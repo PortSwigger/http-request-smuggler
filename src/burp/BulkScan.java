@@ -329,6 +329,11 @@ abstract class Scan implements IScannerCheck {
             throw new RuntimeException("Aborting due to extension unload");
         }
 
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+
+        }
 
         IHttpRequestResponse resp = null;
         long startTime = System.currentTimeMillis();
@@ -408,7 +413,10 @@ class Resp {
         this.req = req;
 
         // fixme will interact badly with distribute-damage
-        if (System.currentTimeMillis() - startTime > ((Utilities.globalSettings.getInt("timeout")*1000-1000))) {
+        if ((System.currentTimeMillis() - startTime) > (Utilities.globalSettings.getInt("timeout")*1000)) {
+            if (req.getResponse() != null) {
+                Utilities.out("Timeout with response "+(System.currentTimeMillis() - startTime)/1000+" seconds");
+            }
             this.timedOut = true;
             this.failed = true;
         }

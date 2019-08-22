@@ -37,6 +37,10 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
                     return false;
                 }
 
+                if (truncatedChunk.getReq().getResponse() != null) {
+                    Utilities.out("Unexpected report with response");
+                }
+
                 String title = "HTTP Request Smuggling: CL.TE " + String.join("|", config.keySet());
 
                 if (leftAlive(baseReq, service) ) {
@@ -86,6 +90,10 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
                 title += " left-alive";
             } else {
                 title += " closed";
+            }
+
+            if (truncatedChunk.getReq().getResponse() != null) {
+                Utilities.out("Unexpected report with response");
             }
 
             report(title,

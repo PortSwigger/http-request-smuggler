@@ -345,6 +345,10 @@ class Utilities {
         return matches;
     }
 
+    static byte[] replace(byte[] request, String find, String replace) {
+        return replace(request, find.getBytes(), replace.getBytes());
+    }
+
     static byte[] replace(byte[] request, byte[] find, byte[] replace) {
         return replace(request, find, replace, -1);
     }

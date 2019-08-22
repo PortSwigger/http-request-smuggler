@@ -45,6 +45,16 @@ public abstract class SmuggleScanBox extends Scan {
         registerPermutation("vertwrap");
         registerPermutation("tabwrap");
 
+        // new techniques
+        registerPermutation("lazygrep");
+        registerPermutation("multiCase");
+        registerPermutation("UPPERCASE");
+        registerPermutation("0dwrap");
+        registerPermutation("0dsuffix");
+        registerPermutation("tabsuffix");
+        registerPermutation("revdualchunk");
+
+
         for(int i: getSpecialChars()) {
             registerPermutation("prefix1:"+i);
         }
@@ -233,6 +243,21 @@ public abstract class SmuggleScanBox extends Scan {
             chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), "Transfer-Encoding: \n\t".getBytes());
         } else if (settings.containsKey("dualchunk")) {
             chunkedReq = Utilities.addOrReplaceHeader(chunkedReq, "Transfer-encoding", "cow");
+        } else if (settings.containsKey("lazygrep")) {
+            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked", "Transfer-Encoding: chunk");
+        } else if (settings.containsKey("multiCase")) {
+            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked", "Transfer-Encoding: cHuNkeD");
+        } else if (settings.containsKey("UPPERCASE")) {
+            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked", "Transfer-Encoding: CHUNKED");
+        } else if (settings.containsKey("0dwrap")) {
+            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked".getBytes(), "Foo: bar".getBytes());
+            chunkedReq = Utilities.replace(chunkedReq, "HTTP/1.1\r\n".getBytes(), "HTTP/1.1\r\nFoo: bar\r\n\rTransfer-Encoding: chunked\r\n".getBytes());
+        } else if (settings.containsKey("0dsuffix")) {
+            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked", "Transfer-Encoding: chunked\r");
+        } else if (settings.containsKey("tabsuffix")) {
+            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked", "Transfer-Encoding: chunked\t");
+        } else if (settings.containsKey("revdualchunk")) {
+            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked", "Transfer-Encoding: cow\r\nTransfer-Encoding: chunked");
         }
 
         if (Utilities.globalSettings.getBoolean("swap - with _")) {
