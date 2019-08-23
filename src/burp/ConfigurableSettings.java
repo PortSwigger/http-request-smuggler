@@ -45,6 +45,7 @@ class ConfigurableSettings {
 //        registerSetting("poc: collab-blind", true);
         registerSetting("skip vulnerable hosts", false);
         registerSetting("skip obsolete permutations", false);
+        registerSetting("only report exploitable", false);
 
 
         NumberFormat format = NumberFormat.getInstance();

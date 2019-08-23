@@ -27,7 +27,9 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
 
         byte[] baseReq = makeChunked(original, 0, 0, config, true);
         Resp syncedResp = request(service, baseReq);
-        if (!syncedResp.failed()) {
+        if (!syncedResp.failed() && !(Utilities.globalSettings.getBoolean("only report exploitable") && syncedResp.getStatus() == 400)) {
+
+
             byte[] reverseLength = makeChunked(original, -6, 0, config, true);
 
             Resp truncatedChunk = request(service, reverseLength, 3);
@@ -49,6 +51,10 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
                     title += " closed";
                 }
 
+                if (truncatedChunk.getReq().getResponse() != null) {
+                    title += " (delayed response)";
+                }
+
                 report(title,
                         "Burp issued a request, and got a response. Burp then issued the same request, but with a shorter Content-Length, and got a timeout.<br/> " +
                                 "This suggests that the front-end system is using the Content-Length header, and the backend is using the Transfer-Encoding: chunked header. You should be able to manually verify this using the Repeater, provided you uncheck the 'Update Content-Length' setting on the top menu. <br/>" +
@@ -61,7 +67,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
 
         baseReq = makeChunked(original, 0, 0, config, false);
         syncedResp = request(service, baseReq);
-        if (syncedResp.failed()) {
+        if (syncedResp.failed() || (Utilities.globalSettings.getBoolean("only report exploitable") && syncedResp.getStatus() == 400)) {
             Utilities.log("Timeout on first request. Aborting.");
             return false;
         }
@@ -93,7 +99,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
             }
 
             if (truncatedChunk.getReq().getResponse() != null) {
-                Utilities.out("Unexpected report with response");
+                title += " (delayed response)";
             }
 
             report(title,

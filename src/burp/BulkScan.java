@@ -413,16 +413,26 @@ class Resp {
         this.req = req;
 
         // fixme will interact badly with distribute-damage
-        if ((System.currentTimeMillis() - startTime) > (Utilities.globalSettings.getInt("timeout")*1000)) {
-            if (req.getResponse() != null) {
-                Utilities.out("Timeout with response "+(System.currentTimeMillis() - startTime)/1000+" seconds");
+        int burpTimeout = Integer.parseInt(Utilities.getSetting("project_options.connections.timeouts.normal_timeout"));
+        int scanTimeout = Utilities.globalSettings.getInt("timeout") * 1000;
+
+        if (burpTimeout == scanTimeout) {
+            if (req.getResponse() == null) {
+                this.timedOut = true;
+                this.failed = true;
             }
-            this.timedOut = true;
-            this.failed = true;
-        }
-        else if (req.getResponse() == null) {
-            this.failed = true;
         } else {
+            if ((System.currentTimeMillis() - startTime) > scanTimeout) {
+                if (req.getResponse() != null) {
+                    Utilities.out("TImeout with response. Start time: " + startTime + " Current time: " + System.currentTimeMillis() + " Difference: " + (System.currentTimeMillis() - startTime) + " Tolerance: " + scanTimeout);
+                }
+                this.timedOut = true;
+                this.failed = true;
+            } else if (req.getResponse() == null) {
+                this.failed = true;
+            }
+        }
+        if (!this.failed) {
             this.info = Utilities.helpers.analyzeResponse(req.getResponse());
             this.attributes = Utilities.helpers.analyzeResponseVariations(req.getResponse());
             this.status = this.info.getStatusCode();

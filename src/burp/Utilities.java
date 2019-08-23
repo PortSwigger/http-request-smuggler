@@ -532,7 +532,7 @@ class Utilities {
         int newlines_seen = 0;
         while (i < response.length) {
             byte x = response[i];
-            if (x == '\n') {
+            if (x == '\n' && response[i-1] == '\r') {
                 newlines_seen++;
             } else if (x != '\r') {
                 newlines_seen = 0;

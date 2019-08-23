@@ -48,15 +48,22 @@ public abstract class SmuggleScanBox extends Scan {
         // new techniques
         registerPermutation("lazygrep");
         registerPermutation("multiCase");
-        registerPermutation("UPPERCASE");
+        //registerPermutation("UPPERCASE");
         registerPermutation("0dwrap");
-        registerPermutation("0dsuffix");
-        registerPermutation("tabsuffix");
+        registerPermutation("0dspam");
+        //registerPermutation("0dsuffix");
+        //registerPermutation("tabsuffix");
         registerPermutation("revdualchunk");
-
+        registerPermutation("bodysplit");
 
         for(int i: getSpecialChars()) {
+            registerPermutation("spacefix1:"+i);
+        }
+        for(int i: getSpecialChars()) {
             registerPermutation("prefix1:"+i);
+        }
+        for(int i: getSpecialChars()) {
+            registerPermutation("suffix1:"+i);
         }
     }
 
@@ -126,11 +133,13 @@ public abstract class SmuggleScanBox extends Scan {
 //        for (int i=0;i<32;i++) {
 //            chars.add(i);
 //        }
-//        chars.add(127);
-        chars.add(9);
-        chars.add(11);
-        chars.add(12);
-        chars.add(13);
+
+        chars.add(0); // null
+        chars.add(9); // tab
+        chars.add(11); // vert tab
+        chars.add(12); // form feed
+        chars.add(13); // \r
+        chars.add(127);
         return chars;
     }
 
@@ -246,9 +255,9 @@ public abstract class SmuggleScanBox extends Scan {
         } else if (settings.containsKey("lazygrep")) {
             chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked", "Transfer-Encoding: chunk");
         } else if (settings.containsKey("multiCase")) {
-            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked", "Transfer-Encoding: cHuNkeD");
+            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked", "TrAnSFer-EnCODinG: cHuNkeD");
         } else if (settings.containsKey("UPPERCASE")) {
-            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked", "Transfer-Encoding: CHUNKED");
+            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked", "TRANSFER-ENCODING: CHUNKED");
         } else if (settings.containsKey("0dwrap")) {
             chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked".getBytes(), "Foo: bar".getBytes());
             chunkedReq = Utilities.replace(chunkedReq, "HTTP/1.1\r\n".getBytes(), "HTTP/1.1\r\nFoo: bar\r\n\rTransfer-Encoding: chunked\r\n".getBytes());
@@ -258,6 +267,12 @@ public abstract class SmuggleScanBox extends Scan {
             chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked", "Transfer-Encoding: chunked\t");
         } else if (settings.containsKey("revdualchunk")) {
             chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked", "Transfer-Encoding: cow\r\nTransfer-Encoding: chunked");
+        } else if (settings.containsKey("0dspam")) {
+            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked", "Transfer\r-Encoding: chunked");
+        } else if (settings.containsKey("bodysplit")) {
+            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked", "X: y");
+            chunkedReq = Utilities.addOrReplaceHeader(chunkedReq, "Foo", "barzxaazz");
+            chunkedReq = Utilities.replace(chunkedReq, "barzxaazz", "barn\n\nTransfer-Encoding: chunked");
         }
 
         if (Utilities.globalSettings.getBoolean("swap - with _")) {
@@ -265,8 +280,20 @@ public abstract class SmuggleScanBox extends Scan {
         }
 
         for (int i: getSpecialChars()) {
-            if (settings.containsKey("prefix1:"+i)) {
+            if (settings.containsKey("spacefix1:"+i)) {
                 chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), ("Transfer-Encoding:"+(char) i).getBytes());
+            }
+        }
+
+        for (int i: getSpecialChars()) {
+            if (settings.containsKey("prefix1:"+i)) {
+                chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), ("Transfer-Encoding: "+(char) i).getBytes());
+            }
+        }
+
+        for (int i: getSpecialChars()) {
+            if (settings.containsKey("suffix1:"+i)) {
+                chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked".getBytes(), ("Transfer-Encoding: chunked"+(char) i).getBytes());
             }
         }
 
