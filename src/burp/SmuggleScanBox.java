@@ -143,12 +143,14 @@ public abstract class SmuggleScanBox extends Scan {
         return chars;
     }
 
-    boolean leftAlive(byte[] req, IHttpService service) {
+    Resp leftAlive(byte[] req, IHttpService service) {
         byte[] keepalive = Utilities.setHeader(req, "Connection", "keep-alive");
         Resp resp = request(service, keepalive);
         String connectionType = Utilities.getHeader(resp.getReq().getResponse(), "Connection");
-        return connectionType.toLowerCase().contains("alive");
-
+        if (connectionType.toLowerCase().contains("alive")) {
+            return resp;
+        }
+        return null;
     }
 
     static Resp buildPoc(byte[] req, IHttpService service, HashMap<String, Boolean> config) {
@@ -299,7 +301,12 @@ public abstract class SmuggleScanBox extends Scan {
 
         String ending = "0\r\n\r\n";
         if (malformedClose) {
-            ending = "1\r\nZ\r\nQ\r\n\r\n";
+            if (Utilities.globalSettings.getBoolean("risky mode")) {
+                ending = "1\r\nZ\r\n0\r\n\r\n";
+            }
+            else {
+                ending = "1\r\nZ\r\nQ\r\n\r\n";
+            }
         }
 
         int bodySize = baseReq.length - Utilities.getBodyStart(baseReq);

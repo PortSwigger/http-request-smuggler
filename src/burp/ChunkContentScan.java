@@ -25,17 +25,23 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
         original = Utilities.addOrReplaceHeader(original, "Transfer-Encoding", "foo");
         original = Utilities.setHeader(original, "Connection", "close");
 
-        byte[] baseReq = makeChunked(original, 0, 0, config, true);
-        Resp syncedResp = request(service, baseReq);
-        if (!syncedResp.failed() && !(Utilities.globalSettings.getBoolean("only report exploitable") && syncedResp.getStatus() == 400)) {
+        byte[] syncedReq = makeChunked(original, 0, 0, config, false);
+        Resp syncedResp = request(service, syncedReq);
+        if (syncedResp.failed() || (Utilities.globalSettings.getBoolean("only report exploitable") && syncedResp.getStatus() == 400)) {
+            Utilities.log("Timeout on first request. Aborting.");
+            return false;
+        }
 
+        byte[] syncedBreakReq = makeChunked(original, 0, 0, config, true);
+        Resp syncedBreakResp = request(service, syncedBreakReq);
+        if (!syncedBreakResp.failed()) {
 
             byte[] reverseLength = makeChunked(original, -6, 0, config, true);
 
             Resp truncatedChunk = request(service, reverseLength, 3);
             if (truncatedChunk.timedOut()) {
 
-                if (request(service, baseReq).timedOut()) {
+                if (request(service, syncedBreakReq).timedOut()) {
                     return false;
                 }
 
@@ -45,10 +51,10 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
 
                 String title = "HTTP Request Smuggling: CL.TE " + String.join("|", config.keySet());
 
-                if (leftAlive(baseReq, service) ) {
+                Resp retryAlive = leftAlive(syncedReq, service);
+                if (retryAlive != null ) {
+                    syncedResp = retryAlive;
                     title += " left-alive";
-                } else {
-                    title += " closed";
                 }
 
                 if (truncatedChunk.getReq().getResponse() != null) {
@@ -60,16 +66,9 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
                                 "This suggests that the front-end system is using the Content-Length header, and the backend is using the Transfer-Encoding: chunked header. You should be able to manually verify this using the Repeater, provided you uncheck the 'Update Content-Length' setting on the top menu. <br/>" +
                                 "As such, it may be vulnerable to HTTP Desync attacks, aka Request Smuggling. <br/>" +
                                 "To attempt an actual Desync attack, right click on the attached request and choose 'Desync attack'. Please note that this is not risk-free - other genuine visitors to the site may be affected.<br/><br/>Please refer to <a href=\"https://portswigger.net/blog/http-desync-attacks\">https://portswigger.net/blog/http-desync-attacks</a> for further information. ",
-                        syncedResp, truncatedChunk);
+                        syncedResp, syncedBreakResp, truncatedChunk);
                 return true;
             }
-        }
-
-        baseReq = makeChunked(original, 0, 0, config, false);
-        syncedResp = request(service, baseReq);
-        if (syncedResp.failed() || (Utilities.globalSettings.getBoolean("only report exploitable") && syncedResp.getStatus() == 400)) {
-            Utilities.log("Timeout on first request. Aborting.");
-            return false;
         }
 
         // this is unsafe for CL-TE, so we only attempt it if CL-TE detection failed
@@ -86,16 +85,16 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
 
         if (truncatedChunk.timedOut()) {
 
-            if (request(service, baseReq).timedOut()) {
+            if (request(service, syncedReq).timedOut()) {
                 return false;
             }
 
             String title = "HTTP Request Smuggling: TE.CL " + String.join("|", config.keySet());
 
-            if (leftAlive(baseReq, service) ) {
+            Resp retryAlive = leftAlive(syncedReq, service);
+            if (retryAlive != null ) {
+                syncedResp = retryAlive;
                 title += " left-alive";
-            } else {
-                title += " closed";
             }
 
             if (truncatedChunk.getReq().getResponse() != null) {

@@ -7,6 +7,10 @@ import javax.swing.JMenuItem;
 
 public class SuggestAttack implements IContextMenuFactory {
 
+    final static String UNKNOWN = "";
+    final static String CLTE = "CL.TE";
+    final static String TECL = "TE.CL";
+
     @Override
     public List<JMenuItem> createMenuItems(IContextMenuInvocation invocation) {
         ArrayList<JMenuItem> options = new ArrayList<>();
@@ -18,10 +22,38 @@ public class SuggestAttack implements IContextMenuFactory {
             String request = new String(message.getRequest());
             String headers = Utils.getHeaders(request);
 
+
+
+
             if (headers.contains("chunked") || headers.contains("Transfer-Encoding")) {
-                JMenuItem probeButton = new JMenuItem("Smuggle attack");
-                probeButton.addActionListener(new LaunchSuggestedAttack(message));
-                options.add(probeButton);
+                String type = "";
+                if (invocation.getSelectedIssues() != null) {
+                    String name = invocation.getSelectedIssues()[0].getIssueName();
+                    if (name.contains("CL.TE")) {
+                        type = CLTE;
+                    }
+                    else if (name.contains("TE.CL")) {
+                        type = TECL;
+                    }
+                }
+
+                if (type.equals(UNKNOWN)) {
+                    type = CLTE;
+                    JMenuItem probeButton = new JMenuItem("Smuggle attack ("+type+")");
+                    probeButton.addActionListener(new LaunchSuggestedAttack(message, type));
+                    options.add(probeButton);
+                    type = TECL;
+                    JMenuItem probeButton2 = new JMenuItem("Smuggle attack ("+type+")");
+                    probeButton2.addActionListener(new LaunchSuggestedAttack(message, type));
+                    options.add(probeButton2);
+                } else {
+                    JMenuItem probeButton = new JMenuItem("Smuggle attack ("+type+")");
+                    probeButton.addActionListener(new LaunchSuggestedAttack(message, type));
+                    options.add(probeButton);
+                }
+
+
+
             }
 
         }
@@ -33,9 +65,11 @@ public class SuggestAttack implements IContextMenuFactory {
 class LaunchSuggestedAttack implements ActionListener {
 
     private IHttpRequestResponse message;
+    private String type = SuggestAttack.UNKNOWN;
 
-    LaunchSuggestedAttack(IHttpRequestResponse message) {
+    LaunchSuggestedAttack(IHttpRequestResponse message, String type) {
         this.message = message;
+        this.type = type;
     }
 
     @Override
@@ -45,14 +79,21 @@ class LaunchSuggestedAttack implements ActionListener {
         String request = new String(message.getRequest());
         String script;
 
-        if (request.contains(PAYLOAD)) {
-            // this is CL.TE
-            script = Utilities.getResource("/CL-TE.py");
+        if (type.equals(SuggestAttack.CLTE)) {
             request = request.replaceFirst(PAYLOAD, "\r\n0\r\n\r\n");
-        }
-        else {
-            // this is either a normal chunked request, or TE.CL
+            script = Utilities.getResource("/CL-TE.py");
+        } else if (type.equals(SuggestAttack.TECL)) {
             script = Utilities.getResource("/TE-CL.py");
+        } else {
+
+            if (request.contains(PAYLOAD)) {
+                // this is CL.TE
+                script = Utilities.getResource("/CL-TE.py");
+                request = request.replaceFirst(PAYLOAD, "\r\n0\r\n\r\n");
+            } else {
+                // this is either a normal chunked request, or TE.CL
+                script = Utilities.getResource("/TE-CL.py");
+            }
         }
 
         // amend the script to try and ensure the smuggled request gets a different response

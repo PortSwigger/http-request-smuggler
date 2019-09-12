@@ -46,6 +46,7 @@ class ConfigurableSettings {
         registerSetting("skip vulnerable hosts", false);
         registerSetting("skip obsolete permutations", false);
         registerSetting("only report exploitable", false);
+        registerSetting("risky mode", false);
 
 
         NumberFormat format = NumberFormat.getInstance();
