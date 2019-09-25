@@ -45,26 +45,23 @@ public abstract class SmuggleScanBox extends Scan {
         registerPermutation("vertwrap");
         registerPermutation("tabwrap");
 
-        // new techniques
+        // new techniques for AppSec
         registerPermutation("lazygrep");
         registerPermutation("multiCase");
-        //registerPermutation("UPPERCASE");
         registerPermutation("0dwrap");
         registerPermutation("0dspam");
-        //registerPermutation("0dsuffix");
-        //registerPermutation("tabsuffix");
         registerPermutation("revdualchunk");
-        registerPermutation("bodysplit");
-
-        registerPermutation("reversevanilla");
-        registerPermutation("spaceFF");
-        registerPermutation("accentTE");
-        registerPermutation("accentCH");
-        registerPermutation("unispace");
-
-        registerPermutation("connection");
-
         registerPermutation("nested");
+//        registerPermutation("bodysplit");
+//        registerPermutation("0dsuffix");
+//        registerPermutation("tabsuffix");
+//        registerPermutation("UPPERCASE");
+//        registerPermutation("reversevanilla");
+//        registerPermutation("spaceFF");
+//        registerPermutation("accentTE");
+//        registerPermutation("accentCH");
+//        registerPermutation("unispace");
+//        registerPermutation("connection");
 
         for(int i: getSpecialChars()) {
             registerPermutation("spacefix1:"+i);
