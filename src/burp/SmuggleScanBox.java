@@ -56,6 +56,16 @@ public abstract class SmuggleScanBox extends Scan {
         registerPermutation("revdualchunk");
         registerPermutation("bodysplit");
 
+        registerPermutation("reversevanilla");
+        registerPermutation("spaceFF");
+        registerPermutation("accentTE");
+        registerPermutation("accentCH");
+        registerPermutation("unispace");
+
+        registerPermutation("connection");
+
+        registerPermutation("nested");
+
         for(int i: getSpecialChars()) {
             registerPermutation("spacefix1:"+i);
         }
@@ -275,6 +285,10 @@ public abstract class SmuggleScanBox extends Scan {
             chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked", "X: y");
             chunkedReq = Utilities.addOrReplaceHeader(chunkedReq, "Foo", "barzxaazz");
             chunkedReq = Utilities.replace(chunkedReq, "barzxaazz", "barn\n\nTransfer-Encoding: chunked");
+        } else if (settings.containsKey("connection")) {
+            chunkedReq = Utilities.addOrReplaceHeader(chunkedReq, "Connection", "Transfer-Encoding");
+        } else if (settings.containsKey("nested")) {
+            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked", "Transfer-Encoding: cow chunked bar");
         }
 
         if (Utilities.globalSettings.getBoolean("swap - with _")) {
@@ -299,6 +313,48 @@ public abstract class SmuggleScanBox extends Scan {
             }
         }
 
+        if (settings.containsKey("spaceFF")) {
+            try {
+                ByteArrayOutputStream encoded = new ByteArrayOutputStream();
+                encoded.write("Transfer-Encoding:".getBytes());
+                encoded.write((byte) 0xFF);
+                chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), encoded.toByteArray());
+            } catch (IOException e) {
+
+            }
+        }
+        if (settings.containsKey("unispace")) {
+            try {
+                ByteArrayOutputStream encoded = new ByteArrayOutputStream();
+                encoded.write("Transfer-Encoding:".getBytes());
+                encoded.write((byte) 0xa0);
+                chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), encoded.toByteArray());
+            } catch (IOException e) {
+
+            }
+        }
+        if (settings.containsKey("accentTE")) {
+            try {
+                ByteArrayOutputStream encoded = new ByteArrayOutputStream();
+                encoded.write("Transf".getBytes());
+                encoded.write((byte) 0x82);
+                encoded.write("r-Encoding: ".getBytes());
+                chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), encoded.toByteArray());
+            } catch (IOException e) {
+
+            }
+        }
+        if (settings.containsKey("accentCH")) {
+            try {
+                ByteArrayOutputStream encoded = new ByteArrayOutputStream();
+                encoded.write("Transfer-Encoding: ch".getBytes());
+                encoded.write((byte) 0x96);
+                chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chu".getBytes(), encoded.toByteArray());
+            } catch (IOException e) {
+
+            }
+        }
+
         String ending = "0\r\n\r\n";
         if (malformedClose) {
             if (Utilities.globalSettings.getBoolean("risky mode")) {
@@ -320,7 +376,12 @@ public abstract class SmuggleScanBox extends Scan {
         }
         bodySize = chunkedReq.length - Utilities.getBodyStart(chunkedReq);
         String newContentLength = Integer.toString(bodySize+contentLengthOffset);
+
         chunkedReq = Utilities.setHeader(chunkedReq, "Content-Length", newContentLength);
+        if (settings.containsKey("reversevanilla")) {
+            chunkedReq = Utilities.replace(chunkedReq, "Content-Length", "oldContentLength");
+            chunkedReq = Utilities.addOrReplaceHeader(chunkedReq, "Content-Length", newContentLength);
+        }
 
         // fixme breaks stuff
 //        if (settings.containsKey("underscore2")) {
