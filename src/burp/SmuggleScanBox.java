@@ -16,7 +16,7 @@ public abstract class SmuggleScanBox extends Scan {
     SmuggleScanBox(String name) {
         super(name);
         Utilities.globalSettings.registerSetting("convert GET to POST", true);
-        Utilities.globalSettings.registerSetting("swap - with _", false);
+        Utilities.globalSettings.registerSetting("globally swap - with _", false);
         //Utilities.globalSettings.registerSetting("report dodgy findings", false);
         supportedPermutations = new ArrayList<>();
         // core techniques
@@ -288,7 +288,7 @@ public abstract class SmuggleScanBox extends Scan {
             chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked", "Transfer-Encoding: cow chunked bar");
         }
 
-        if (Utilities.globalSettings.getBoolean("swap - with _")) {
+        if (Utilities.globalSettings.getBoolean("globally swap - with _")) {
             chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding".getBytes(), "Transfer_Encoding".getBytes());
         }
 

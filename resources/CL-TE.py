@@ -1,12 +1,15 @@
 # if you edit this file, ensure you keep the line endings as CRLF or you'll have a bad time
 def queueRequests(target, wordlists):
+
+    # to use Burp's HTTP stack for upstream proxy rules etc, use engine=Engine.BURP
     engine = RequestEngine(endpoint=target.endpoint,
                            concurrentConnections=5,
                            requestsPerConnection=1,
                            resumeSSL=False,
                            timeout=10,
                            pipeline=False,
-                           maxRetriesPerRequest=0
+                           maxRetriesPerRequest=0,
+                           engine=Engine.THREADED,
                            )
     engine.start()
 
