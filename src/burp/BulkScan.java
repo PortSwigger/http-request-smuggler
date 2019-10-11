@@ -132,7 +132,8 @@ class BulkScan implements Runnable  {
                 IHttpRequestResponse req = left.next();
 
                 if (!"".equals(filterValue)) {
-                    if (!Utilities.containsBytes(req.getRequest(), filterValue.getBytes())) {
+                    if (req.getResponse() == null || !Utilities.containsBytes(req.getResponse(), filterValue.getBytes())) {
+                        left.remove();
                         continue;
                     }
                 }
