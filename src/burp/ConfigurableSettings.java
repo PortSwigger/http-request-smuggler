@@ -47,6 +47,7 @@ class ConfigurableSettings {
         registerSetting("skip obsolete permutations", false);
         registerSetting("only report exploitable", false);
         registerSetting("risky mode", false);
+        registerSetting("filter", "");
 
 
         NumberFormat format = NumberFormat.getInstance();
