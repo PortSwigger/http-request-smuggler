@@ -747,6 +747,11 @@ class Utilities {
 
     static boolean isHTTP(URL url) {
         String protocol = url.getProtocol().toLowerCase();
+        return "http".equals(protocol);
+    }
+    
+    static boolean isHTTPS(URL url) {
+        String protocol = url.getProtocol().toLowerCase();
         return "https".equals(protocol);
     }
 
