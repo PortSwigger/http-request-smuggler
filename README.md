@@ -2,6 +2,8 @@
 
 This is an extension for Burp Suite designed to help you launch [HTTP Request Smuggling](https://portswigger.net/web-security/request-smuggling) attacks, originally created during [HTTP Desync Attacks](https://portswigger.net/blog/http-desync-attacks-request-smuggling-reborn) research. It supports scanning for Request Smuggling vulnerabilities, and also aids exploitation by handling cumbersome offset-tweaking for you.
 
+This extension should not be confused with [Burp Suite HTTP Smuggler](https://github.com/nccgroup/BurpSuiteHTTPSmuggler), which uses similar techniques but is focused exclusively bypassing WAFs.
+
 ### Install
 The easiest way to install this is in Burp Suite, via `Extender -> BApp Store`.
 
