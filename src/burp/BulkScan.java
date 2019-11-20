@@ -70,7 +70,7 @@ class BulkScan implements Runnable  {
         key.append(req.getHttpService().getProtocol());
         key.append(req.getHttpService().getHost());
 
-        if(  config.getBoolean("key method")) {
+        if( config.getBoolean("key method")) {
             key.append(reqInfo.getMethod());
         }
 
@@ -119,6 +119,8 @@ class BulkScan implements Runnable  {
         Queue<String> cache = new CircularFifoQueue<>(cache_size);
         HashSet<String> remainingHosts = new HashSet<>();
 
+        String filterValue = Utilities.globalSettings.getString("filter");
+
         int i = 0;
         int queued = 0;
 
@@ -128,6 +130,14 @@ class BulkScan implements Runnable  {
             Iterator<IHttpRequestResponse> left = reqlist.iterator();
             while (left.hasNext()) {
                 IHttpRequestResponse req = left.next();
+
+                if (!"".equals(filterValue)) {
+                    if (req.getResponse() == null || !Utilities.containsBytes(req.getResponse(), filterValue.getBytes())) {
+                        left.remove();
+                        continue;
+                    }
+                }
+
                 String host = req.getHttpService().getHost();
                 if (cache.contains(host)) {
                     remainingHosts.add(host);

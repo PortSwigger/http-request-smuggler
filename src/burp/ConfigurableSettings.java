@@ -47,6 +47,7 @@ class ConfigurableSettings {
         registerSetting("skip obsolete permutations", false);
         registerSetting("only report exploitable", false);
         registerSetting("risky mode", false);
+        registerSetting("filter", "");
 
 
         NumberFormat format = NumberFormat.getInstance();
@@ -160,7 +161,7 @@ class ConfigurableSettings {
 
     ConfigurableSettings showSettings() {
         JPanel panel = new JPanel();
-        panel.setLayout(new GridLayout(0, 4));
+        panel.setLayout(new GridLayout(0, 6));
 
         HashMap<String, Object> configured = new HashMap<>();
 
