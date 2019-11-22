@@ -229,10 +229,10 @@ public abstract class SmuggleScanBox extends Scan {
 //            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), "Transfer-Encoding:\u000B".getBytes());
 //        }
         else if (settings.containsKey("commaCow")) {
-            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked".getBytes(), "Transfer-Encoding: chunked, cow".getBytes());
+            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked".getBytes(), "Transfer-Encoding: chunked, identity".getBytes());
         }
         else if (settings.containsKey("cowComma")) {
-            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), "Transfer-Encoding: cow, ".getBytes());
+            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), "Transfer-Encoding: identity, ".getBytes());
         }
         else if (settings.containsKey("contentEnc")) {
             chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), "Content-Encoding: ".getBytes());
