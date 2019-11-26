@@ -34,15 +34,17 @@ class ConfigurableSettings {
         // smuggle-scan specific
         //registerSetting("try chunk-truncate", true);
         //registerSetting("try timeout-diff", true);
-//        registerSetting("poc: G", true);
-//        registerSetting("poc: headerConcat", true);
-//        registerSetting("poc: bodyConcat", true);
-//        registerSetting("poc: collab", true);
-//        registerSetting("poc: collab-header", true);
-//        registerSetting("poc: collab-XFO-header", true);
-//        registerSetting("poc: collab-abs", true);
-//        registerSetting("poc: collab-at", true);
-//        registerSetting("poc: collab-blind", true);
+        registerSetting("skip straight to poc", false);
+        registerSetting("poc: G", false);
+        registerSetting("poc: headerConcat", false);
+        registerSetting("poc: bodyConcat", false);
+        registerSetting("poc: collab", false);
+        registerSetting("poc: collab-header", false);
+        registerSetting("poc: collab-XFO-header", false);
+        registerSetting("poc: collab-abs", false);
+        registerSetting("poc: collab-at", false);
+        registerSetting("poc: collab-blind", false);
+
         registerSetting("skip vulnerable hosts", false);
         registerSetting("skip obsolete permutations", false);
         registerSetting("only report exploitable", false);

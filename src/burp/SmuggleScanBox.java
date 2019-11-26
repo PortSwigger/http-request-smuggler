@@ -260,7 +260,7 @@ public abstract class SmuggleScanBox extends Scan {
         } else if (settings.containsKey("tabwrap")) {
             chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), "Transfer-Encoding: \n\t".getBytes());
         } else if (settings.containsKey("dualchunk")) {
-            chunkedReq = Utilities.addOrReplaceHeader(chunkedReq, "Transfer-encoding", "cow");
+            chunkedReq = Utilities.addOrReplaceHeader(chunkedReq, "Transfer-encoding", "identity");
         } else if (settings.containsKey("lazygrep")) {
             chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked", "Transfer-Encoding: chunk");
         } else if (settings.containsKey("multiCase")) {
@@ -275,7 +275,7 @@ public abstract class SmuggleScanBox extends Scan {
         } else if (settings.containsKey("tabsuffix")) {
             chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked", "Transfer-Encoding: chunked\t");
         } else if (settings.containsKey("revdualchunk")) {
-            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked", "Transfer-Encoding: cow\r\nTransfer-Encoding: chunked");
+            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked", "Transfer-Encoding: identity\r\nTransfer-Encoding: chunked");
         } else if (settings.containsKey("0dspam")) {
             chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked", "Transfer\r-Encoding: chunked");
         } else if (settings.containsKey("bodysplit")) {
@@ -392,87 +392,92 @@ public abstract class SmuggleScanBox extends Scan {
     }
 
 
-    //    boolean sendPoc(String name, byte[] setupAttack, byte[] victim, IHttpService service) {
-//        return sendPoc(name, Utilities.helpers.bytesToString(setupAttack), victim, service, new HashMap<>());
-//    }
-//
-//    boolean sendPoc(String name, byte[] setupAttack, byte[] victim, IHttpService service, HashMap<String, Boolean> config) {
-//        return sendPoc(name, Utilities.helpers.bytesToString(setupAttack), victim, service, config);
-//    }
-//
-//
-//    boolean sendPoc(String name, String setupAttack, byte[] victim, IHttpService service, HashMap<String, Boolean> config) {
-//        try {
-//            Resp baseline = request(service, victim);
-//            SmuggleHelper helper = new SmuggleHelper(service);
-//            helper.queue(setupAttack);
-//            helper.queue(Utilities.helpers.bytesToString(victim));
-//            helper.queue(Utilities.helpers.bytesToString(victim));
-//
-//            List<Resp> results = helper.waitFor();
-//            Resp cleanup = null;
-//            for (int i=0;i<3;i++) {
-//                cleanup = request(service, victim);
-//                if (cleanup.getInfo().getStatusCode() != baseline.getInfo().getStatusCode()) {
-//                    request(service, victim);
-//                    break;
-//                }
-//            }
-//            short cleanupStatus = cleanup.getStatus();
-//            short minerStatus = results.get(0).getStatus();
-//            short victimStatus = results.get(1).getStatus();
-//
-//            if (cleanupStatus == minerStatus && minerStatus == victimStatus) {
-//                return false;
-//            }
-//
-//            String issueTitle;
-//            String issueDescription = "";
-//
-//            if (cleanupStatus == minerStatus) {
-//                if (victimStatus == 0) {
-//                    issueTitle = "Null victim";
-//                }
-//                else {
-//                    issueTitle = "Req smuggling attack (legit)";
-//                }
-//            } else if (minerStatus == victimStatus) {
-//                issueTitle = "Req smuggling attack (XCON)";
-//            } else if (cleanupStatus == victimStatus) {
-//                issueTitle = "Attack timeout";
-//            } else {
-//                issueTitle = "Req smuggling attack (hazardous)";
-//            }
-//
-//
-//            helper = new SmuggleHelper(service);
-//            final int randomCheckCount = 7;
-//            for (int i=0; i<randomCheckCount;i++) {
-//                helper.queue(Utilities.helpers.bytesToString(victim));
-//            }
-//            List<Resp> cleanResults = helper.waitFor();
-//            for (int i=1; i<randomCheckCount;i++) {
-//                if (cleanResults.get(i-1).getStatus() != cleanResults.get(i).getStatus()) {
-//                    if (!Utilities.globalSettings.getBoolean("report dodgy findings")) {
-//                        return false;
-//                    }
-//                    issueTitle += " (dodgy)";
-//                    break;
-//                }
-//            }
-//
-//            issueTitle += ": "+name + " -";
-//
-//            issueTitle += String.join("|", config.keySet());
-//
-//            report(issueTitle, issueDescription, cleanup, results.get(0), results.get(1));
-//
-//            BurpExtender.hostsToSkip.putIfAbsent(service.getHost(), true);
-//            return true;
-//        }
-//        catch (Exception e) {
-//            return false;
-//        }
-//    }
+        boolean sendPoc(String name, byte[] setupAttack, byte[] victim, IHttpService service) {
+        return sendPoc(name, Utilities.helpers.bytesToString(setupAttack), victim, service, new HashMap<>());
+    }
+
+    boolean sendPoc(String name, byte[] setupAttack, byte[] victim, IHttpService service, HashMap<String, Boolean> config) {
+        return sendPoc(name, Utilities.helpers.bytesToString(setupAttack), victim, service, config);
+    }
+
+
+    boolean sendPoc(String name, String setupAttack, byte[] victim, IHttpService service, HashMap<String, Boolean> config) {
+        try {
+            Resp baseline = request(service, victim);
+            SmuggleHelper helper = new SmuggleHelper(service);
+            helper.queue(setupAttack);
+            helper.queue(Utilities.helpers.bytesToString(victim));
+            helper.queue(Utilities.helpers.bytesToString(victim));
+
+            List<Resp> results = helper.waitFor();
+            Resp cleanup = null;
+            for (int i=0;i<3;i++) {
+                cleanup = request(service, victim);
+                if (cleanup.getInfo().getStatusCode() != baseline.getInfo().getStatusCode()) {
+                    request(service, victim);
+                    break;
+                }
+            }
+            int cleanupStatus = cleanup.getStatus();
+            int minerStatus = results.get(0).getStatus();
+            int victimStatus = results.get(1).getStatus();
+
+            if (cleanupStatus == minerStatus && minerStatus == victimStatus) {
+                return false;
+            }
+
+            HashSet<Integer> badCodes = new HashSet<>();
+            badCodes.add(0);
+            badCodes.add(428);
+            badCodes.add(429);
+            badCodes.add(430);
+
+            if (badCodes.contains(cleanupStatus) || badCodes.contains(minerStatus) || badCodes.contains(victimStatus)) {
+                return false;
+            }
+            
+            String issueTitle;
+            String issueDescription = "";
+
+            if (minerStatus == victimStatus || cleanupStatus == minerStatus) {
+                issueTitle = "HTTP Request Smuggling Confirmed";
+            }
+            else if (cleanupStatus == victimStatus) {
+                return false;
+            }
+            else {
+                issueTitle = "HTTP Request Smuggling maybe";
+            }
+
+            helper = new SmuggleHelper(service);
+            int randomCheckCount = 7;
+            if (Utilities.globalSettings.getBoolean("skip straight to poc")) {
+                randomCheckCount = 14;
+            }
+
+            for (int i=0; i<randomCheckCount;i++) {
+                helper.queue(Utilities.helpers.bytesToString(victim));
+            }
+            List<Resp> cleanResults = helper.waitFor();
+            for (int i=0; i<randomCheckCount;i++) {
+                if (cleanResults.get(i).getStatus() != baseline.getInfo().getStatusCode()) {
+                    issueTitle += " (dodgy)";
+                    break;
+                }
+            }
+
+            issueTitle += ": "+name + " -";
+
+            issueTitle += String.join("|", config.keySet());
+
+            report(issueTitle, issueDescription, cleanup, results.get(0), results.get(1));
+
+            BurpExtender.hostsToSkip.putIfAbsent(service.getHost(), true);
+            return true;
+        }
+        catch (Exception e) {
+            return false;
+        }
+    }
 
 }
