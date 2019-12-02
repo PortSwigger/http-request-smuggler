@@ -582,6 +582,10 @@ class Utilities {
     }
 
     public static boolean containsBytes(byte[] request, byte[] value) {
+        if (request.length == 0 && value.length != 0) {
+            return false;
+        }
+
         return helpers.indexOf(request, value, false, 1, request.length - 1) != -1;
     }
 

@@ -49,6 +49,7 @@ class ConfigurableSettings {
         registerSetting("skip obsolete permutations", false);
         registerSetting("only report exploitable", false);
         registerSetting("risky mode", false);
+        registerSetting("pad everything", false);
         registerSetting("filter", "");
 
 

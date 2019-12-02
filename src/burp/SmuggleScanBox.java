@@ -52,6 +52,9 @@ public abstract class SmuggleScanBox extends Scan {
         registerPermutation("0dspam");
         registerPermutation("revdualchunk");
         registerPermutation("nested");
+
+        // new techniques for BHEU
+        registerPermutation("chunky");
 //        registerPermutation("bodysplit");
 //        registerPermutation("0dsuffix");
 //        registerPermutation("tabsuffix");
@@ -330,6 +333,7 @@ public abstract class SmuggleScanBox extends Scan {
 
             }
         }
+
         if (settings.containsKey("accentTE")) {
             try {
                 ByteArrayOutputStream encoded = new ByteArrayOutputStream();
@@ -364,6 +368,19 @@ public abstract class SmuggleScanBox extends Scan {
 
         int bodySize = baseReq.length - Utilities.getBodyStart(baseReq);
         String body = Utilities.getBody(baseReq);
+
+        // concept by @webtonull
+        if (Utilities.globalSettings.getBoolean("pad everything") || settings.containsKey("chunky")) {
+            String padChunk = "F\r\nAAAAAAAAAAAAAAA\r\n";
+            StringBuilder fullPad = new StringBuilder();
+            for (int i=0; i<3000; i++) {
+                fullPad.append(padChunk);
+            }
+            ending = fullPad.toString() + ending;
+        }
+
+
+
         int chunkSize = bodySize+chunkOffset;
         if (chunkSize > 0) {
             chunkedReq = Utilities.setBody(chunkedReq, Integer.toHexString(chunkSize) + "\r\n" + body + "\r\n"+ending);
@@ -435,7 +452,7 @@ public abstract class SmuggleScanBox extends Scan {
             if (badCodes.contains(cleanupStatus) || badCodes.contains(minerStatus) || badCodes.contains(victimStatus)) {
                 return false;
             }
-            
+
             String issueTitle;
             String issueDescription = "";
 
