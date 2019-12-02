@@ -12,7 +12,12 @@ class SmuggleHelper {
     SmuggleHelper(IHttpService service) {
         this.service = service;
         String url = service.getProtocol()+"://"+service.getHost()+":"+service.getPort();
-        this.engine = new ThreadedRequestEngine(url, 1, 20, 1, 1, 0, this::callback, 10, null, 1024, false);
+        if (Utilities.globalSettings.getBoolean("use turbo for autopoc")) {
+            this.engine = new ThreadedRequestEngine(url, 1, 20, 1, 1, 0, this::callback, 10, null, 1024, false);
+        }
+        else {
+            this.engine = new BurpRequestEngine(url, 1, 20, 0, this::callback, null);
+        }
     }
 
     void queue(String req) {

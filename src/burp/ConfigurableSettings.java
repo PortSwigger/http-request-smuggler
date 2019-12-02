@@ -45,6 +45,9 @@ class ConfigurableSettings {
         registerSetting("poc: collab-at", false);
         registerSetting("poc: collab-blind", false);
 
+        registerSetting("poc-collab domain", "manual-collab-domain-here");
+        registerSetting("use turbo for autopoc", true);
+
         registerSetting("skip vulnerable hosts", false);
         registerSetting("skip obsolete permutations", false);
         registerSetting("only report exploitable", false);
