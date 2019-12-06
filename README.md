@@ -26,7 +26,7 @@ For more advanced use watch the [video](https://portswigger.net/blog/http-desync
 
 We've released a collection of [free online labs to practise against](https://portswigger.net/web-security/request-smuggling). Here's how to use the tool to solve the first lab - [HTTP request smuggling, basic CL.TE vulnerability](https://portswigger.net/web-security/request-smuggling/lab-basic-cl-te):
 
-1. Use the Extender->BApp store tab to install the 'Desynchronize' extension.
+1. Use the Extender->BApp store tab to install the 'HTTP Request Smuggler' extension.
 2. Load the lab homepage, find the request in the proxy history, right click and select 'Launch Desync probe', then click 'OK'.
 3. Wait for the probe to complete, indicated by 'Completed 1 of 1' appearing in the extension's output tab.
 4. If you're using Burp Suite Pro, find the reported vulnerability in the dashboard and open the first attached request.
