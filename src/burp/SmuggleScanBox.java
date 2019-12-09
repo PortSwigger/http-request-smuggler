@@ -66,13 +66,13 @@ public abstract class SmuggleScanBox extends Scan {
 //        registerPermutation("unispace");
 //        registerPermutation("connection");
 
-        for(int i: getSpecialChars()) {
+        for(int i: DesyncBox.getSpecialChars()) {
             registerPermutation("spacefix1:"+i);
         }
-        for(int i: getSpecialChars()) {
+        for(int i: DesyncBox.getSpecialChars()) {
             registerPermutation("prefix1:"+i);
         }
-        for(int i: getSpecialChars()) {
+        for(int i: DesyncBox.getSpecialChars()) {
             registerPermutation("suffix1:"+i);
         }
     }
@@ -138,20 +138,6 @@ public abstract class SmuggleScanBox extends Scan {
         Utilities.globalSettings.registerSetting(PERMUTE_PREFIX+permutation, true);
     }
 
-    static ArrayList<Integer> getSpecialChars() {
-        ArrayList<Integer> chars = new ArrayList<>();
-//        for (int i=0;i<32;i++) {
-//            chars.add(i);
-//        }
-
-        chars.add(0); // null
-        chars.add(9); // tab
-        chars.add(11); // vert tab
-        chars.add(12); // form feed
-        chars.add(13); // \r
-        chars.add(127);
-        return chars;
-    }
 
     Resp leftAlive(byte[] req, IHttpService service) {
         byte[] keepalive = Utilities.setHeader(req, "Connection", "keep-alive");
@@ -205,155 +191,10 @@ public abstract class SmuggleScanBox extends Scan {
             baseReq = Utilities.addOrReplaceHeader(baseReq, "Transfer-Encoding", "foo");
         }
 
-        byte[] chunkedReq = Utilities.setHeader(baseReq, "Transfer-Encoding", "chunked");
-
-
-        if (settings.containsKey("underjoin1")) {
-            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding".getBytes(), "Transfer_Encoding".getBytes());
-        } else if (settings.containsKey("spacejoin1")) {
-            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding".getBytes(), "Transfer Encoding".getBytes());
-        }
-        else if (settings.containsKey("space1")) {
-            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding".getBytes(), "Transfer-Encoding ".getBytes());
-        }
-        else if (settings.containsKey("nameprefix1")) {
-            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding".getBytes(), " Transfer-Encoding".getBytes());
-        }
-        else if (settings.containsKey("valueprefix1")) {
-            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), "Transfer-Encoding:  ".getBytes());
-        }
-        else if (settings.containsKey("nospace1")) {
-            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), "Transfer-Encoding:".getBytes());
-        }
-//        else if (settings.containsKey("tabprefix1")) {
-//            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), "Transfer-Encoding:\t".getBytes());
-//        }
-//        else if (settings.containsKey("vertprefix1")) {
-//            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), "Transfer-Encoding:\u000B".getBytes());
-//        }
-        else if (settings.containsKey("commaCow")) {
-            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked".getBytes(), "Transfer-Encoding: chunked, identity".getBytes());
-        }
-        else if (settings.containsKey("cowComma")) {
-            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), "Transfer-Encoding: identity, ".getBytes());
-        }
-        else if (settings.containsKey("contentEnc")) {
-            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), "Content-Encoding: ".getBytes());
-        }
-
-        else if (settings.containsKey("linewrapped1")) {
-            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), "Transfer-Encoding:\n ".getBytes());
-        } else if (settings.containsKey("gareth1")) {
-            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), "Transfer-Encoding\n : ".getBytes());
-        } else if (settings.containsKey("quoted")) {
-            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked".getBytes(), "Transfer-Encoding: \"chunked\"".getBytes());
-        } else if (settings.containsKey("aposed")) {
-            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked".getBytes(), "Transfer-Encoding: 'chunked'".getBytes());
-        } else if (settings.containsKey("badwrap")) {
-            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked".getBytes(), "Foo: bar".getBytes());
-            chunkedReq = Utilities.replace(chunkedReq, "HTTP/1.1\r\n".getBytes(), "HTTP/1.1\r\n Transfer-Encoding: chunked\r\n".getBytes());
-        } else if (settings.containsKey("badsetupCR")) {
-            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked".getBytes(), "Foo: bar".getBytes());
-            chunkedReq = Utilities.replace(chunkedReq, "HTTP/1.1\r\n".getBytes(), "HTTP/1.1\r\nFooz: bar\rTransfer-Encoding: chunked\r\n".getBytes());
-        } else if (settings.containsKey("badsetupLF")) {
-            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked".getBytes(), "Foo: bar".getBytes());
-            chunkedReq = Utilities.replace(chunkedReq, "HTTP/1.1\r\n".getBytes(), "HTTP/1.1\r\nFooz: bar\nTransfer-Encoding: chunked\r\n".getBytes());
-        } else if (settings.containsKey("vertwrap")) {
-            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), "Transfer-Encoding: \n\u000B".getBytes());
-        } else if (settings.containsKey("tabwrap")) {
-            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), "Transfer-Encoding: \n\t".getBytes());
-        } else if (settings.containsKey("dualchunk")) {
-            chunkedReq = Utilities.addOrReplaceHeader(chunkedReq, "Transfer-encoding", "identity");
-        } else if (settings.containsKey("lazygrep")) {
-            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked", "Transfer-Encoding: chunk");
-        } else if (settings.containsKey("multiCase")) {
-            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked", "TrAnSFer-EnCODinG: cHuNkeD");
-        } else if (settings.containsKey("UPPERCASE")) {
-            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked", "TRANSFER-ENCODING: CHUNKED");
-        } else if (settings.containsKey("0dwrap")) {
-            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked".getBytes(), "Foo: bar".getBytes());
-            chunkedReq = Utilities.replace(chunkedReq, "HTTP/1.1\r\n".getBytes(), "HTTP/1.1\r\nFoo: bar\r\n\rTransfer-Encoding: chunked\r\n".getBytes());
-        } else if (settings.containsKey("0dsuffix")) {
-            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked", "Transfer-Encoding: chunked\r");
-        } else if (settings.containsKey("tabsuffix")) {
-            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked", "Transfer-Encoding: chunked\t");
-        } else if (settings.containsKey("revdualchunk")) {
-            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked", "Transfer-Encoding: identity\r\nTransfer-Encoding: chunked");
-        } else if (settings.containsKey("0dspam")) {
-            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked", "Transfer\r-Encoding: chunked");
-        } else if (settings.containsKey("bodysplit")) {
-            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked", "X: y");
-            chunkedReq = Utilities.addOrReplaceHeader(chunkedReq, "Foo", "barzxaazz");
-            chunkedReq = Utilities.replace(chunkedReq, "barzxaazz", "barn\n\nTransfer-Encoding: chunked");
-        } else if (settings.containsKey("connection")) {
-            chunkedReq = Utilities.addOrReplaceHeader(chunkedReq, "Connection", "Transfer-Encoding");
-        } else if (settings.containsKey("nested")) {
-            chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked", "Transfer-Encoding: cow chunked bar");
-        }
+        byte[] chunkedReq = DesyncBox.applyDesync(baseReq, settings);
 
         if (Utilities.globalSettings.getBoolean("globally swap - with _")) {
             chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding".getBytes(), "Transfer_Encoding".getBytes());
-        }
-
-        for (int i: getSpecialChars()) {
-            if (settings.containsKey("spacefix1:"+i)) {
-                chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), ("Transfer-Encoding:"+(char) i).getBytes());
-            }
-        }
-
-        for (int i: getSpecialChars()) {
-            if (settings.containsKey("prefix1:"+i)) {
-                chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), ("Transfer-Encoding: "+(char) i).getBytes());
-            }
-        }
-
-        for (int i: getSpecialChars()) {
-            if (settings.containsKey("suffix1:"+i)) {
-                chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chunked".getBytes(), ("Transfer-Encoding: chunked"+(char) i).getBytes());
-            }
-        }
-
-        if (settings.containsKey("spaceFF")) {
-            try {
-                ByteArrayOutputStream encoded = new ByteArrayOutputStream();
-                encoded.write("Transfer-Encoding:".getBytes());
-                encoded.write((byte) 0xFF);
-                chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), encoded.toByteArray());
-            } catch (IOException e) {
-
-            }
-        }
-        if (settings.containsKey("unispace")) {
-            try {
-                ByteArrayOutputStream encoded = new ByteArrayOutputStream();
-                encoded.write("Transfer-Encoding:".getBytes());
-                encoded.write((byte) 0xa0);
-                chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), encoded.toByteArray());
-            } catch (IOException e) {
-
-            }
-        }
-
-        if (settings.containsKey("accentTE")) {
-            try {
-                ByteArrayOutputStream encoded = new ByteArrayOutputStream();
-                encoded.write("Transf".getBytes());
-                encoded.write((byte) 0x82);
-                encoded.write("r-Encoding: ".getBytes());
-                chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: ".getBytes(), encoded.toByteArray());
-            } catch (IOException e) {
-
-            }
-        }
-        if (settings.containsKey("accentCH")) {
-            try {
-                ByteArrayOutputStream encoded = new ByteArrayOutputStream();
-                encoded.write("Transfer-Encoding: ch".getBytes());
-                encoded.write((byte) 0x96);
-                chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding: chu".getBytes(), encoded.toByteArray());
-            } catch (IOException e) {
-
-            }
         }
 
         String ending = "0\r\n\r\n";
@@ -378,8 +219,6 @@ public abstract class SmuggleScanBox extends Scan {
             }
             ending = fullPad.toString() + ending;
         }
-
-
 
         int chunkSize = bodySize+chunkOffset;
         if (chunkSize > 0) {
