@@ -20,12 +20,12 @@ public class SuggestAttack implements IContextMenuFactory {
 
             IHttpRequestResponse message = invocation.getSelectedMessages()[0];
             String request = new String(message.getRequest());
-            String headers = Utils.getHeaders(request);
+            String headers = Utils.getHeaders(request).toLowerCase();
 
 
 
 
-            if (headers.contains("chunked") || headers.contains("Transfer-Encoding")) {
+            if (headers.contains("chunked") || headers.contains("transfer-encoding")) {
                 String type = "";
                 if (invocation.getSelectedIssues() != null) {
                     String name = invocation.getSelectedIssues()[0].getIssueName();
