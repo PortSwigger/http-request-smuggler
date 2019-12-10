@@ -10,71 +10,35 @@ import java.util.zip.GZIPOutputStream;
 
 public abstract class SmuggleScanBox extends Scan {
 
-    ArrayList<String> supportedPermutations;
-    static final String PERMUTE_PREFIX = "permute: ";
-
     SmuggleScanBox(String name) {
         super(name);
         Utilities.globalSettings.registerSetting("convert GET to POST", true);
         Utilities.globalSettings.registerSetting("globally swap - with _", false);
         //Utilities.globalSettings.registerSetting("report dodgy findings", false);
-        supportedPermutations = new ArrayList<>();
-        // core techniques
-        registerPermutation("vanilla");
-        registerPermutation("dualchunk");
-        registerPermutation("badwrap");
-        registerPermutation("space1");
-        registerPermutation("badsetupLF");
-        registerPermutation("gareth1");
 
-        // niche techniques
-        // registerPermutation("underjoin1");
-        registerPermutation("spacejoin1");
-        //registerPermutation("underscore2");
-        registerPermutation("space2");
-        registerPermutation("nameprefix1");
-        registerPermutation("valueprefix1");
-        registerPermutation("nospace1");
-        registerPermutation("commaCow");
-        registerPermutation("cowComma");
-        registerPermutation("contentEnc");
-        registerPermutation("linewrapped1");
-        registerPermutation("quoted");
-        registerPermutation("aposed");
-        registerPermutation("badsetupCR");
-        registerPermutation("vertwrap");
-        registerPermutation("tabwrap");
+        DesyncBox.registerPermutation("dualchunk");
+        DesyncBox.registerPermutation("commaCow");
+        DesyncBox.registerPermutation("cowComma");
+        DesyncBox.registerPermutation("contentEnc");
+        DesyncBox.registerPermutation("quoted");
+        DesyncBox.registerPermutation("aposed");
+        DesyncBox.registerPermutation("revdualchunk");
+        DesyncBox.registerPermutation("nested");
+        DesyncBox.registerPermutation("lazygrep");
 
-        // new techniques for AppSec
-        registerPermutation("lazygrep");
-        registerPermutation("multiCase");
-        registerPermutation("0dwrap");
-        registerPermutation("0dspam");
-        registerPermutation("revdualchunk");
-        registerPermutation("nested");
-
-        // new techniques for BHEU
-        registerPermutation("chunky");
-//        registerPermutation("bodysplit");
-//        registerPermutation("0dsuffix");
-//        registerPermutation("tabsuffix");
-//        registerPermutation("UPPERCASE");
-//        registerPermutation("reversevanilla");
-//        registerPermutation("spaceFF");
-//        registerPermutation("accentTE");
-//        registerPermutation("accentCH");
-//        registerPermutation("unispace");
-//        registerPermutation("connection");
+        DesyncBox.registerPermutation("bodysplit");
+        DesyncBox.registerPermutation("0dsuffix");
+        DesyncBox.registerPermutation("tabsuffix");
+        DesyncBox.registerPermutation("accentTE");
+        DesyncBox.registerPermutation("accentCH");
 
         for(int i: DesyncBox.getSpecialChars()) {
-            registerPermutation("spacefix1:"+i);
+            DesyncBox.registerPermutation("prefix1:"+i);
         }
         for(int i: DesyncBox.getSpecialChars()) {
-            registerPermutation("prefix1:"+i);
+            DesyncBox.registerPermutation("suffix1:"+i);
         }
-        for(int i: DesyncBox.getSpecialChars()) {
-            registerPermutation("suffix1:"+i);
-        }
+
     }
 
     byte[] setupRequest(byte[] baseReq) {
@@ -96,7 +60,7 @@ public abstract class SmuggleScanBox extends Scan {
         HashMap<String, Boolean> config;
 
         ArrayList<String> validPermutations = new ArrayList<>();
-        for (String permutation: supportedPermutations) {
+        for (String permutation: DesyncBox.supportedPermutations) {
             String key = permutation+service.getProtocol()+service.getHost();
             if (BurpExtender.hostsToSkip.containsKey(key)) {
                 if (Utilities.globalSettings.getBoolean("skip vulnerable hosts")) {
@@ -109,11 +73,11 @@ public abstract class SmuggleScanBox extends Scan {
         }
 
         if (validPermutations.isEmpty()) {
-            validPermutations.addAll(supportedPermutations);
+            validPermutations.addAll(DesyncBox.supportedPermutations);
         }
 
         for (String permutation: validPermutations) {
-            if (!Utilities.globalSettings.getBoolean(PERMUTE_PREFIX+permutation)) {
+            if (!Utilities.globalSettings.getBoolean(DesyncBox.PERMUTE_PREFIX+permutation)) {
                 continue;
             }
 
@@ -132,11 +96,6 @@ public abstract class SmuggleScanBox extends Scan {
     }
 
     abstract boolean doConfiguredScan(byte[] baseReq, IHttpService service, HashMap<String, Boolean> config);
-
-    void registerPermutation(String permutation) {
-        supportedPermutations.add(permutation);
-        Utilities.globalSettings.registerSetting(PERMUTE_PREFIX+permutation, true);
-    }
 
 
     Resp leftAlive(byte[] req, IHttpService service) {
@@ -188,10 +147,11 @@ public abstract class SmuggleScanBox extends Scan {
 
     static byte[] makeChunked(byte[] baseReq, int contentLengthOffset, int chunkOffset, HashMap<String, Boolean> settings, boolean malformedClose) {
         if (!Utilities.containsBytes(baseReq, "Transfer-Encoding".getBytes())) {
-            baseReq = Utilities.addOrReplaceHeader(baseReq, "Transfer-Encoding", "foo");
+            baseReq = Utilities.addOrReplaceHeader(baseReq, "Transfer-Encoding", "chunked");
         }
 
-        byte[] chunkedReq = DesyncBox.applyDesync(baseReq, settings);
+        String technique = settings.keySet().iterator().next();
+        byte[] chunkedReq = DesyncBox.applyDesync(baseReq, "Transfer-Encoding", technique);
 
         if (Utilities.globalSettings.getBoolean("globally swap - with _")) {
             chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding".getBytes(), "Transfer_Encoding".getBytes());

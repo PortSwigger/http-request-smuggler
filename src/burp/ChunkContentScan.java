@@ -21,7 +21,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
 
         original = setupRequest(original);
         original = Utilities.addOrReplaceHeader(original, "User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36");
-        original = Utilities.addOrReplaceHeader(original, "Transfer-Encoding", "foo");
+        original = Utilities.addOrReplaceHeader(original, "Transfer-Encoding", "chunked");
         original = Utilities.setHeader(original, "Connection", "close");
 
         if (Utilities.globalSettings.getBoolean("skip straight to poc")) {

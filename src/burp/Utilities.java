@@ -600,8 +600,8 @@ class Utilities {
         } catch (IOException e) {
             throw new RuntimeException("Req creation unexpectedly failed");
         } catch (NullPointerException e) {
-            Utilities.out("header locating fail: "+header);
-            Utilities.out("'"+helpers.bytesToString(request)+"'");
+            Utilities.err("header locating fail: "+header);
+            Utilities.err("'"+helpers.bytesToString(request)+"'");
             throw new RuntimeException("Can't find the header: "+header);
         }
     }
