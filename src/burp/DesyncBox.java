@@ -23,7 +23,6 @@ public class DesyncBox {
         // registerPermutation("underjoin1");
         registerPermutation("spacejoin1");
         //registerPermutation("underscore2");
-        registerPermutation("space2");
         registerPermutation("nameprefix1");
         registerPermutation("valueprefix1");
         registerPermutation("nospace1");
@@ -214,7 +213,7 @@ public class DesyncBox {
             }
         }
         
-        if (Arrays.equals(transformed, request)) {
+        if (Arrays.equals(transformed, request) && !technique.equals("vanilla")) {
             Utilities.err("Requested desync technique had no effect: "+technique);
         }
 

@@ -18,6 +18,7 @@ public class BurpExtender implements IBurpExtender, IExtensionStateListener {
         ChunkContentScan scanner = new ChunkContentScan("Smuggle probe");
         new SmuggleMenu();
         new BulkScanLauncher(scanner);
+        new DesyncBox();
 
         callbacks.registerContextMenuFactory(new SuggestAttack());
         Utils.setBurpPresent(callbacks);
