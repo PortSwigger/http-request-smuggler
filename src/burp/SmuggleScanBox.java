@@ -32,6 +32,9 @@ public abstract class SmuggleScanBox extends Scan {
         DesyncBox.registerPermutation("accentTE");
         DesyncBox.registerPermutation("accentCH");
 
+        // requires hyphen in target header name
+        DesyncBox.registerPermutation("spacejoin1");
+
         for(int i: DesyncBox.getSpecialChars()) {
             DesyncBox.registerPermutation("prefix1:"+i);
         }

@@ -21,7 +21,7 @@ public class DesyncBox {
 
         // niche techniques
         // registerPermutation("underjoin1");
-        registerPermutation("spacejoin1");
+
         //registerPermutation("underscore2");
         registerPermutation("nameprefix1");
         registerPermutation("valueprefix1");
@@ -49,6 +49,7 @@ public class DesyncBox {
     }
 
     static byte[] applyDesync(byte[] request, String header, String technique) {
+        String headerValue = Utilities.getHeader(request, header);
         header = header + ": ";
         String permuted = null;
         byte[] transformed = request;
@@ -65,7 +66,7 @@ public class DesyncBox {
                 permuted = header.replace(":", " :");
                 break;
             case "nameprefix1":
-                permuted = " " + header;
+                permuted = "Foo: bar\r\n " + header;
                 break;
             case "valueprefix1":
                 permuted = header + " ";
@@ -102,7 +103,7 @@ public class DesyncBox {
                 permuted = "Foo: bar\r\n\r"+header;
                 break;
             case "0dspam":
-                permuted = header.replace("-", "\r-");
+                permuted = header.substring(0, 3) + "\r" + header.substring(3);
                 break;
             case "connection":
                 permuted = "Connection: "+header.split(": ")[0]+"\r\n"+header;
@@ -126,6 +127,11 @@ public class DesyncBox {
             transformed = Utilities.replace(request, header, permuted);
         }
 
+        if (technique.equals("badwrap")) {
+            transformed = Utilities.replace(request, header, "X-Blah-Ignore: ");
+            transformed = Utilities.replace(transformed, "HTTP/1.1\r\n", "HTTP/1.1\r\n "+header+headerValue+"\r\n");
+        }
+
         if (technique.equals("spaceFF")) {
             try {
                 ByteArrayOutputStream encoded = new ByteArrayOutputStream();
@@ -147,7 +153,6 @@ public class DesyncBox {
             }
         }
 
-
         if (header.equals("Transfer-Encoding: ")) {
             if (technique.equals("commaCow")) {
                 transformed = Utilities.replace(request, "Transfer-Encoding: chunked".getBytes(), "Transfer-Encoding: chunked, identity".getBytes());
@@ -159,10 +164,6 @@ public class DesyncBox {
                 transformed = Utilities.replace(request, "Transfer-Encoding: chunked".getBytes(), "Transfer-Encoding: \"chunked\"".getBytes());
             } else if (technique.equals("aposed")) {
                 transformed = Utilities.replace(request, "Transfer-Encoding: chunked".getBytes(), "Transfer-Encoding: 'chunked'".getBytes());
-            }
-            else if (technique.equals("badwrap")) {
-                transformed = Utilities.replace(request, "Transfer-Encoding: chunked".getBytes(), "Foo: bar".getBytes());
-                transformed = Utilities.replace(transformed, "HTTP/1.1\r\n".getBytes(), "HTTP/1.1\r\n Transfer-Encoding: chunked\r\n".getBytes());
             } else if (technique.equals("dualchunk")) {
                 transformed = Utilities.addOrReplaceHeader(request, "Transfer-encoding", "identity");
             } else if (technique.equals("lazygrep")) {
