@@ -13,7 +13,6 @@ def queueRequests(target, wordlists):
                            maxRetriesPerRequest=0,
                            engine=Engine.THREADED,
                            )
-    engine.start()
 
     # This will prefix the victim's request. Edit it to achieve the desired effect.
     prefix = '''POST /hopefully404 HTTP/1.1
