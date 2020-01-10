@@ -9,6 +9,7 @@ import javax.swing.text.NumberFormatter;
 import java.awt.*;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.URL;
 import java.text.NumberFormat;
@@ -258,6 +259,21 @@ class Utilities {
 
     static boolean mightBeFunction(String value) {
         return phpFunctions.contains(value);
+    }
+
+
+
+    public static byte[] setMethod(byte[] request, String newMethod) {
+        int i = 0;
+        while (request[++i] != ' ') { }
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        try {
+            outputStream.write(newMethod.getBytes());
+            outputStream.write(Arrays.copyOfRange(request, i, request.length));
+        } catch (IOException e) {
+
+        }
+        return outputStream.toByteArray();
     }
 
     // records from the first space to the second space

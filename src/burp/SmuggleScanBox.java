@@ -13,6 +13,7 @@ public abstract class SmuggleScanBox extends Scan {
     SmuggleScanBox(String name) {
         super(name);
         Utilities.globalSettings.registerSetting("convert GET to POST", true);
+        Utilities.globalSettings.registerSetting("force method name", "");
         Utilities.globalSettings.registerSetting("globally swap - with _", false);
         //Utilities.globalSettings.registerSetting("report dodgy findings", false);
 
@@ -53,6 +54,11 @@ public abstract class SmuggleScanBox extends Scan {
                 baseReq = Utilities.addOrReplaceHeader(baseReq, "Content-Type", "application/x-www-form-urlencoded");
                 baseReq = Utilities.addOrReplaceHeader(baseReq, "Content-Length", "0");
             }
+        }
+
+        String forceMethodName = Utilities.globalSettings.getString("force method name");
+        if (!"".equals(forceMethodName)) {
+            baseReq = Utilities.setMethod(baseReq, forceMethodName);
         }
 
         return baseReq;
