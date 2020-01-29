@@ -52,7 +52,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
                     Utilities.out("Unexpected report with response");
                 }
 
-                String title = "HTTP Request Smuggling: CL.TE " + String.join("|", config.keySet());
+                String title = "Possible HTTP Request Smuggling: CL.TE " + String.join("|", config.keySet());
 
                 Resp retryAlive = leftAlive(syncedReq, service);
                 if (retryAlive != null ) {
@@ -68,7 +68,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
                         "Burp issued a request, and got a response. Burp then issued the same request, but with a shorter Content-Length, and got a timeout.<br/> " +
                                 "This suggests that the front-end system is using the Content-Length header, and the backend is using the Transfer-Encoding: chunked header. You should be able to manually verify this using the Repeater, provided you uncheck the 'Update Content-Length' setting on the top menu. <br/>" +
                                 "As such, it may be vulnerable to HTTP Desync attacks, aka Request Smuggling. <br/>" +
-                                "To attempt an actual Desync attack, right click on the attached request and choose 'Desync attack'. Please note that this is not risk-free - other genuine visitors to the site may be affected.<br/><br/>Please refer to <a href=\"https://portswigger.net/blog/http-desync-attacks\">https://portswigger.net/blog/http-desync-attacks</a> for further information. ",
+                                "To attempt an actual Desync attack, right click on the attached request and choose 'Desync attack'. Please note that this is not risk-free - other genuine visitors to the site may be affected.<br/><br/>Please refer to the following posts for further information: <br/><a href=\"https://portswigger.net/blog/http-desync-attacks\">https://portswigger.net/blog/http-desync-attacks</a><br/><a href=\"https://portswigger.net/research/http-desync-attacks-what-happened-next\">https://portswigger.net/research/http-desync-attacks-what-happened-next</a><br/><a href=\"https://portswigger.net/research/breaking-the-chains-on-http-request-smuggler\">https://portswigger.net/research/breaking-the-chains-on-http-request-smuggler</a>",
                         syncedResp, syncedBreakResp, truncatedChunk);
                 sendPoc(original, service, config);
                 return true;
@@ -93,7 +93,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
                 return false;
             }
 
-            String title = "HTTP Request Smuggling: TE.CL " + String.join("|", config.keySet());
+            String title = "Possible HTTP Request Smuggling: TE.CL " + String.join("|", config.keySet());
 
             Resp retryAlive = leftAlive(syncedReq, service);
             if (retryAlive != null ) {
@@ -109,7 +109,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
                     "Burp issued a request, and got a response. Burp then issued the same request, but with a closing chunk in the body, and got a timeout. <br/>" +
                             "This suggests that the front-end system is using the Transfer-Encoding header, and the backend is using the Content-Length header. You should be able to manually verify this using the Repeater. <br/>" +
                             "As such, it may be vulnerable to HTTP Desync attacks, aka Request Smuggling. <br/>" +
-                            "To attempt an actual Desync attack, right click on the attached request and choose 'Desync attack'. Please note that this is not risk-free - other genuine visitors to the site may be affected. <br/><br/>Please refer to <a href=\"https://portswigger.net/blog/http-desync-attacks\">https://portswigger.net/blog/http-desync-attacks</a> for further information. ",
+                            "To attempt an actual Desync attack, right click on the attached request and choose 'Desync attack'. Please note that this is not risk-free - other genuine visitors to the site may be affected. <br/><br/><br/>Please refer to the following posts for further information: <br/><a href=\"https://portswigger.net/blog/http-desync-attacks\">https://portswigger.net/blog/http-desync-attacks</a><br/><a href=\"https://portswigger.net/research/http-desync-attacks-what-happened-next\">https://portswigger.net/research/http-desync-attacks-what-happened-next</a><br/><a href=\"https://portswigger.net/research/breaking-the-chains-on-http-request-smuggler\">https://portswigger.net/research/breaking-the-chains-on-http-request-smuggler</a>",
                     syncedResp, truncatedChunk);
             sendPoc(original, service, config);
             return true;

@@ -264,7 +264,7 @@ public abstract class SmuggleScanBox extends Scan {
             }
 
             String issueTitle;
-            String issueDescription = "";
+            String issueDescription = "HTTP Request Smuggler attempted a request smuggling attack, and it appeared to succeed. Please refer to the following posts for further information: <br/><a href=\"https://portswigger.net/blog/http-desync-attacks\">https://portswigger.net/blog/http-desync-attacks</a><br/><a href=\"https://portswigger.net/research/http-desync-attacks-what-happened-next\">https://portswigger.net/research/http-desync-attacks-what-happened-next</a><b/r><a href=\"https://portswigger.net/research/breaking-the-chains-on-http-request-smuggler\">https://portswigger.net/research/breaking-the-chains-on-http-request-smuggler</a>";
 
             if (minerStatus == victimStatus || cleanupStatus == minerStatus) {
                 issueTitle = "HTTP Request Smuggling Confirmed";
