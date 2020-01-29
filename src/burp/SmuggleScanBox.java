@@ -151,7 +151,9 @@ public abstract class SmuggleScanBox extends Scan {
     }
 
     static byte[] makeChunked(byte[] baseReq, int contentLengthOffset, int chunkOffset) {
-        return makeChunked(baseReq, contentLengthOffset, chunkOffset, new HashMap<>(), false);
+        HashMap<String, Boolean> settings = new HashMap<>();
+        settings.put("vanilla", true);
+        return makeChunked(baseReq, contentLengthOffset, chunkOffset, settings, false);
     }
 
     static byte[] makeChunked(byte[] baseReq, int contentLengthOffset, int chunkOffset, HashMap<String, Boolean> settings, boolean malformedClose) {
