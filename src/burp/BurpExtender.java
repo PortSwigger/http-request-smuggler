@@ -3,7 +3,7 @@ package burp;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class BurpExtender implements IBurpExtender, IExtensionStateListener {
-    private static final String name = "HTTP Request Smuggler";
+    private static final String name = "HTTP Request Smuggler TEST";
     private static final String version = "1.07";
     public boolean unloaded = false;
     static ConcurrentHashMap<String, Boolean> hostsToSkip = new ConcurrentHashMap<>();
@@ -23,7 +23,7 @@ public class BurpExtender implements IBurpExtender, IExtensionStateListener {
         callbacks.registerContextMenuFactory(new SuggestAttack());
         Utils.setBurpPresent(callbacks);
 
-        Utilities.out("Loaded " + name + " v" + version);
+        Utilities.out("Loaded " + name + "v" + version);
     }
 
     public void extensionUnloaded() {

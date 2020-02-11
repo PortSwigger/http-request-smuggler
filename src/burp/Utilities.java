@@ -275,6 +275,20 @@ class Utilities {
         }
         return outputStream.toByteArray();
     }
+//New Function Added to fuzz all methods
+    public static byte[] fuzzAllMethods(byte[] request, String newMethod) {
+        int i = 0;
+        while (request[++i] != ' ') { }
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        try {
+            //ouptutStream.write(newMethod.getBytes());
+            outputStream.write("YOWASSUP".getBytes());
+            outputStream.write(Arrays.copyOfRange(request, i, request.length));
+        } catch (IOException e) {
+
+        }
+        return outputStream.toByteArray();
+    }
 
     // records from the first space to the second space
     static String getPathFromRequest(byte[] request) {

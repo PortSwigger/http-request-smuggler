@@ -14,6 +14,7 @@ public abstract class SmuggleScanBox extends Scan {
         super(name);
         Utilities.globalSettings.registerSetting("convert GET to POST", true);
         Utilities.globalSettings.registerSetting("force method name", "");
+        Utilities.globalSettings.registerSetting("fuzz all methods", "");
         Utilities.globalSettings.registerSetting("globally swap - with _", false);
         //Utilities.globalSettings.registerSetting("report dodgy findings", false);
 
@@ -58,6 +59,12 @@ public abstract class SmuggleScanBox extends Scan {
 
         String forceMethodName = Utilities.globalSettings.getString("force method name");
         if (!"".equals(forceMethodName)) {
+            baseReq = Utilities.setMethod(baseReq, forceMethodName);
+        }
+
+        //Fuzz all methods - Added code
+        String forceAllMethods = Utilities.globalSettings.getString("fuzz all methods");
+        if (!"".equals(forceAllMethods)) {
             baseReq = Utilities.setMethod(baseReq, forceMethodName);
         }
 
