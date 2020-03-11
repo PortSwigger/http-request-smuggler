@@ -63,9 +63,13 @@ public abstract class SmuggleScanBox extends Scan {
         }
 
         //Fuzz all methods - Added code
-        String forceAllMethods = Utilities.globalSettings.getString("fuzz all methods");
-        if (!"".equals(forceAllMethods)) {
-            baseReq = Utilities.setMethod(baseReq, forceMethodName);
+        String[] httpverbs = new String[] {"GET","POST","OPTIONS","HEAD","PUT","TRACE","CONNECT","PROPFIND","PROPPATCH","MKCOL","COPY","MOVE","LOCK","UNLOCK","VERSION-CONTROL","REPORT","CHECKOUT","CHECKIN","UNCHECKOUT","MKWORKSPACE","UPDATE","LABEL","MERGE","BASELINE-CONTROL","MKACTIVITY","ORDERPATCH","ACL","PATCH","SEARCH"};
+
+        if (Utilities.globalSettings.getBoolean("FUononoZZ ALL ZE METHODS")){ //if true (Box is checked)
+            for(int i=0; i<httpverbs.length; i++){
+                baseReq = Utilities.setMethod(baseReq, httpverbs[i]);
+            }
+                
         }
 
         return baseReq;
