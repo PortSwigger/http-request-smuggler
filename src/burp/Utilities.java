@@ -261,8 +261,7 @@ class Utilities {
         return phpFunctions.contains(value);
     }
 
-
-
+    //Original Code
     public static byte[] setMethod(byte[] request, String newMethod) {
         int i = 0;
         while (request[++i] != ' ') { }
@@ -275,15 +274,18 @@ class Utilities {
         }
         return outputStream.toByteArray();
     }
-//New Function Added to fuzz all methods
-    public static byte[] fuzzAllMethods(byte[] request, String newMethod) {
+
+    //WTF doesn't work
+    public static byte[] setAllMethod(byte[] request) {
+        String[] httpverbs = {"GET","POST","OPTIONS","HEAD","PUT","TRACE","CONNECT","PROPFIND","PROPPATCH","MKCOL","COPY","MOVE","LOCK","UNLOCK","VERSION-CONTROL","REPORT","CHECKOUT","CHECKIN","UNCHECKOUT","MKWORKSPACE","UPDATE","LABEL","MERGE","BASELINE-CONTROL","MKACTIVITY","ORDERPATCH","ACL","PATCH","SEARCH"};
         int i = 0;
         while (request[++i] != ' ') { }
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         try {
-            //ouptutStream.write(newMethod.getBytes());
-            outputStream.write("YOWASSUP".getBytes());
-            outputStream.write(Arrays.copyOfRange(request, i, request.length));
+            for(int c=0; c<httpverbs.length; c++){
+                outputStream.write(httpverbs[c].getBytes());
+                outputStream.write(Arrays.copyOfRange(request, i, request.length));
+            }
         } catch (IOException e) {
 
         }

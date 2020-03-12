@@ -14,7 +14,7 @@ public abstract class SmuggleScanBox extends Scan {
         super(name);
         Utilities.globalSettings.registerSetting("convert GET to POST", true);
         Utilities.globalSettings.registerSetting("force method name", "");
-        Utilities.globalSettings.registerSetting("fuzz all methods", "");
+        Utilities.globalSettings.registerSetting("FUZZ ALL ZE METHODS", false);
         Utilities.globalSettings.registerSetting("globally swap - with _", false);
         //Utilities.globalSettings.registerSetting("report dodgy findings", false);
 
@@ -62,14 +62,16 @@ public abstract class SmuggleScanBox extends Scan {
             baseReq = Utilities.setMethod(baseReq, forceMethodName);
         }
 
-        //Fuzz all methods - Added code
-        String[] httpverbs = new String[] {"GET","POST","OPTIONS","HEAD","PUT","TRACE","CONNECT","PROPFIND","PROPPATCH","MKCOL","COPY","MOVE","LOCK","UNLOCK","VERSION-CONTROL","REPORT","CHECKOUT","CHECKIN","UNCHECKOUT","MKWORKSPACE","UPDATE","LABEL","MERGE","BASELINE-CONTROL","MKACTIVITY","ORDERPATCH","ACL","PATCH","SEARCH"};
+        //Fuzz all methods - Added code: Damn code cannot loop for nuts and only send SEARCH (the last one in the fkin array) verb 
+        //String[] httpverbs = {"GET","POST","OPTIONS","HEAD","PUT","TRACE","CONNECT","PROPFIND","PROPPATCH","MKCOL","COPY","MOVE","LOCK","UNLOCK","VERSION-CONTROL","REPORT","CHECKOUT","CHECKIN","UNCHECKOUT","MKWORKSPACE","UPDATE","LABEL","MERGE","BASELINE-CONTROL","MKACTIVITY","ORDERPATCH","ACL","PATCH","SEARCH"};
 
-        if (Utilities.globalSettings.getBoolean("FUononoZZ ALL ZE METHODS")){ //if true (Box is checked)
-            for(int i=0; i<httpverbs.length; i++){
-                baseReq = Utilities.setMethod(baseReq, httpverbs[i]);
-            }
-                
+        //if (Utilities.globalSettings.getBoolean("FUZZ ALL ZE METHODS")){ //if true (Box is checked)
+            //for(int i=0; i<httpverbs.length; i++){
+                //baseReq = Utilities.setMethod(baseReq, httpverbs[i]);
+            //}
+        //}
+        if (Utilities.globalSettings.getBoolean("FUZZ ALL ZE METHODS")){//if true (Box is checked)
+            baseReq = Utilities.setAllMethod(baseReq);
         }
 
         return baseReq;
