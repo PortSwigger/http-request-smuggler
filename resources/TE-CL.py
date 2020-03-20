@@ -6,7 +6,7 @@ def queueRequests(target, wordlists):
     # to use Burp's HTTP stack for upstream proxy rules etc, use engine=Engine.BURP
     engine = RequestEngine(endpoint=target.endpoint,
                            concurrentConnections=5,
-                           requestsPerConnection=1,
+                           requestsPerConnection=1, # if you increase this from 1, you may get false positives
                            resumeSSL=False,
                            timeout=10,
                            pipeline=False,
