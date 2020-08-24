@@ -36,6 +36,8 @@ public class DesyncBox {
         registerPermutation("spaceFF");
         registerPermutation("unispace");
         registerPermutation("connection");
+        registerPermutation("spjunk");
+        registerPermutation("backslash");
 
         for(int i: DesyncBox.getSpecialChars()) {
             registerPermutation("spacefix1:"+i);
@@ -107,6 +109,14 @@ public class DesyncBox {
                 break;
             case "connection":
                 permuted = "Connection: "+header.split(": ")[0]+"\r\n"+header;
+                break;
+            case "spjunk":
+                // Technique from "HTTP Request Smuggling in 2020"  by Amit Klein
+                permuted = header.replace(":", " x:");
+                break;
+            case "backslash":
+                // Technique from "HTTP Request Smuggling in 2020"  by Amit Klein
+                permuted = header.replace("-", "\\");
                 break;
         }
         
