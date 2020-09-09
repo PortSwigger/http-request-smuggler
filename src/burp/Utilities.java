@@ -602,7 +602,7 @@ class Utilities {
             return false;
         }
 
-        return helpers.indexOf(request, value, false, 1, request.length) != -1;
+        return helpers.indexOf(request, value, false, 0, request.length) != -1;
     }
 
     public static byte[] setHeader(byte[] request, String header, String value) {
