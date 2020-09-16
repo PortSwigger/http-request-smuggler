@@ -20,7 +20,7 @@ class ConfigMenu implements Runnable, MenuListener, IExtensionStateListener{
 
     public void run()
     {
-        menuButton = new JMenu("Param Miner");
+        menuButton = new JMenu(BurpExtender.name);
         menuButton.addMenuListener(this);
         JMenuBar burpMenuBar = Utilities.getBurpFrame().getJMenuBar();
         burpMenuBar.add(menuButton);
@@ -124,6 +124,7 @@ class ConfigurableSettings {
         onlyInt.setMinimum(-1);
         onlyInt.setMaximum(Integer.MAX_VALUE);
         onlyInt.setAllowsInvalid(false);
+        new ConfigMenu().run();
     }
 
     public void setDefaultSettings() {
