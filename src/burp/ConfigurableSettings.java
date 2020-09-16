@@ -8,9 +8,51 @@ import java.awt.*;
 import java.text.NumberFormat;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+class ConfigMenu implements Runnable, MenuListener, IExtensionStateListener{
+    private JMenu menuButton;
+
+    ConfigMenu() {
+        Utilities.callbacks.registerExtensionStateListener(this);
+    }
+
+    public void run()
+    {
+        menuButton = new JMenu("Param Miner");
+        menuButton.addMenuListener(this);
+        JMenuBar burpMenuBar = Utilities.getBurpFrame().getJMenuBar();
+        burpMenuBar.add(menuButton);
+    }
+
+    public void menuSelected(MenuEvent e) {
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run(){
+                Utilities.globalSettings.showSettings();
+            }
+        });
+    }
+
+    public void menuDeselected(MenuEvent e) { }
+
+    public void menuCanceled(MenuEvent e) { }
+
+    public void extensionUnloaded() {
+        JMenuBar jMenuBar = Utilities.getBurpFrame().getJMenuBar();
+        jMenuBar.remove(menuButton);
+        jMenuBar.repaint();
+    }
+}
+
+
+interface ConfigListener {
+    void valueUpdated(String value);
+}
 
 class ConfigurableSettings {
-    private LinkedHashMap<String, String> settings;
+    static private LinkedHashMap<String, String> settings = new LinkedHashMap<>();
+    static private LinkedHashMap<String, String> defaultSettings = new LinkedHashMap<>();
     private NumberFormatter onlyInt;
 
     private HashMap<String, ConfigListener> callbacks = new HashMap<>();
@@ -19,10 +61,23 @@ class ConfigurableSettings {
         callbacks.put(key, listener);
     }
 
-    ConfigurableSettings() {
-        settings = new LinkedHashMap<>();
-        put("thread pool size", 8);
+    void registerSetting(String key, Object value) {
+        if (settings.containsKey(key)) {
+            return;
+        }
 
+        defaultSettings.put(key, encode(value));
+        String oldValue = Utilities.callbacks.loadExtensionSetting(key);
+        if (oldValue != null) {
+            putRaw(key, oldValue);
+            return;
+        }
+
+        putRaw(key, encode(value));
+    }
+
+    ConfigurableSettings() {
+        registerSetting("thread pool size", 8);
         registerSetting("timeout", 10);
         registerSetting("use key", true);
         registerSetting("key method", true);
@@ -55,6 +110,13 @@ class ConfigurableSettings {
         registerSetting("pad everything", false);
         registerSetting("filter", "");
 
+        for(String key: settings.keySet()) {
+            //Utilities.callbacks.saveExtensionSetting(key, null); // purge saved settings
+            String value = Utilities.callbacks.loadExtensionSetting(key);
+            if (Utilities.callbacks.loadExtensionSetting(key) != null) {
+                putRaw(key, value);
+            }
+        }
 
         NumberFormat format = NumberFormat.getInstance();
         onlyInt = new NumberFormatter(format);
@@ -62,7 +124,12 @@ class ConfigurableSettings {
         onlyInt.setMinimum(-1);
         onlyInt.setMaximum(Integer.MAX_VALUE);
         onlyInt.setAllowsInvalid(false);
+    }
 
+    public void setDefaultSettings() {
+        for (String key: settings.keySet()) {
+            putRaw(key, defaultSettings.get(key));
+        }
     }
 
     private ConfigurableSettings(ConfigurableSettings base) {
@@ -103,28 +170,11 @@ class ConfigurableSettings {
     }
 
     private void putRaw(String key, String value) {
-        String oldValue = settings.get(key);
-        if (!value.equals(oldValue)) {
-            settings.put(key, value);
-            ConfigListener callback = callbacks.getOrDefault(key, null);
-            if (callback != null) {
-                callback.valueUpdated(value);
-            }
+        settings.put(key, value);
+        ConfigListener callback = callbacks.getOrDefault(key, null);
+        if (callback != null) {
+            callback.valueUpdated(value);
         }
-    }
-
-    void registerSetting(String key, Object value) {
-        if (settings.containsKey(key)) {
-            return;
-        }
-
-        String oldValue = Utilities.callbacks.loadExtensionSetting(key);
-        if (oldValue != null) {
-            putRaw(key, oldValue);
-            return;
-        }
-
-        putRaw(key, encode(value));
     }
 
     private void put(String key, Object value) {
@@ -149,7 +199,7 @@ class ConfigurableSettings {
         else if ("false".equals(val)){
             return false;
         }
-        throw new RuntimeException("Not boolean or not found: "+key);
+        throw new RuntimeException();
     }
 
     private String getType(String key) {
@@ -168,12 +218,18 @@ class ConfigurableSettings {
     ConfigurableSettings showSettings() {
         JPanel panel = new JPanel();
         panel.setLayout(new GridLayout(0, 6));
+        panel.setSize(800, 800);
 
         HashMap<String, Object> configured = new HashMap<>();
+        JButton buttonResetSettings = new JButton("Reset Settings");
 
         for(String key: settings.keySet()) {
             String type = getType(key);
-            panel.add(new JLabel("\n"+key+": "));
+            JLabel label = new JLabel("\n"+key+": ");
+            if (!settings.get(key).equals(defaultSettings.get(key))) {
+                label.setForeground(Color.magenta);
+            }
+            panel.add(label);
 
             if (type.equals("boolean")) {
                 JCheckBox box = new JCheckBox();
@@ -188,11 +244,31 @@ class ConfigurableSettings {
                 configured.put(key, box);
             }
             else {
-                JTextField box = new JTextField(getString(key));
+                String value = getString(key);
+                JTextField box = new JTextField(value, value.length());
+                box.setColumns(1);
                 panel.add(box);
                 configured.put(key, box);
             }
         }
+
+        panel.add(new JLabel(""));
+        panel.add(new JLabel(""));
+        panel.add(buttonResetSettings);
+        buttonResetSettings.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                Utilities.out("Discarding settings...");
+                for(String key: settings.keySet()) {
+                    Utilities.callbacks.saveExtensionSetting(key, null); // purge saved settings
+                }
+                setDefaultSettings();
+                //BulkScanLauncher.registerDefaults();
+                JComponent comp = (JComponent) e.getSource();
+                Window win = SwingUtilities.getWindowAncestor(comp);
+                win.dispose();
+
+            }
+        } );
 
         int result = JOptionPane.showConfirmDialog(Utilities.getBurpFrame(), panel, "Attack Config", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
         if (result == JOptionPane.OK_OPTION) {
@@ -217,42 +293,6 @@ class ConfigurableSettings {
         return null;
     }
 
-}
 
-class ConfigMenu implements Runnable, MenuListener, IExtensionStateListener{
-    private JMenu menuButton;
 
-    ConfigMenu() {
-        Utilities.callbacks.registerExtensionStateListener(this);
-    }
-
-    public void run()
-    {
-        menuButton = new JMenu("Param Miner");
-        menuButton.addMenuListener(this);
-        JMenuBar burpMenuBar = Utilities.getBurpFrame().getJMenuBar();
-        burpMenuBar.add(menuButton);
-    }
-
-    public void menuSelected(MenuEvent e) {
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run(){
-                Utilities.globalSettings.showSettings();
-            }
-        });
-    }
-
-    public void menuDeselected(MenuEvent e) { }
-
-    public void menuCanceled(MenuEvent e) { }
-
-    public void extensionUnloaded() {
-        JMenuBar jMenuBar = Utilities.getBurpFrame().getJMenuBar();
-        jMenuBar.remove(menuButton);
-        jMenuBar.repaint();
-    }
-}
-
-interface ConfigListener {
-    void valueUpdated(String value);
 }
