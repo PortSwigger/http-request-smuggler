@@ -3,7 +3,7 @@ ExtensionType: 1
 Name: HTTP Request Smuggler
 RepoName: http-request-smuggler
 ScreenVersion: 1.10
-SerialVersion: 15
+SerialVersion: 16
 MinPlatformVersion: 0
 ProOnly: False
 Author: James Kettle
