@@ -2,10 +2,7 @@ package burp;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 import java.util.zip.GZIPOutputStream;
 
 public abstract class SmuggleScanBox extends Scan {
@@ -15,8 +12,10 @@ public abstract class SmuggleScanBox extends Scan {
         Utilities.globalSettings.registerSetting("convert GET to POST", true);
         Utilities.globalSettings.registerSetting("force method name", "");
         Utilities.globalSettings.registerSetting("globally swap - with _", false);
+        Utilities.globalSettings.registerSetting("strip CL", false);
         //Utilities.globalSettings.registerSetting("report dodgy findings", false);
 
+        DesyncBox.registerPermutation("http2hide");
         DesyncBox.registerPermutation("dualchunk");
         DesyncBox.registerPermutation("commaCow");
         DesyncBox.registerPermutation("cowComma");
@@ -89,7 +88,6 @@ public abstract class SmuggleScanBox extends Scan {
             if (!Utilities.globalSettings.getBoolean(DesyncBox.PERMUTE_PREFIX+permutation)) {
                 continue;
             }
-
             config = new HashMap<>();
             config.put(permutation, true);
             boolean worked = doConfiguredScan(baseReq, service, config);
@@ -201,10 +199,18 @@ public abstract class SmuggleScanBox extends Scan {
         bodySize = chunkedReq.length - Utilities.getBodyStart(chunkedReq);
         String newContentLength = Integer.toString(bodySize+contentLengthOffset);
 
-        chunkedReq = Utilities.setHeader(chunkedReq, "Content-Length", newContentLength);
-        if (settings.containsKey("reversevanilla")) {
-            chunkedReq = Utilities.replace(chunkedReq, "Content-Length", "oldContentLength");
-            chunkedReq = Utilities.addOrReplaceHeader(chunkedReq, "Content-Length", newContentLength);
+        try {
+            chunkedReq = Utilities.setHeader(chunkedReq, "Content-Length", newContentLength);
+            if (settings.containsKey("reversevanilla")) {
+                chunkedReq = Utilities.replace(chunkedReq, "Content-Length", "oldContentLength");
+                chunkedReq = Utilities.addOrReplaceHeader(chunkedReq, "Content-Length", newContentLength);
+            }
+        } catch (RuntimeException e) {
+            // throws if CL isn't present, not a big issue
+        }
+
+        if (Utilities.globalSettings.getBoolean("strip CL")) {
+            chunkedReq = Utilities.replace(chunkedReq, "Content-Length", "fakeContentLength");
         }
 
         // fixme breaks stuff
@@ -219,16 +225,16 @@ public abstract class SmuggleScanBox extends Scan {
     }
 
 
-        boolean sendPoc(String name, byte[] setupAttack, byte[] victim, IHttpService service) {
+    static boolean sendPoc(String name, byte[] setupAttack, byte[] victim, IHttpService service) {
         return sendPoc(name, Utilities.helpers.bytesToString(setupAttack), victim, service, new HashMap<>());
     }
 
-    boolean sendPoc(String name, byte[] setupAttack, byte[] victim, IHttpService service, HashMap<String, Boolean> config) {
+    static boolean sendPoc(String name, byte[] setupAttack, byte[] victim, IHttpService service, HashMap<String, Boolean> config) {
         return sendPoc(name, Utilities.helpers.bytesToString(setupAttack), victim, service, config);
     }
 
 
-    boolean sendPoc(String name, String setupAttack, byte[] victim, IHttpService service, HashMap<String, Boolean> config) {
+    static boolean sendPoc(String name, String setupAttack, byte[] victim, IHttpService service, HashMap<String, Boolean> config) {
         try {
             Resp baseline = request(service, victim);
             SmuggleHelper helper = new SmuggleHelper(service);

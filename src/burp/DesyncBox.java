@@ -5,10 +5,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 
 public class DesyncBox {
 
-    static ArrayList<String> supportedPermutations = new ArrayList<>();
+    static HashSet<String> supportedPermutations = new HashSet<>();
     static final String PERMUTE_PREFIX = "permute: ";
 
     DesyncBox () {
@@ -192,6 +193,8 @@ public class DesyncBox {
 
             } else if (technique.equals("nested")) {
                 transformed = Utilities.replace(request, "Transfer-Encoding: chunked", "Transfer-Encoding: identity, chunked, identity");
+            } else if (technique.equals("http2hide")) {
+                transformed = Utilities.replace(request, "Transfer-Encoding: chunked", "Foo: b^~Transfer-Encoding: chunked^~x: x");
             }
 
 

@@ -37,6 +37,10 @@ public class BurpExtender implements IBurpExtender, IExtensionStateListener {
         Utilities.callbacks.registerExtensionStateListener(this);
 
         new ChunkContentScan("Smuggle probe");
+        new HTTP2Scan("HTTP/2 probe");
+        new HeadScanTE("Head probe TE");
+        new HeadScanCL("Head probe CL");
+        new PipelineDesync("Pipeline probe");
         new SmuggleMenu();
         new BulkScanLauncher(BulkScan.scans);
         new DesyncBox();
