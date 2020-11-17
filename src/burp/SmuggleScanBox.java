@@ -235,6 +235,13 @@ public abstract class SmuggleScanBox extends Scan {
 
 
     static boolean sendPoc(String name, String setupAttack, byte[] victim, IHttpService service, HashMap<String, Boolean> config) {
+
+        if ("collab-blind".equals(name)) {
+            request(service, setupAttack.getBytes());
+            return false;
+        }
+
+
         try {
             Resp baseline = request(service, victim);
             SmuggleHelper helper = new SmuggleHelper(service);
