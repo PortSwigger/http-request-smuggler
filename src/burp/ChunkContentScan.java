@@ -24,6 +24,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
         original = Utilities.addOrReplaceHeader(original, "Transfer-Encoding", "chunked");
         original = Utilities.setHeader(original, "Connection", "close");
 
+
         if (Utilities.globalSettings.getBoolean("skip straight to poc")) {
             sendPoc(original, service, true, config);
             sendPoc(original, service, false, config);
@@ -128,7 +129,6 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
         }
         //boolean cpoc = sendPoc(base, service,"GET / HTTP/1.1\r\nHost: "+service.getHost()+".z88m811soo7x6fxuo08vu4wd94fw3l.burpcollaborator.net\r\n\r\n");
         //boolean cpoc = sendPoc(base, service, "collab", "GET /?x=z88m811soo7x6fxuo08vu4wd94fw3l/"+service.getHost()+" HTTP/1.1\r\nHost: 52.16.21.24\r\n\r\n");
-
         String collabWithHost = service.getHost() + "."  + Utilities.globalSettings.getString("poc-collab domain");
 
         if (Utilities.globalSettings.getBoolean("poc: headerConcat")) {
@@ -211,7 +211,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
             attack = Utilities.setHeader(attack, "Content-Length", String.valueOf(CL));
 
             attack = bypassContentLengthFix(attack);
-            Utils.out(Utilities.helpers.bytesToString(attack));
+            //Utils.out(Utilities.helpers.bytesToString(attack));
             return Utilities.helpers.bytesToString(attack);
         } catch (IOException e) {
             return null;

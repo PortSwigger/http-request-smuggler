@@ -42,6 +42,8 @@ public class HeadScanTE extends SmuggleScanBox implements IScannerCheck {
                     List<Resp> results = helper.waitFor();
                     if (mixedResponse(results.get(0), false)) {
                         report("Head desync TE-H1v8: " + entry.getKey(), "", resp, results.get(0));
+                    } else {
+                        report("Head desync TE-H1v8 maybe: "+entry.getKey(), "", resp);
                     }
 //                    recordCandidateFound();
 //                    Resp followup1 = request(service, Utilities.setMethod(attack, "GET"));

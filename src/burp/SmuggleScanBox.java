@@ -15,6 +15,10 @@ public abstract class SmuggleScanBox extends Scan {
         Utilities.globalSettings.registerSetting("strip CL", false);
         //Utilities.globalSettings.registerSetting("report dodgy findings", false);
 
+        DesyncBox.registerPermutation("h2colon");
+        DesyncBox.registerPermutation("encode");
+        DesyncBox.registerPermutation("nameprefix2");
+        DesyncBox.registerPermutation("nameprefix1");
         DesyncBox.registerPermutation("http2hide");
         DesyncBox.registerPermutation("dualchunk");
         DesyncBox.registerPermutation("commaCow");

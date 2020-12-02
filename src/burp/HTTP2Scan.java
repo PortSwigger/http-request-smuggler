@@ -20,40 +20,36 @@ public class HTTP2Scan extends SmuggleScanBox implements IScannerCheck {
 
         byte[] syncedReq = makeChunked(original, 0, 0, config, false);
         Resp syncedResp = request(service, syncedReq);
-        if (syncedResp.failed() || (Utilities.globalSettings.getBoolean("only report exploitable") && (syncedResp.getStatus() == 400 || syncedResp.getStatus() == 501))) {
-            Utilities.log("Timeout on first request. Aborting.");
-            return false;
+        if (!syncedResp.failed()) {
+            if (!Utilities.containsBytes(syncedResp.getReq().getResponse(), "HTTP/2 ".getBytes())) {
+                BurpExtender.hostsToSkip.put(service.getHost(), true);
+                return false;
+            }
+
+            byte[] attackReq = makeChunked(original, 0, 10, config, false);
+            Resp attack = request(service, attackReq);
+            if (attack.timedOut() && !request(service, syncedReq).timedOut() && !request(service, syncedReq).timedOut() && request(service, attackReq).timedOut()) {
+                report("HTTP/2 TE desync v8", ".", syncedResp, attack);
+                ChunkContentScan.sendPoc(original, service, true, config);
+                return true;
+            }
         }
 
-        if (!Utilities.containsBytes(syncedResp.getReq().getResponse(), "HTTP/2 ".getBytes())) {
-            BurpExtender.hostsToSkip.put(service.getHost(), true);
-            return false;
-        }
+        // dodgy but worthwhile as HEAD-detection is a bit unreliable
+        syncedReq = makeChunked(original, -1, 0, config, false);
+        syncedReq = Utilities.replace(syncedReq, "Transfer-Encoding", "nope");
+        syncedResp = request(service, syncedReq);
 
-        byte[] attackReq = makeChunked(original, 0, 10, config, false);
-        Resp attack = request(service, attackReq);
-        if (attack.failed() && !request(service, syncedReq).failed() && !request(service, syncedReq).failed() && request(service, attackReq).failed()) {
-            report("HTTP/2 TE desync v6", ".", syncedResp, attack);
-            ChunkContentScan.sendPoc(original, service, true, config);
-            return true;
+        // if they reject this they probably just don't like a content-type mismatch
+        if (!syncedResp.failed()) {
+            byte[] attackReq = makeChunked(original, 10, 0, config, false);
+            attackReq = Utilities.replace(attackReq, "Transfer-Encoding", "nope");
+            Resp attack = request(service, attackReq);
+            if (attack.timedOut() && !request(service, syncedReq).timedOut() && !request(service, syncedReq).timedOut() && request(service, attackReq).timedOut()) {
+                report("HTTP/2 CL desync v3", ".", syncedResp, attack);
+                return true;
+            }
         }
-
-//        syncedReq = makeChunked(original, 0, 0, config, false);
-//        syncedReq = Utilities.replace(syncedReq, "Transfer-Encoding", "noTranfer-Encoding");
-//        syncedResp = request(service, syncedReq);
-//
-//        attackReq = makeChunked(original, 10, 0, config, false);
-//        attackReq = Utilities.replace(attackReq, "Transfer-Encoding", "noTranfer-Encoding");
-//        attack = request(service, attackReq);
-//        if (attack.failed() && !request(service, syncedReq).failed() && !request(service, syncedReq).failed() && request(service, attackReq).failed()) {
-//            byte[] attackConfReq = makeChunked(original, -5, 0, config, false);
-//            attackConfReq = Utilities.replace(attackConfReq, "Transfer-Encoding", "noTranfer-Encoding");
-//            Resp attackConf = request(service, attackConfReq);
-//            if (attackConf.getStatus() == syncedResp.getStatus()) {
-//                report("HTTP/2 CL desync v2", ".", syncedResp, attackConf, attack);
-//            }
-//            return true;
-//        }
 
        return false;
     }
