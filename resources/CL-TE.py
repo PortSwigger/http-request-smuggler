@@ -1,4 +1,3 @@
-# if you edit this file, ensure you keep the line endings as CRLF or you'll have a bad time
 def queueRequests(target, wordlists):
 
     # to use Burp's HTTP stack for upstream proxy rules etc, use engine=Engine.BURP
@@ -15,6 +14,10 @@ def queueRequests(target, wordlists):
     # This will prefix the victim's request. Edit it to achieve the desired effect.
     prefix = '''GET /hopefully404 HTTP/1.1
 X-Ignore: X'''
+
+    # HTTP uses \r\n for line-endings. Linux uses \n so we need to normalise
+    if '\r' not in prefix:
+        prefix = prefix.replace('\n', '\r\n')
 
     # The request engine will auto-fix the content-length for us
     attack = target.req + prefix
