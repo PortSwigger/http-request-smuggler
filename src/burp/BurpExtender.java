@@ -6,7 +6,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class BurpExtender implements IBurpExtender, IExtensionStateListener {
     static final String name = "HTTP Request Smuggler";
-    private static final String version = "1.10";
+    private static final String version = "1.11";
     public boolean unloaded = false;
     static ConcurrentHashMap<String, Boolean> hostsToSkip = new ConcurrentHashMap<>();
 
