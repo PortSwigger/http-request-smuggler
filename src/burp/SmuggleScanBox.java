@@ -109,7 +109,7 @@ public abstract class SmuggleScanBox extends Scan {
 
     Resp leftAlive(byte[] req, IHttpService service) {
         byte[] keepalive = Utilities.setHeader(req, "Connection", "keep-alive");
-        Resp resp = request(service, keepalive);
+        Resp resp = request(service, keepalive, 0, true);
         String connectionType = Utilities.getHeader(resp.getReq().getResponse(), "Connection");
         if (connectionType.toLowerCase().contains("alive")) {
             return resp;
@@ -230,7 +230,7 @@ public abstract class SmuggleScanBox extends Scan {
 
     boolean sendPoc(String name, String setupAttack, byte[] victim, IHttpService service, HashMap<String, Boolean> config) {
         try {
-            Resp baseline = request(service, victim);
+            Resp baseline = request(service, victim, 0, true);
             SmuggleHelper helper = new SmuggleHelper(service);
             helper.queue(setupAttack);
             helper.queue(Utilities.helpers.bytesToString(victim));
@@ -239,9 +239,9 @@ public abstract class SmuggleScanBox extends Scan {
             List<Resp> results = helper.waitFor();
             Resp cleanup = null;
             for (int i=0;i<3;i++) {
-                cleanup = request(service, victim);
+                cleanup = request(service, victim, 0, true);
                 if (cleanup.getInfo().getStatusCode() != baseline.getInfo().getStatusCode()) {
-                    request(service, victim);
+                    request(service, victim, 0, true);
                     break;
                 }
             }

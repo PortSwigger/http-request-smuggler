@@ -139,7 +139,7 @@ public class DesyncBox {
 
         if (technique.equals("badwrap")) {
             transformed = Utilities.replace(request, header, "X-Blah-Ignore: ");
-            transformed = Utilities.replace(transformed, "HTTP/1.1\r\n", "HTTP/1.1\r\n "+header+headerValue+"\r\n");
+            transformed = Utilities.replaceFirst(transformed, "\r\n", "\r\n "+header+headerValue+"\r\n");
         }
 
         if (technique.equals("spaceFF")) {
