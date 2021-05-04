@@ -20,6 +20,10 @@ Content-Length: 15
 
 x=1'''
 
+    # HTTP uses \r\n for line-endings. Linux uses \n so we need to normalise
+    if '\r' not in prefix:
+        prefix = prefix.replace('\n', '\r\n')
+
     chunk_size = hex(len(prefix)).lstrip("0x")
     attack = target.req.replace('0\r\n\r\n', chunk_size+'\r\n'+prefix+'\r\n0\r\n\r\n')
     content_length = re.search('Content-Length: ([\d]+)', attack).group(1)

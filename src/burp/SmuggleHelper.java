@@ -16,7 +16,7 @@ class SmuggleHelper {
             this.engine = new ThreadedRequestEngine(url, 1, 20, 1, 1, 0, this::callback, 10, null, 1024, false);
         }
         else {
-            this.engine = new BurpRequestEngine(url, 1, 20, 0, this::callback, null);
+            this.engine = new BurpRequestEngine(url, 1, 20, 0, this::callback, null, true);
         }
     }
 

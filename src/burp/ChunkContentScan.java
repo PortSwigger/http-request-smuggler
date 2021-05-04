@@ -32,22 +32,22 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
         }
 
         byte[] syncedReq = makeChunked(original, 0, 0, config, false);
-        Resp syncedResp = request(service, syncedReq);
+        Resp syncedResp = request(service, syncedReq, 0, true);
         if (syncedResp.failed() || (Utilities.globalSettings.getBoolean("only report exploitable") && (syncedResp.getStatus() == 400 || syncedResp.getStatus() == 501))) {
             Utilities.log("Timeout on first request. Aborting.");
             return false;
         }
 
         byte[] syncedBreakReq = makeChunked(original, 0, 0, config, true);
-        Resp syncedBreakResp = request(service, syncedBreakReq);
+        Resp syncedBreakResp = request(service, syncedBreakReq, 0, true);
         if (!syncedBreakResp.failed()) {
 
             byte[] reverseLength = makeChunked(original, -6, 0, config, true);
 
-            Resp truncatedChunk = request(service, reverseLength, 3);
+            Resp truncatedChunk = request(service, reverseLength, 3, true);
             if (truncatedChunk.timedOut()) {
 
-                if (request(service, syncedBreakReq).timedOut()) {
+                if (request(service, syncedBreakReq, 0, true).timedOut()) {
                     return false;
                 }
 
@@ -88,11 +88,11 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
         } catch (IOException e) {
 
         }
-        Resp truncatedChunk = request(service, reverseLength, 3);
+        Resp truncatedChunk = request(service, reverseLength, 3, true);
 
         if (truncatedChunk.timedOut()) {
 
-            if (request(service, syncedReq).timedOut()) {
+            if (request(service, syncedReq, 0, true).timedOut()) {
                 return false;
             }
 
