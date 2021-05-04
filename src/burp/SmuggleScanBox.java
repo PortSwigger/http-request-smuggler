@@ -13,8 +13,15 @@ public abstract class SmuggleScanBox extends Scan {
         Utilities.globalSettings.registerSetting("force method name", "");
         Utilities.globalSettings.registerSetting("globally swap - with _", false);
         Utilities.globalSettings.registerSetting("strip CL", false);
+        Utilities.globalSettings.registerSetting("h2: swap CRLF with LF", false);
         //Utilities.globalSettings.registerSetting("report dodgy findings", false);
 
+        DesyncBox.registerPermutation("h2method");
+        DesyncBox.registerPermutation("h2name");
+        DesyncBox.registerPermutation("h2scheme");
+        DesyncBox.registerPermutation("http2case");
+        DesyncBox.registerPermutation("h2path");
+        DesyncBox.registerPermutation("h2auth");
         DesyncBox.registerPermutation("h2colon");
         DesyncBox.registerPermutation("encode");
         DesyncBox.registerPermutation("nameprefix2");
@@ -170,6 +177,10 @@ public abstract class SmuggleScanBox extends Scan {
             chunkedReq = Utilities.replace(chunkedReq, "Transfer-Encoding".getBytes(), "Transfer_Encoding".getBytes());
         }
 
+        if (Utilities.globalSettings.getBoolean("h2: swap CRLF with LF")) {
+            chunkedReq = Utilities.replace(chunkedReq, "^~", "~");
+        }
+
         String ending = "0\r\n\r\n";
         if (malformedClose) {
             if (Utilities.globalSettings.getBoolean("risky mode")) {
@@ -204,7 +215,7 @@ public abstract class SmuggleScanBox extends Scan {
         String newContentLength = Integer.toString(bodySize+contentLengthOffset);
 
         try {
-            chunkedReq = Utilities.setHeader(chunkedReq, "Content-Length", newContentLength);
+            chunkedReq = Utilities.addOrReplaceHeader(chunkedReq, "Content-Length", newContentLength);
             if (settings.containsKey("reversevanilla")) {
                 chunkedReq = Utilities.replace(chunkedReq, "Content-Length", "oldContentLength");
                 chunkedReq = Utilities.addOrReplaceHeader(chunkedReq, "Content-Length", newContentLength);
@@ -214,7 +225,7 @@ public abstract class SmuggleScanBox extends Scan {
         }
 
         if (Utilities.globalSettings.getBoolean("strip CL")) {
-            chunkedReq = Utilities.replace(chunkedReq, "Content-Length", "fakeContentLength");
+            chunkedReq = Utilities.replace(chunkedReq, "Content-Length", "fakecontentlength");
         }
 
         // fixme breaks stuff

@@ -56,7 +56,7 @@ public class DesyncBox {
         header = header + ": ";
         String permuted = null;
         byte[] transformed = request;
-        
+
         
         switch (technique) {
             case "underjoin1":
@@ -202,6 +202,19 @@ public class DesyncBox {
                 transformed = Utilities.replace(request, "Transfer-Encoding: chunked", "Transfer-%45ncoding: chunked");
             } else if (technique.equals("h2colon")) {
                 transformed = Utilities.replace(request, "Transfer-Encoding: chunked", "Transfer-Encoding`chunked : chunked");
+            } else if (technique.equals("h2auth")) {
+                transformed = Utilities.replace(request, "Transfer-Encoding: chunked", ":authority: "+ Utilities.getHeader(request, "Host") +":443^~Transfer-Encoding: chunked^~x: x");
+            } else if (technique.equals("h2path")) {
+                transformed = Utilities.replace(request, "Transfer-Encoding: chunked", ":path: "+Utilities.getPathFromRequest(request)+" HTTP/1.1^~Transfer-Encoding: chunked^~x: x");
+            }  else if (technique.equals("http2case")) {
+                request = (new String(request)).toLowerCase().getBytes();
+                transformed = Utilities.replace(request, "transfer-encoding: chunked", "x-reject: 1\r\ntransfer-Encoding: chunked");
+            } else if (technique.equals("h2scheme")) {
+                transformed = Utilities.replace(request, "Transfer-Encoding: chunked", ":scheme: https://"+Utilities.getHeader(request, "Host")+Utilities.getPathFromRequest(request)+" HTTP/1.1^~Transfer-Encoding: chunked^~x: x");
+            } else if (technique.equals("h2name")) {
+                transformed = Utilities.replace(request, "Transfer-Encoding: chunked", "Transfer-Encoding`chunked^~xz: x");
+            } else if (technique.equals("h2method")) {
+                transformed = Utilities.replace(request, "Transfer-Encoding: chunked", ":method: POST "+Utilities.getPathFromRequest(request)+" HTTP/1.1^~Transfer-Encoding: chunked^~x: x");
             }
 
 

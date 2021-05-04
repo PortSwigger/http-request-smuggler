@@ -208,7 +208,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
             byte[] attack = makeChunked(attackStream.toByteArray(), 0, 0, config, false);
             String attackString = Utilities.helpers.bytesToString(attack);
             int CL = attackString.lastIndexOf(inject) - Utilities.getBodyStart(attack);
-            attack = Utilities.setHeader(attack, "Content-Length", String.valueOf(CL));
+            attack = Utilities.addOrReplaceHeader(attack, "Content-Length", String.valueOf(CL));
 
             attack = bypassContentLengthFix(attack);
             //Utils.out(Utilities.helpers.bytesToString(attack));

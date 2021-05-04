@@ -2,6 +2,7 @@ package burp;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,32 +20,53 @@ public class HeadScanTE extends SmuggleScanBox implements IScannerCheck {
             original = Utilities.addOrReplaceHeader(original, "User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36");
             original = Utilities.addCacheBuster(original, Utilities.generateCanary());
             original = Utilities.replaceFirst(original, "HTTP/2", "HTTP/1.1");
+            original = Utilities.addOrReplaceHeader(original, "X-Come-Out-And-Play", "1");
             byte[] base = Utilities.addOrReplaceHeader(original, "Transfer-Encoding", "chunked");
             base = Utilities.addOrReplaceHeader(base, "Connection", "keep-alive");
-            base = Utilities.setMethod(base, "HEAD");
+            //base = Utilities.setMethod(base, "HEAD"); // use 'force method name' instead
+            //base = Utilities.setPath(base, "*");
 
+            ArrayList<String> methods = new ArrayList<>();
+            methods.add("HEAD");
+            methods.add("OPTIONS");
+            methods.add("GET");
+            methods.add("POST");
 
-            HashMap<String, String> attacks = new HashMap<>();
-            //attacks.put("invalid1", "FOO BAR AAH\r\n\r\n");
-            //attacks.put("invalid2", "GET / HTTP/1.2\r\nFoo: bar\r\n\r\n");
-            attacks.put("basic", Utilities.helpers.bytesToString(original));
+            for (String method: methods) {
+                base = Utilities.setMethod(base, method);
+                ArrayList<String> attacks = new ArrayList<>();
+//            attacks.put("invalid1", "FOO BAR AAH\r\n\r\n");
+//            attacks.put("invalid2", "GET / HTTP/1.2\r\nFoo: bar\r\n\r\n");
+//            attacks.put("unfinished", "GET / HTTP/1.1\r\nFoo: bar");
 
-            for (Map.Entry<String, String> entry: attacks.entrySet()) {
-                byte[] attack = buildTEAttack(base, config, entry.getValue());
-                Resp resp = request(service, attack);
+                attacks.add(Utilities.helpers.bytesToString(Utilities.setMethod(Utilities.setPath(original, "/"), "GET")));
+                // todo try collab-host here somewhere
+                // todo try subdomain too
+                // or should be just be a followup test? argh.
 
-                if (mixedResponse(resp)) {
-                    report("Head desync TE-H2v3: "+entry.getKey(), "", resp);
-                } else if (mixedResponse(resp, false)) {
-                    recordCandidateFound();
-                    SmuggleHelper helper = new SmuggleHelper(service);
-                    helper.queue(Utilities.helpers.bytesToString(attack));
-                    List<Resp> results = helper.waitFor();
-                    if (mixedResponse(results.get(0), false)) {
-                        report("Head desync TE-H1v8: " + entry.getKey(), "", resp, results.get(0));
-                    } else {
-                        report("Head desync TE-H1v8 maybe: "+entry.getKey(), "", resp);
-                    }
+                attacks.add(Utilities.helpers.bytesToString(Utilities.setPath(original, "/")));
+                //attacks.add(Utilities.helpers.bytesToString(Utilities.setPath(original, "/")));
+                attacks.add(Utilities.helpers.bytesToString(original));
+               // attacks.add(Utilities.helpers.bytesToString(original));
+
+                String attackCode = String.join("|", config.keySet());
+                for (String entry : attacks) {
+                    byte[] attack = buildTEAttack(base, config, entry);
+                    Resp resp = request(service, attack);
+
+                    if (mixedResponse(resp)) {
+                        report("Tunnel desync v9-6: TE-H2: " + attackCode, "", resp);
+                        return true;
+                    } else if (mixedResponse(resp, false)) {
+                        recordCandidateFound();
+                        SmuggleHelper helper = new SmuggleHelper(service);
+                        helper.queue(Utilities.helpers.bytesToString(attack));
+                        List<Resp> results = helper.waitFor();
+                        if (mixedResponse(results.get(0), false)) {
+                            report("Tunnel desync v9 TE-H1: " + attackCode, "", resp, results.get(0));
+                        } else {
+                            report("Tunnel desync v9 TE-H1 maybe: " + attackCode, "", resp);
+                        }
 //                    recordCandidateFound();
 //                    Resp followup1 = request(service, Utilities.setMethod(attack, "GET"));
 //                    if (!mixedResponse(followup1, false)) {
@@ -54,6 +76,9 @@ public class HeadScanTE extends SmuggleScanBox implements IScannerCheck {
 //                            report("Head desync TE-H1v2: " + entry.getKey(), "", resp, followup1, followup2);
 //                        }
 //                    }
+                    } else if (resp.failed()) {
+                        return false;
+                    }
                 }
             }
 
@@ -66,12 +91,12 @@ public class HeadScanTE extends SmuggleScanBox implements IScannerCheck {
                 //new ChunkContentScan("xyz").DualChunkTE().
 
                 ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                //outputStream.write(makeChunked(base, attack.length(), 0, config, false));
-                //putputStream.write(attack.getBytes());
-//                return outputStream.toByteArray();
-                outputStream.write(base);
+                outputStream.write(makeChunked(base, attack.length(), 0, config, false));
                 outputStream.write(attack.getBytes());
-                return makeChunked(outputStream.toByteArray(), 0, 0, config, false);
+                return outputStream.toByteArray();
+//                outputStream.write(base);
+//                outputStream.write(attack.getBytes());
+//                return makeChunked(outputStream.toByteArray(), 0, 0, config, false);
 
             } catch (IOException e) {
                 throw new RuntimeException(e);

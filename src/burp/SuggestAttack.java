@@ -16,7 +16,7 @@ public class SuggestAttack implements IContextMenuFactory {
         ArrayList<JMenuItem> options = new ArrayList<>();
 
         // todo add support for click on the scanner issue itself?
-        if (invocation != null && invocation.getSelectedMessages()[0] != null) {
+        if (invocation != null && invocation.getSelectedMessages().length > 0 && invocation.getSelectedMessages()[0] != null) {
 
             IHttpRequestResponse message = invocation.getSelectedMessages()[0];
             String request = new String(message.getRequest());
