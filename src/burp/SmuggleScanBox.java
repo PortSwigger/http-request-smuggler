@@ -16,6 +16,7 @@ public abstract class SmuggleScanBox extends Scan {
         Utilities.globalSettings.registerSetting("h2: swap CRLF with LF", false);
         //Utilities.globalSettings.registerSetting("report dodgy findings", false);
 
+        DesyncBox.registerPermutation("h2space");
         DesyncBox.registerPermutation("h2method");
         DesyncBox.registerPermutation("h2name");
         DesyncBox.registerPermutation("h2scheme");

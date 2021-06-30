@@ -6,7 +6,7 @@ repositories {
 
 dependencies {
     //compile 'net.portswigger.burp.extender:burp-extender-api:1.7.13'
-    compile files('burp-extender-2021.6.jar')
+    compile files('burp-http2-extender-api.jar')
     compile 'org.apache.commons:commons-lang3:3.5'
     compile group: 'org.apache.commons', name: 'commons-collections4', version: '4.1'
     compile files('turbo-intruder-all.jar')

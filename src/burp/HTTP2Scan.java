@@ -1,6 +1,8 @@
 package burp;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 public class HTTP2Scan extends SmuggleScanBox implements IScannerCheck {
 
@@ -21,7 +23,7 @@ public class HTTP2Scan extends SmuggleScanBox implements IScannerCheck {
 
         String attackCode = String.join("|", config.keySet());
         byte[] syncedReq = makeChunked(original, 0, 0, config, false);
-        Resp syncedResp = request(service, syncedReq);
+        Resp syncedResp = h2request(service, syncedReq);
         if (!syncedResp.failed()) {
             if (!Utilities.containsBytes(syncedResp.getReq().getResponse(), "HTTP/2 ".getBytes())) {
                 BurpExtender.hostsToSkip.put(service.getHost(), true);
@@ -30,15 +32,15 @@ public class HTTP2Scan extends SmuggleScanBox implements IScannerCheck {
 
             // todo send a followup without TE to make sure chunked encoding is relevant, reducing FPs
             byte[] attackReq = makeChunked(original, 0, 10, config, false);
-            Resp attack = request(service, attackReq);
-            if (attack.timedOut() && !request(service, syncedReq).timedOut() && !request(service, syncedReq).timedOut() && request(service, attackReq).timedOut()) {
+            Resp attack = h2request(service, attackReq);
+            if (attack.timedOut() && !h2request(service, syncedReq).timedOut() && !h2request(service, syncedReq).timedOut() && h2request(service, attackReq).timedOut()) {
 
                 byte[] brokenAttackReq = Utilities.replace(attackReq, "ransfer-Encoding", "zansfer-Zncoding");
-                Resp brokenAttack = request(service, brokenAttackReq);
+                Resp brokenAttack = h2request(service, brokenAttackReq);
                 if (!brokenAttack.timedOut()) {
                     attackCode += " tested";
                 }
-                attack = request(service, attackReq);
+                attack = h2request(service, attackReq);
                 if (!attack.timedOut()) {
                     return true;
                 }
@@ -46,14 +48,16 @@ public class HTTP2Scan extends SmuggleScanBox implements IScannerCheck {
                 report("HTTP/2 TE desync v10a "+attackCode, ".", syncedResp, brokenAttack, attack);
                 ChunkContentScan.sendPoc(original, service, true, config);
                 return true;
-            } else if (attack.failed() && !request(service, syncedReq).failed() && !request(service, syncedReq).failed() && request(service, attackReq).failed()) {
+            } else if (attack.failed() && !h2request(service, syncedReq).failed() && !h2request(service, syncedReq).failed() && h2request(service, attackReq).failed()) {
                 byte[] brokenAttackReq = Utilities.replace(attackReq, "ransfer-Encoding", "zansfer-Zncoding");
-                Resp brokenAttack = request(service, brokenAttackReq);
+                Resp brokenAttack = h2request(service, brokenAttackReq);
+                Resp foo_Bar = h2request(service, brokenAttackReq);
+
 
                 if (!brokenAttack.failed()) {
                     attackCode += " tested";
                 }
-                attack = request(service, attackReq);
+                attack = h2request(service, attackReq);
                 if (!attack.failed()) {
                     return true;
                 }
@@ -64,10 +68,10 @@ public class HTTP2Scan extends SmuggleScanBox implements IScannerCheck {
             }
         }
 
-        // dodgy but worthwhile as HEAD-detection is a bit unreliable
-        //syncedReq = makeChunked(original, -1, 0, config, false);
-
-
+         //dodgy but worthwhile as HEAD-detection is a bit unreliable
+//        syncedReq = makeChunked(original, -1, 0, config, false);
+//
+//
 //        syncedReq = Utilities.setBody(original, "abcd=def");
 //        syncedReq = Utilities.replace(syncedReq, "Transfer-Encoding", "nope");
 //        syncedReq = Utilities.setHeader(syncedReq, "Content-Length", "6");
@@ -102,5 +106,19 @@ public class HTTP2Scan extends SmuggleScanBox implements IScannerCheck {
 //        }
 
        return false;
+    }
+
+    public static Resp h2request(IHttpService service, byte[] req) {
+        LinkedHashMap<String, String> h2headers = Connection.Companion.buildReq(new HTTP2Request(Utilities.helpers.bytesToString(req)));
+        ArrayList<IHttpHeader> headers = new ArrayList<>();
+        h2headers.forEach((key, value) -> { headers.add(Utilities.helpers.buildHeader(key, value)); });
+        byte[] body = Utilities.getBodyBytes(req);
+        byte[] responseBytes;
+        try {
+            responseBytes = Utilities.callbacks.makeHttp2Request(service, headers, body);
+        } catch (RuntimeException e) {
+            responseBytes = null;
+        }
+        return new Resp(new Req(req, responseBytes, service));
     }
 }

@@ -215,6 +215,8 @@ public class DesyncBox {
                 transformed = Utilities.replace(request, "Transfer-Encoding: chunked", "Transfer-Encoding`chunked^~xz: x");
             } else if (technique.equals("h2method")) {
                 transformed = Utilities.replace(request, "Transfer-Encoding: chunked", ":method: POST "+Utilities.getPathFromRequest(request)+" HTTP/1.1^~Transfer-Encoding: chunked^~x: x");
+            } else if (technique.equals("h2space")) {
+                transformed = Utilities.replace(request, "Transfer-Encoding: chunked", "Transfer-Encoding chunked : chunked");
             }
 
 
