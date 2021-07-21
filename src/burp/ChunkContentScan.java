@@ -12,6 +12,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
 
     ChunkContentScan(String name) {
         super(name);
+        scanSettings.importSettings(DesyncBox.h1Settings);
     }
 
     public boolean doConfiguredScan(byte[] original, IHttpService service, HashMap<String, Boolean> config) {

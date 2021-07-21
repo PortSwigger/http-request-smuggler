@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 public class HeadScanTE extends SmuggleScanBox implements IScannerCheck {
 
@@ -13,6 +14,7 @@ public class HeadScanTE extends SmuggleScanBox implements IScannerCheck {
             super(name);
         }
 
+        private static Pattern H1_RESPONSE_LINE = Pattern.compile("HTTP/1[.][01] [0-9]");
 
         public boolean doConfiguredScan(byte[] original, IHttpService service, HashMap<String, Boolean> config) {
             original = setupRequest(original);
@@ -28,14 +30,14 @@ public class HeadScanTE extends SmuggleScanBox implements IScannerCheck {
 
             ArrayList<String> methods = new ArrayList<>();
             methods.add("HEAD");
-            methods.add("OPTIONS");
-            methods.add("GET");
+            //methods.add("OPTIONS");
+            //methods.add("GET");
             methods.add("POST");
 
             for (String method: methods) {
                 base = Utilities.setMethod(base, method);
                 ArrayList<String> attacks = new ArrayList<>();
-//            attacks.put("invalid1", "FOO BAR AAH\r\n\r\n");
+                attacks.add("FOO BAR AAH\r\n\r\n");
 //            attacks.put("invalid2", "GET / HTTP/1.2\r\nFoo: bar\r\n\r\n");
 //            attacks.put("unfinished", "GET / HTTP/1.1\r\nFoo: bar");
 
@@ -44,20 +46,25 @@ public class HeadScanTE extends SmuggleScanBox implements IScannerCheck {
                 // todo try subdomain too
                 // or should be just be a followup test? argh.
 
-                attacks.add(Utilities.helpers.bytesToString(Utilities.setPath(original, "/")));
                 //attacks.add(Utilities.helpers.bytesToString(Utilities.setPath(original, "/")));
-                attacks.add(Utilities.helpers.bytesToString(original));
+                //attacks.add(Utilities.helpers.bytesToString(Utilities.setPath(original, "/")));
+                //attacks.add(Utilities.helpers.bytesToString(original));
                // attacks.add(Utilities.helpers.bytesToString(original));
 
                 String attackCode = String.join("|", config.keySet());
                 for (String entry : attacks) {
                     byte[] attack = buildTEAttack(base, config, entry);
-                    Resp resp = request(service, attack);
+                    Resp resp = HTTP2Scan.h2request(service, attack);
 
                     if (mixedResponse(resp)) {
+                        Resp baseResp = HTTP2Scan.h2request(service, Utilities.setMethod(original, method));
+                        if (mixedResponse(baseResp)) {
+                            continue;
+                        }
+
                         report("Tunnel desync v9-6: TE-H2: " + attackCode, "", resp);
                         return true;
-                    } else if (mixedResponse(resp, false)) {
+                    } else if (false && mixedResponse(resp, false)) { // disabled as it's too sketchy
                         recordCandidateFound();
                         SmuggleHelper helper = new SmuggleHelper(service);
                         helper.queue(Utilities.helpers.bytesToString(attack));
@@ -109,6 +116,10 @@ public class HeadScanTE extends SmuggleScanBox implements IScannerCheck {
 
         static boolean mixedResponse(Resp resp, boolean requireHTTP2) {
             if (!Utilities.containsBytes(Utilities.getBody(resp.getReq().getResponse()).getBytes(), "HTTP/1".getBytes())) {
+                return false;
+            }
+
+            if (!H1_RESPONSE_LINE.matcher(Utilities.getBody(resp.getReq().getResponse())).find()) {
                 return false;
             }
 

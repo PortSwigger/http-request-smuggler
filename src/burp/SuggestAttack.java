@@ -10,6 +10,7 @@ public class SuggestAttack implements IContextMenuFactory {
     final static String UNKNOWN = "";
     final static String CLTE = "CL.TE";
     final static String TECL = "TE.CL";
+    final static String H2TE = "H2.TE";
 
     @Override
     public List<JMenuItem> createMenuItems(IContextMenuInvocation invocation) {
@@ -34,10 +35,18 @@ public class SuggestAttack implements IContextMenuFactory {
                     }
                     else if (name.contains("TE.CL")) {
                         type = TECL;
+                    } else  if (name.contains("H2.TE")) {
+                        type = H2TE;
                     }
                 }
 
-                if (type.equals(UNKNOWN)) {
+
+                if (Utilities.isHTTP2(message.getRequest())) {
+                    type = H2TE;
+                    JMenuItem probeButton = new JMenuItem("Smuggle attack ("+type+")");
+                    probeButton.addActionListener(new LaunchSuggestedAttack(message, type));
+                    options.add(probeButton);
+                } else if (type.equals(UNKNOWN)) {
                     type = CLTE;
                     JMenuItem probeButton = new JMenuItem("Smuggle attack ("+type+")");
                     probeButton.addActionListener(new LaunchSuggestedAttack(message, type));
@@ -76,10 +85,15 @@ class LaunchSuggestedAttack implements ActionListener {
     public void actionPerformed(ActionEvent e) {
 
         String PAYLOAD = "\r\n1\r\nZ\r\nQ\r\n\r\n";
+        String H2PAYLOAD = "\r\na\r\n\r\n0\r\n\r\n";
         String request = new String(message.getRequest());
         String script;
 
-        if (type.equals(SuggestAttack.CLTE)) {
+        if (type.equals(SuggestAttack.H2TE)) {
+            request = request.replaceFirst(H2PAYLOAD, "\r\n0\r\n\r\n");
+            script = Utilities.getResource("/H2-TE.py");
+        }
+        else if (type.equals(SuggestAttack.CLTE)) {
             request = request.replaceFirst(PAYLOAD, "\r\n0\r\n\r\n");
             script = Utilities.getResource("/CL-TE.py");
         } else if (type.equals(SuggestAttack.TECL)) {

@@ -9,51 +9,14 @@ public abstract class SmuggleScanBox extends Scan {
 
     SmuggleScanBox(String name) {
         super(name);
-        Utilities.globalSettings.registerSetting("convert GET to POST", true);
-        Utilities.globalSettings.registerSetting("force method name", "");
-        Utilities.globalSettings.registerSetting("globally swap - with _", false);
-        Utilities.globalSettings.registerSetting("strip CL", false);
-        Utilities.globalSettings.registerSetting("h2: swap CRLF with LF", false);
+        DesyncBox.sharedSettings.register("convert GET to POST", true);
+        DesyncBox.sharedSettings.register("force method name", "");
+        DesyncBox.sharedSettings.register("globally swap - with _", false);
+        DesyncBox.sharedSettings.register("strip CL", false);
+        DesyncBox.h2Settings.register("h2: swap CRLF with LF", false);
+        scanSettings.importSettings(DesyncBox.sharedSettings);
         //Utilities.globalSettings.registerSetting("report dodgy findings", false);
-
-        DesyncBox.registerPermutation("h2space");
-        DesyncBox.registerPermutation("h2method");
-        DesyncBox.registerPermutation("h2name");
-        DesyncBox.registerPermutation("h2scheme");
-        DesyncBox.registerPermutation("http2case");
-        DesyncBox.registerPermutation("h2path");
-        DesyncBox.registerPermutation("h2auth");
-        DesyncBox.registerPermutation("h2colon");
-        DesyncBox.registerPermutation("encode");
-        DesyncBox.registerPermutation("nameprefix2");
-        DesyncBox.registerPermutation("nameprefix1");
-        DesyncBox.registerPermutation("http2hide");
-        DesyncBox.registerPermutation("dualchunk");
-        DesyncBox.registerPermutation("commaCow");
-        DesyncBox.registerPermutation("cowComma");
-        DesyncBox.registerPermutation("contentEnc");
-        DesyncBox.registerPermutation("quoted");
-        DesyncBox.registerPermutation("aposed");
-        DesyncBox.registerPermutation("revdualchunk");
-        DesyncBox.registerPermutation("nested");
-        DesyncBox.registerPermutation("lazygrep");
-
-        DesyncBox.registerPermutation("bodysplit");
-        DesyncBox.registerPermutation("0dsuffix");
-        DesyncBox.registerPermutation("tabsuffix");
-        DesyncBox.registerPermutation("accentTE");
-        DesyncBox.registerPermutation("accentCH");
-
-        // requires hyphen in target header name
-        DesyncBox.registerPermutation("spacejoin1");
-
-        for(int i: DesyncBox.getSpecialChars()) {
-            DesyncBox.registerPermutation("prefix1:"+i);
-        }
-        for(int i: DesyncBox.getSpecialChars()) {
-            DesyncBox.registerPermutation("suffix1:"+i);
-        }
-
+        //DesyncBox.sharedSettings.register();
     }
 
     byte[] setupRequest(byte[] baseReq) {
@@ -97,7 +60,7 @@ public abstract class SmuggleScanBox extends Scan {
         }
 
         for (String permutation: validPermutations) {
-            if (!Utilities.globalSettings.getBoolean(DesyncBox.PERMUTE_PREFIX+permutation)) {
+            if (!Utilities.globalSettings.getBoolean(permutation)) {
                 continue;
             }
             config = new HashMap<>();

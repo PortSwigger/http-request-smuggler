@@ -1,13 +1,18 @@
 package burp;
 
+import kotlin.Pair;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 
 public class HTTP2Scan extends SmuggleScanBox implements IScannerCheck {
 
     HTTP2Scan(String name) {
         super(name);
+        scanSettings.importSettings(DesyncBox.h2Settings);
+        //scanSettings.
     }
 
     public boolean doConfiguredScan(byte[] original, IHttpService service, HashMap<String, Boolean> config) {
@@ -16,11 +21,13 @@ public class HTTP2Scan extends SmuggleScanBox implements IScannerCheck {
         }
 
         original = setupRequest(original);
-        original = Utilities.replaceFirst(original, " HTTP/1.1\r\n", " HTTP/2\r\n");
+        if (!Utilities.isHTTP2(original)) {
+            original = Utilities.replaceFirst(original, " HTTP/1.1\r\n", " HTTP/2\r\n");
+        }
         original = Utilities.addOrReplaceHeader(original, "User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36");
         original = Utilities.addOrReplaceHeader(original, "Transfer-Encoding", "chunked");
-        original = Utilities.addOrReplaceHeader(original, "X-Come-Out-And-Play", "1");
-        original = Utilities.addOrReplaceHeader(original, "Connection", "close");
+        //original = Utilities.addOrReplaceHeader(original, "X-Come-Out-And-Play", "1");
+        //original = Utilities.addOrReplaceHeader(original, "Connection", "close");
 
         String attackCode = String.join("|", config.keySet());
         byte[] syncedReq = makeChunked(original, 0, 0, config, false);
@@ -111,9 +118,13 @@ public class HTTP2Scan extends SmuggleScanBox implements IScannerCheck {
 
     // based on BulkScan.request()
     public static Resp h2request(IHttpService service, byte[] req) {
-        LinkedHashMap<String, String> h2headers = Connection.Companion.buildReq(new HTTP2Request(Utilities.helpers.bytesToString(req)));
+        if (Utilities.unloaded.get()) {
+            throw new RuntimeException("Aborting request due to extension unload");
+        }
+
+        LinkedList<Pair<String, String>> h2headers = Connection.Companion.buildReq(new HTTP2Request(Utilities.helpers.bytesToString(req)));
         ArrayList<IHttpHeader> headers = new ArrayList<>();
-        h2headers.forEach((key, value) -> { headers.add(Utilities.helpers.buildHeader(key, value)); });
+        h2headers.forEach(entry -> { headers.add(Utilities.helpers.buildHeader(entry.getFirst(), entry.getSecond())); });
         byte[] body = Utilities.getBodyBytes(req);
         byte[] responseBytes;
         Utilities.requestCount.incrementAndGet();
