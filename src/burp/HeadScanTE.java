@@ -18,6 +18,9 @@ public class HeadScanTE extends SmuggleScanBox implements IScannerCheck {
 
         public boolean doConfiguredScan(byte[] original, IHttpService service, HashMap<String, Boolean> config) {
             original = setupRequest(original);
+            if (!Utilities.isHTTP2(original)) {
+                original = Utilities.replaceFirst(original, " HTTP/1.1\r\n", " HTTP/2\r\n");
+            }
             original = Utilities.addOrReplaceHeader(original, "Accept-Encoding", "identity");
             original = Utilities.addOrReplaceHeader(original, "User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36");
             original = Utilities.addCacheBuster(original, Utilities.generateCanary());

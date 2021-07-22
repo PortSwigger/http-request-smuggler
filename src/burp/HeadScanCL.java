@@ -19,6 +19,9 @@ public class HeadScanCL extends SmuggleScanBox implements IScannerCheck {
         }
 
         original = setupRequest(original);
+        if (!Utilities.isHTTP2(original)) {
+            original = Utilities.replaceFirst(original, " HTTP/1.1\r\n", " HTTP/2\r\n");
+        }
         original = Utilities.addOrReplaceHeader(original, "User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36");
         //original = Utilities.setHeader(original, "Connection", "keep-alive");
         //original = Utilities.setMethod(original, "HEAD");
@@ -54,7 +57,7 @@ public class HeadScanCL extends SmuggleScanBox implements IScannerCheck {
                     report("Tunnel desync CLv2-1: " + method, "", resp);
                     break;
                 } else if (false && HeadScanTE.mixedResponse(resp, false)) {
-                    Resp followup = request(service, Utilities.setMethod(attack, "GET"));
+                    Resp followup = HTTP2Scan.h2request(service, Utilities.setMethod(attack, "GET"));
                     if (!HeadScanTE.mixedResponse(followup, false)) {
                         report("Tunnel desync CL-H1: " + method, "", resp, followup);
                         break;

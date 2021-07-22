@@ -40,9 +40,15 @@ public class BurpExtender implements IBurpExtender, IExtensionStateListener {
 
         new ChunkContentScan("Smuggle probe");
         new HTTP2Scan("HTTP/2 probe");
-        new HeadScanTE("Head probe TE");
-        new HeadScanCL("Head probe CL");
-        new HiddenHTTP2("Hidden HTTP/2 probe");
+        new HeadScanTE("HTTP/2 Tunnel probe TE");
+        new HeadScanCL("HTTP/2 Tunnel probe CL");
+        new HiddenHTTP2("HTTP/2-hidden probe");
+
+        // todo these need testing
+        new HTTP2Scheme("HTTP/2 :scheme probe");
+        new HTTP2DualPath("HTTP/2 dual :path probe");
+        new HTTP2Method("HTTP/2 :method probe");
+
         //new PipelineDesync("Pipeline probe");
         new SmuggleMenu();
         new BulkScanLauncher(BulkScan.scans);
