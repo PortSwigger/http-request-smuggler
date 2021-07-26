@@ -7,7 +7,6 @@ public class HTTP2Method extends Scan {
 
     HTTP2Method(String name) {
         super(name);
-        scanSettings.register("collab-domain", Utilities.generateCanary()+".burpcollaborator.net");
     }
 
     List<IScanIssue> doScan(byte[] baseReq, IHttpService service) {

@@ -4,7 +4,6 @@ import kotlin.Pair;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 
 public class HTTP2Scan extends SmuggleScanBox implements IScannerCheck {
@@ -12,7 +11,7 @@ public class HTTP2Scan extends SmuggleScanBox implements IScannerCheck {
     HTTP2Scan(String name) {
         super(name);
         scanSettings.importSettings(DesyncBox.h2Settings);
-        //scanSettings.
+        scanSettings.importSettings(DesyncBox.h2Permutations);
     }
 
     public boolean doConfiguredScan(byte[] original, IHttpService service, HashMap<String, Boolean> config) {

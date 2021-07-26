@@ -42,7 +42,7 @@ public class HeadScanCL extends SmuggleScanBox implements IScannerCheck {
 //            attacks.put("basic3", Utilities.helpers.bytesToString(original));
             //attacks.put("invalid1", "FOO BAR AAH\r\n\r\n");
             //attacks.put("invalid2", "GET / HTTP/1.2\r\nFoo: bar\r\n\r\n");
-            //attacks.put("basic", "GET / HTTP/1.1\r\nHost: "+service.getHost()+"\r\nUser-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36\r\nConnection: close\r\n\r\n"); // Utilities.globalSettings.getString("poc-collab domain")
+            //attacks.put("basic", "GET / HTTP/1.1\r\nHost: "+service.getHost()+"\r\nUser-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36\r\nConnection: close\r\n\r\n"); // Utilities.globalSettings.getString("collab domain")
 
             for (Map.Entry<String, String> entry : attacks.entrySet()) {
                 byte[] attack = Utilities.setBody(original, entry.getValue());

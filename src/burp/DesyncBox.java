@@ -4,86 +4,88 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 
 public class DesyncBox {
 
     static HashSet<String> supportedPermutations;
     //static final String PERMUTE_PREFIX = "permute: ";
+    static SettingsBox sharedPermutations = new SettingsBox();
+    static SettingsBox h1Permutations = new SettingsBox();
+    static SettingsBox h2Permutations = new SettingsBox();
     static SettingsBox sharedSettings = new SettingsBox();
     static SettingsBox h1Settings = new SettingsBox();
-    static SettingsBox h2Settings = new SettingsBox();
+    static SettingsBox h2Settings= new SettingsBox();
 
     DesyncBox () {
         // core techniques
-        sharedSettings.register("vanilla", true);
-        sharedSettings.register("underjoin1", true);
-        sharedSettings.register("spacejoin1", true);
-        sharedSettings.register("space1", true);
-        sharedSettings.register("nameprefix1", true);
-        sharedSettings.register("nameprefix2", true);
-        sharedSettings.register("valueprefix1", true);
-        sharedSettings.register("vertwrap", true);
-        sharedSettings.register("connection", true);
-        sharedSettings.register("spjunk", true);
-        sharedSettings.register("backslash", true);
-        sharedSettings.register("spaceFF", true);
-        sharedSettings.register("unispace", true);
-        sharedSettings.register("commaCow", true);
-        sharedSettings.register("cowComma", true);
-        sharedSettings.register("contentEnc", true);
-        sharedSettings.register("quoted", true);
-        sharedSettings.register("aposed", true);
-        sharedSettings.register("dualchunk", true);
-        sharedSettings.register("lazygrep", true);
-        sharedSettings.register("0dsuffix", true);
-        sharedSettings.register("tabsuffix", true);
-        sharedSettings.register("revdualchunk", true);
-        sharedSettings.register("nested", true);
-        sharedSettings.register("encode", true);
-        sharedSettings.register("accentTE", true);
-        sharedSettings.register("accentCH", true);
+        sharedPermutations.register("vanilla", true);
+        sharedPermutations.register("underjoin1", true);
+        sharedPermutations.register("spacejoin1", true);
+        sharedPermutations.register("space1", true);
+        sharedPermutations.register("nameprefix1", true);
+        sharedPermutations.register("nameprefix2", true);
+        sharedPermutations.register("valueprefix1", true);
+        sharedPermutations.register("vertwrap", true);
+        sharedPermutations.register("connection", true);
+        sharedPermutations.register("spjunk", true);
+        sharedPermutations.register("backslash", true);
+        sharedPermutations.register("spaceFF", true);
+        sharedPermutations.register("unispace", true);
+        sharedPermutations.register("commaCow", true);
+        sharedPermutations.register("cowComma", true);
+        sharedPermutations.register("contentEnc", true);
+        sharedPermutations.register("quoted", true);
+        sharedPermutations.register("aposed", true);
+        sharedPermutations.register("dualchunk", true);
+        sharedPermutations.register("lazygrep", true);
+        sharedPermutations.register("0dsuffix", true);
+        sharedPermutations.register("tabsuffix", true);
+        sharedPermutations.register("revdualchunk", true);
+        sharedPermutations.register("nested", true);
+        sharedPermutations.register("encode", true);
+        sharedPermutations.register("accentTE", true);
+        sharedPermutations.register("accentCH", true);
 
 
         for(int i: DesyncBox.getSpecialChars()) {
-            sharedSettings.register("spacefix1:"+i, true);
+            sharedPermutations.register("spacefix1:"+i, true);
         }
 
         for(int i: DesyncBox.getSpecialChars()) {
-            sharedSettings.register("prefix1:"+i, true);
+            sharedPermutations.register("prefix1:"+i, true);
         }
         for(int i: DesyncBox.getSpecialChars()) {
-            sharedSettings.register("suffix1:"+i, true);
+            sharedPermutations.register("suffix1:"+i, true);
         }
 
-        h1Settings.register("nospace1", true);
-        h1Settings.register("linewrapped1", true);
-        h1Settings.register("gareth1", true);
-        h1Settings.register("badsetupCR", true);
-        h1Settings.register("badsetupLF", true);
-        h1Settings.register("multiCase", true);
-        h1Settings.register("tabwrap", true);
-        h1Settings.register("UPPERCASE", true);
-        h1Settings.register("0dwrap", true);
-        h1Settings.register("0dspam", true);
-        h1Settings.register("badwrap", true);
-        h1Settings.register("bodysplit", true);
+        h1Permutations.register("nospace1", true);
+        h1Permutations.register("linewrapped1", true);
+        h1Permutations.register("gareth1", true);
+        h1Permutations.register("badsetupCR", true);
+        h1Permutations.register("badsetupLF", true);
+        h1Permutations.register("multiCase", true);
+        h1Permutations.register("tabwrap", true);
+        h1Permutations.register("UPPERCASE", true);
+        h1Permutations.register("0dwrap", true);
+        h1Permutations.register("0dspam", true);
+        h1Permutations.register("badwrap", true);
+        h1Permutations.register("bodysplit", true);
 
-        h2Settings.register("http2hide", true);
-        h2Settings.register("h2colon", true);
-        h2Settings.register("h2auth", true);
-        h2Settings.register("h2path", true);
-        h2Settings.register("http2case", true);
-        h2Settings.register("h2scheme", true);
-        h2Settings.register("h2name", true);
-        h2Settings.register("h2method", true);
-        h2Settings.register("h2space", true);
+        h2Permutations.register("http2hide", true);
+        h2Permutations.register("h2colon", true);
+        h2Permutations.register("h2auth", true);
+        h2Permutations.register("h2path", true);
+        h2Permutations.register("http2case", true);
+        h2Permutations.register("h2scheme", true);
+        h2Permutations.register("h2name", true);
+        h2Permutations.register("h2method", true);
+        h2Permutations.register("h2space", true);
 
         supportedPermutations = new HashSet<>();
-        supportedPermutations.addAll(sharedSettings.getSettings());
-        supportedPermutations.addAll(h1Settings.getSettings());
-        supportedPermutations.addAll(h2Settings.getSettings());
+        supportedPermutations.addAll(sharedPermutations.getSettings());
+        supportedPermutations.addAll(h1Permutations.getSettings());
+        supportedPermutations.addAll(h2Permutations.getSettings());
     }
 
     static byte[] applyDesync(byte[] request, String header, String technique) {

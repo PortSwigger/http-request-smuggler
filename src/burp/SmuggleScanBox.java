@@ -13,8 +13,28 @@ public abstract class SmuggleScanBox extends Scan {
         DesyncBox.sharedSettings.register("force method name", "");
         DesyncBox.sharedSettings.register("globally swap - with _", false);
         DesyncBox.sharedSettings.register("strip CL", false);
+        DesyncBox.sharedSettings.register("skip vulnerable hosts", false);
+        DesyncBox.sharedSettings.register("pad everything", false);
+        DesyncBox.sharedSettings.register("skip obsolete permutations", true);
+        DesyncBox.sharedSettings.register("collab-domain", Utilities.generateCanary()+".burpcollaborator.net");
+
+        DesyncBox.h1Settings.register("skip straight to poc", false);
+        DesyncBox.h1Settings.register("poc: G", false);
+        DesyncBox.h1Settings.register("poc: headerConcat", false);
+        DesyncBox.h1Settings.register("poc: bodyConcat", false);
+        DesyncBox.h1Settings.register("poc: collab", false);
+        DesyncBox.h1Settings.register("poc: collab-header", false);
+        DesyncBox.h1Settings.register("poc: collab-XFO-header", false);
+        DesyncBox.h1Settings.register("poc: collab-abs", false);
+        DesyncBox.h1Settings.register("poc: collab-at", false);
+        DesyncBox.h1Settings.register("poc: collab-blind", false);
+        DesyncBox.h1Settings.register("use turbo for autopoc", true);
+        DesyncBox.h1Settings.register("only report exploitable", false);
+        DesyncBox.h1Settings.register("risky mode", false);
+        
         DesyncBox.h2Settings.register("h2: swap CRLF with LF", false);
         scanSettings.importSettings(DesyncBox.sharedSettings);
+        scanSettings.importSettings(DesyncBox.sharedPermutations);
         //Utilities.globalSettings.registerSetting("report dodgy findings", false);
         //DesyncBox.sharedSettings.register();
     }
@@ -125,7 +145,7 @@ public abstract class SmuggleScanBox extends Scan {
 
     static byte[] makeChunked(byte[] baseReq, int contentLengthOffset, int chunkOffset) {
         HashMap<String, Boolean> settings = new HashMap<>();
-        settings.put("vanilla", true);
+         DesyncBox.h1Settings.register("vanilla", true);
         return makeChunked(baseReq, contentLengthOffset, chunkOffset, settings, false);
     }
 

@@ -12,6 +12,8 @@ public class HeadScanTE extends SmuggleScanBox implements IScannerCheck {
 
         HeadScanTE(String name) {
             super(name);
+            scanSettings.importSettings(DesyncBox.h2Settings);
+            scanSettings.importSettings(DesyncBox.h2Permutations);
         }
 
         private static Pattern H1_RESPONSE_LINE = Pattern.compile("HTTP/1[.][01] [0-9]");
@@ -25,9 +27,9 @@ public class HeadScanTE extends SmuggleScanBox implements IScannerCheck {
             original = Utilities.addOrReplaceHeader(original, "User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36");
             original = Utilities.addCacheBuster(original, Utilities.generateCanary());
             original = Utilities.replaceFirst(original, "HTTP/2", "HTTP/1.1");
-            original = Utilities.addOrReplaceHeader(original, "X-Come-Out-And-Play", "1");
+            //original = Utilities.addOrReplaceHeader(original, "X-Come-Out-And-Play", "1");
             byte[] base = Utilities.addOrReplaceHeader(original, "Transfer-Encoding", "chunked");
-            base = Utilities.addOrReplaceHeader(base, "Connection", "keep-alive");
+            //base = Utilities.addOrReplaceHeader(base, "Connection", "keep-alive");
             //base = Utilities.setMethod(base, "HEAD"); // use 'force method name' instead
             //base = Utilities.setPath(base, "*");
 

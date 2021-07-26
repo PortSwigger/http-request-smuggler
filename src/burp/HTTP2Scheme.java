@@ -5,7 +5,6 @@ import java.util.List;
 public class HTTP2Scheme extends Scan {
     HTTP2Scheme(String name) {
         super(name);
-        scanSettings.register("collab-domain", Utilities.generateCanary()+".burpcollaborator.net");
     }
 
     @Override
