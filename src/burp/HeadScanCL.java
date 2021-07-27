@@ -10,7 +10,7 @@ public class HeadScanCL extends SmuggleScanBox implements IScannerCheck {
 
     HeadScanCL(String name) {
         super(name);
-    }
+    } // todo don't show any permutations
 
 
     public boolean doConfiguredScan(byte[] original, IHttpService service, HashMap<String, Boolean> config) {

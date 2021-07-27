@@ -16,6 +16,7 @@ public abstract class SmuggleScanBox extends Scan {
         DesyncBox.sharedSettings.register("skip vulnerable hosts", false);
         DesyncBox.sharedSettings.register("pad everything", false);
         DesyncBox.sharedSettings.register("skip obsolete permutations", true);
+        DesyncBox.sharedSettings.register("ignore probable FPs", true);
         DesyncBox.sharedSettings.register("collab-domain", Utilities.generateCanary()+".burpcollaborator.net");
 
         DesyncBox.h1Settings.register("skip straight to poc", false);
@@ -58,12 +59,34 @@ public abstract class SmuggleScanBox extends Scan {
         return baseReq;
     }
 
+    boolean suspectedFalsePositive(String permutation, Resp response) {
+        if (!Utilities.globalSettings.getBoolean("ignore probable FPs")) {
+            return false;
+        }
+
+        switch(permutation) {
+            case "h2space":
+                return Utilities.contains(response, "X-Amz-Cf-");
+        }
+
+        return false;
+    }
+
     @Override
     protected List<IScanIssue> doScan(byte[] baseReq, IHttpService service) {
         HashMap<String, Boolean> config;
 
-        ArrayList<String> validPermutations = new ArrayList<>();
+        ArrayList<String> relevantPermutations = new ArrayList<>();
         for (String permutation: DesyncBox.supportedPermutations) {
+            if (!scanSettings.contains(permutation)) {
+                continue;
+            }
+            relevantPermutations.add(permutation);
+        }
+
+
+        ArrayList<String> validPermutations = new ArrayList<>();
+        for (String permutation: relevantPermutations) {
             String key = permutation+service.getProtocol()+service.getHost();
             if (BurpExtender.hostsToSkip.containsKey(key)) {
                 if (Utilities.globalSettings.getBoolean("skip vulnerable hosts")) {
@@ -76,7 +99,7 @@ public abstract class SmuggleScanBox extends Scan {
         }
 
         if (validPermutations.isEmpty()) {
-            validPermutations.addAll(DesyncBox.supportedPermutations);
+            validPermutations.addAll(relevantPermutations);
         }
 
         for (String permutation: validPermutations) {
@@ -178,6 +201,12 @@ public abstract class SmuggleScanBox extends Scan {
         int bodySize = baseReq.length - Utilities.getBodyStart(baseReq);
         String body = Utilities.getBody(baseReq);
 
+        // this prevents some FPs
+        if ("".equals(body)) {
+            body = "x=y";
+            bodySize += 3;
+        }
+
         // concept by @webtonull
         if (Utilities.globalSettings.getBoolean("pad everything") || settings.containsKey("chunky")) {
             String padChunk = "F\r\nAAAAAAAAAAAAAAA\r\n";
@@ -186,6 +215,7 @@ public abstract class SmuggleScanBox extends Scan {
                 fullPad.append(padChunk);
             }
             ending = fullPad.toString() + ending;
+            //bodySize += 8; // fixme hmm
         }
 
         int chunkSize = bodySize+chunkOffset;

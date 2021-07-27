@@ -20,7 +20,7 @@ public class DesyncBox {
     DesyncBox () {
         // core techniques
         sharedPermutations.register("vanilla", true);
-        sharedPermutations.register("underjoin1", true);
+        sharedPermutations.register("underjoin1", false); // quite a few FP
         sharedPermutations.register("spacejoin1", true);
         sharedPermutations.register("space1", true);
         sharedPermutations.register("nameprefix1", true);

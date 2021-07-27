@@ -37,15 +37,19 @@ public class HTTP2Scan extends SmuggleScanBox implements IScannerCheck {
                 return false;
             }
 
-            // todo send a followup without TE to make sure chunked encoding is relevant, reducing FPs
+            if (suspectedFalsePositive(attackCode, syncedResp)) {
+                return false;
+            }
+
+            // send a followup without TE to make sure chunked encoding is relevant, reducing FPs
             byte[] attackReq = makeChunked(original, 0, 10, config, false);
             Resp attack = h2request(service, attackReq);
             if (attack.timedOut() && !h2request(service, syncedReq).timedOut() && !h2request(service, syncedReq).timedOut() && h2request(service, attackReq).timedOut()) {
 
-                byte[] brokenAttackReq = Utilities.replace(attackReq, "ransfer-Encoding", "zansfer-Zncoding");
+                byte[] brokenAttackReq = Utilities.replace(attackReq, "ransfer", "zansfer");
                 Resp brokenAttack = h2request(service, brokenAttackReq);
-                if (!brokenAttack.timedOut()) {
-                    attackCode += " tested";
+                if (brokenAttack.timedOut()) {
+                    attackCode += " (probably FP)";
                 }
                 attack = h2request(service, attackReq);
                 if (!attack.timedOut()) {
@@ -53,16 +57,15 @@ public class HTTP2Scan extends SmuggleScanBox implements IScannerCheck {
                 }
 
                 report("HTTP/2 TE desync v10a "+attackCode, ".", syncedResp, brokenAttack, attack);
-                ChunkContentScan.sendPoc(original, service, true, config);
+                //ChunkContentScan.sendPoc(original, service, true, config);
                 return true;
             } else if (attack.failed() && !h2request(service, syncedReq).failed() && !h2request(service, syncedReq).failed() && h2request(service, attackReq).failed()) {
-                byte[] brokenAttackReq = Utilities.replace(attackReq, "ransfer-Encoding", "zansfer-Zncoding");
+                byte[] brokenAttackReq = Utilities.replace(attackReq, "ransfer", "zansfer");
                 Resp brokenAttack = h2request(service, brokenAttackReq);
-                Resp foo_Bar = h2request(service, brokenAttackReq);
 
 
-                if (!brokenAttack.failed()) {
-                    attackCode += " tested";
+                if (brokenAttack.failed()) {
+                    attackCode += " (probably FP)";
                 }
                 attack = h2request(service, attackReq);
                 if (!attack.failed()) {
@@ -70,7 +73,7 @@ public class HTTP2Scan extends SmuggleScanBox implements IScannerCheck {
                 }
 
                 report("HTTP/2 TE desync v10b "+attackCode, ".", syncedResp, brokenAttack, attack);
-                ChunkContentScan.sendPoc(original, service, true, config);
+                //ChunkContentScan.sendPoc(original, service, true, config);
                 return true;
             }
         }
