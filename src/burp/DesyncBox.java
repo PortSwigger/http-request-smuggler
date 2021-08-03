@@ -46,6 +46,7 @@ public class DesyncBox {
         sharedPermutations.register("encode", true);
         sharedPermutations.register("accentTE", true);
         sharedPermutations.register("accentCH", true);
+        sharedPermutations.register("notchunked", true);
 
 
         for(int i: DesyncBox.getSpecialChars()) {
@@ -81,6 +82,7 @@ public class DesyncBox {
         h2Permutations.register("h2name", true);
         h2Permutations.register("h2method", true);
         h2Permutations.register("h2space", true);
+
 
         supportedPermutations = new HashSet<>();
         supportedPermutations.addAll(sharedPermutations.getSettings());
@@ -254,6 +256,8 @@ public class DesyncBox {
                 transformed = Utilities.replace(request, "Transfer-Encoding: chunked", ":method: POST "+Utilities.getPathFromRequest(request)+" HTTP/1.1^~Transfer-Encoding: chunked^~x: x");
             } else if (technique.equals("h2space")) {
                 transformed = Utilities.replace(request, "Transfer-Encoding: chunked", "Transfer-Encoding chunked : chunked");
+            } else if (technique.equals("notchunked")){
+                transformed = Utilities.replace(request, "Transfer-Encoding: chunked", "Nothing-interesting: 1");
             }
 
 

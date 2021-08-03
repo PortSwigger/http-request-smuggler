@@ -15,7 +15,7 @@ public class HTTP2Scheme extends Scan {
         byte[] attack;
         Resp resp = null;
 
-        if (service.getHost().contains(".yahoo") || service.getHost().contains(".aol")) {
+        if (Utilities.globalSettings.getBoolean("ignore probable FPs") && service.getHost().contains(".yahoo") || service.getHost().contains(".aol")) {
             return null;
         }
 

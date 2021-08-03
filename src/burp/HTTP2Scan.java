@@ -38,6 +38,7 @@ public class HTTP2Scan extends SmuggleScanBox implements IScannerCheck {
             }
 
             if (suspectedFalsePositive(attackCode, syncedResp)) {
+                Utilities.out("Skipping technique "+attackCode + " on "+service.getHost() + " due to it matching a known-FP.");
                 return false;
             }
 
@@ -59,7 +60,7 @@ public class HTTP2Scan extends SmuggleScanBox implements IScannerCheck {
                 report("HTTP/2 TE desync v10a "+attackCode, ".", syncedResp, brokenAttack, attack);
                 //ChunkContentScan.sendPoc(original, service, true, config);
                 return true;
-            } else if (attack.failed() && !h2request(service, syncedReq).failed() && !h2request(service, syncedReq).failed() && h2request(service, attackReq).failed()) {
+            } else if (!Utilities.globalSettings.getBoolean("ignore probable FPs") && attack.failed() && !h2request(service, syncedReq).failed() && !h2request(service, syncedReq).failed() && h2request(service, attackReq).failed()) {
                 byte[] brokenAttackReq = Utilities.replace(attackReq, "ransfer", "zansfer");
                 Resp brokenAttack = h2request(service, brokenAttackReq);
 

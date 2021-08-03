@@ -14,7 +14,7 @@ public class HTTP2Method extends Scan {
         String collab = Utilities.globalSettings.getString("collab-domain");
         byte[] attack;
 
-        if (service.getHost().contains(".yahoo") || service.getHost().contains(".aol")) {
+        if (Utilities.globalSettings.getBoolean("ignore probable FPs") && service.getHost().contains(".yahoo") || service.getHost().contains(".aol")) {
             return null;
         }
 

@@ -34,19 +34,36 @@ public class HeadScanTE extends SmuggleScanBox implements IScannerCheck {
             //base = Utilities.setPath(base, "*");
 
             ArrayList<String> methods = new ArrayList<>();
-            methods.add("HEAD");
-            //methods.add("OPTIONS");
-            //methods.add("GET");
-            methods.add("POST");
+
+            for (int i=0; i<5; i+=1) {
+                methods.add("HEAD");
+                methods.add("OPTIONS");
+                methods.add("GET");
+                methods.add("POST");
+            }
+
+            //String foobar = "X\r\n\r\n";
+            String foobar = "H A X\r\n\r\n";
+//            String foobar = "TRACE * HTTP/1.0\r\n\r\n";
+//            String originalReq = Utilities.helpers.bytesToString(Utilities.setMethod(Utilities.setPath(original, "/"), "GET"));
+
+//            padding makes this attack worse... unsure why
+//            String padChunk = "F\r\nAAAAAAAAAAAAAAA\r\n";
+//            StringBuilder fullPad = new StringBuilder();
+//            for (int i=0; i<3000; i++) {
+//                fullPad.append(padChunk);
+//            }
+//            foobar = foobar + fullPad.toString();
+//            originalReq = originalReq + fullPad.toString();
 
             for (String method: methods) {
                 base = Utilities.setMethod(base, method);
                 ArrayList<String> attacks = new ArrayList<>();
-                attacks.add("FOO BAR AAH\r\n\r\n");
+                attacks.add(foobar);
 //            attacks.put("invalid2", "GET / HTTP/1.2\r\nFoo: bar\r\n\r\n");
 //            attacks.put("unfinished", "GET / HTTP/1.1\r\nFoo: bar");
 
-                attacks.add(Utilities.helpers.bytesToString(Utilities.setMethod(Utilities.setPath(original, "/"), "GET")));
+               // attacks.add(originalReq);
                 // todo try collab-host here somewhere
                 // todo try subdomain too
                 // or should be just be a followup test? argh.
