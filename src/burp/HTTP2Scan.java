@@ -134,7 +134,12 @@ public class HTTP2Scan extends SmuggleScanBox implements IScannerCheck {
         long startTime = System.currentTimeMillis();
         try {
             responseBytes = Utilities.callbacks.makeHttp2Request(service, headers, body, true);
-        } catch (RuntimeException e) {
+        } catch (NoSuchMethodError e) {
+            Utilities.out("To enable HTTP/2-specific attacks, you need to use Burp Suite 2020.8 or later");
+            responseBytes = null;
+        }
+        catch (RuntimeException e) {
+            Utilities.out(e.getMessage());
             responseBytes = null;
         }
         return new Resp(new Req(req, responseBytes, service), startTime);
