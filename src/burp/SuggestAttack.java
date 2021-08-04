@@ -11,6 +11,7 @@ public class SuggestAttack implements IContextMenuFactory {
     final static String CLTE = "CL.TE";
     final static String TECL = "TE.CL";
     final static String H2TE = "H2.TE";
+    final static String H2TUNNEL = "H2-TUNNEL";
 
     @Override
     public List<JMenuItem> createMenuItems(IContextMenuInvocation invocation) {
@@ -60,9 +61,11 @@ public class SuggestAttack implements IContextMenuFactory {
                     probeButton.addActionListener(new LaunchSuggestedAttack(message, type));
                     options.add(probeButton);
                 }
-
-
-
+            } else if (Utilities.isHTTP2(message.getRequest()) && Utilities.containsBytes(message.getRequest(), "FOO BAR AAH".getBytes())) {
+                String type = H2TUNNEL;
+                JMenuItem probeButton = new JMenuItem("Smuggle attack ("+type+")");
+                probeButton.addActionListener(new LaunchSuggestedAttack(message, type));
+                options.add(probeButton);
             }
 
         }
@@ -92,6 +95,12 @@ class LaunchSuggestedAttack implements ActionListener {
         if (type.equals(SuggestAttack.H2TE)) {
             request = request.replaceFirst(H2PAYLOAD, "\r\n0\r\n\r\n");
             script = Utilities.getResource("/H2-TE.py");
+        } else if (type.equals(SuggestAttack.H2TUNNEL)) {
+            if (!request.contains("\r\n0\r\n\r\nFOO BAR")) {
+                // stop Turbo from autofixing the content-length
+                request = request.replaceFirst("Content-Length", "Content-length");
+            }
+            script = Utilities.getResource("/H2-TUNNEL.py");
         }
         else if (type.equals(SuggestAttack.CLTE)) {
             request = request.replaceFirst(PAYLOAD, "\r\n0\r\n\r\n");
