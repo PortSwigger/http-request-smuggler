@@ -43,7 +43,7 @@ public class HeadScanTE extends SmuggleScanBox implements IScannerCheck {
             }
 
             //String foobar = "X\r\n\r\n";
-            String foobar = "H A X\r\n\r\n";
+            String foobar = "FOO BAR AAH\r\n\r\n";
 //            String foobar = "TRACE * HTTP/1.0\r\n\r\n";
 //            String originalReq = Utilities.helpers.bytesToString(Utilities.setMethod(Utilities.setPath(original, "/"), "GET"));
 

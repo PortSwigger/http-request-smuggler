@@ -27,7 +27,7 @@ public class HeadScanCL extends SmuggleScanBox implements IScannerCheck {
         //original = Utilities.setMethod(original, "HEAD");
 
         HashSet<String> methods = new HashSet<>();
-        //methods.add("GET");
+        methods.add("GET");
         methods.add("POST");
         methods.add("HEAD");
         methods.add("OPTIONS");
@@ -37,7 +37,7 @@ public class HeadScanCL extends SmuggleScanBox implements IScannerCheck {
             attacks.put("invalid1", "FOO BAR AAH\r\n\r\n");
             //attacks.put("invalid2", "GET / HTTP/1.2\r\nFoo: bar\r\n\r\n");
             //attacks.put("unfinished", "GET / HTTP/1.1\r\nFoo: bar");
-            attacks.put("basic1", Utilities.helpers.bytesToString(original));
+//            attacks.put("basic1", Utilities.helpers.bytesToString(original));
 //            attacks.put("basic2", Utilities.helpers.bytesToString(original));
 //            attacks.put("basic3", Utilities.helpers.bytesToString(original));
             //attacks.put("invalid1", "FOO BAR AAH\r\n\r\n");
