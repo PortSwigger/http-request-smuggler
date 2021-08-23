@@ -56,8 +56,13 @@ public class DesyncBox {
         for(int i: DesyncBox.getSpecialChars()) {
             sharedPermutations.register("prefix1:"+i, true);
         }
+
         for(int i: DesyncBox.getSpecialChars()) {
             sharedPermutations.register("suffix1:"+i, true);
+        }
+
+        for(int i: DesyncBox.getSpecialChars()) {
+            sharedPermutations.register("namesuffix1:"+i, true);
         }
 
         h1Permutations.register("nospace1", true);
@@ -173,6 +178,12 @@ public class DesyncBox {
         for (int i: getSpecialChars()) {
             if (technique.equals("prefix1:"+i)) {
                 permuted = header + (char) i;
+            }
+        }
+
+        for (int i: getSpecialChars()) {
+            if (technique.equals("namesuffix1:"+i)) {
+                permuted = header.replace(":", (char) i+":");
             }
         }
 

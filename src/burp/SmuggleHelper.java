@@ -13,7 +13,7 @@ class SmuggleHelper {
         this.service = service;
         String url = service.getProtocol()+"://"+service.getHost()+":"+service.getPort();
         if (Utilities.globalSettings.getBoolean("use turbo for autopoc")) {
-            this.engine = new ThreadedRequestEngine(url, 1, 20, 1, 1, 0, this::callback, 10, null, 1024, false);
+            this.engine = new ThreadedRequestEngine(url, 1, 20, 1, 5, 0, this::callback, 10, null, 1024, false);
         }
         else {
             this.engine = new BurpRequestEngine(url, 1, 20, 0, this::callback, null, true);
@@ -33,6 +33,10 @@ class SmuggleHelper {
         //engine.start(10);
         engine.showStats(60);
         return reqs;
+    }
+
+    int getConnectionCount() {
+        return engine.getConnections().get();
     }
 
     // todo move into turbo intruder?

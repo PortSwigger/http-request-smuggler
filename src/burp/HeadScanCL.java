@@ -14,7 +14,7 @@ public class HeadScanCL extends SmuggleScanBox implements IScannerCheck {
 
 
     public boolean doConfiguredScan(byte[] original, IHttpService service, HashMap<String, Boolean> config) {
-        if (!config.containsKey("vanilla")) {
+        if (!config.containsKey("vanilla")/* && !config.containsKey("space1") && !config.containsKey("connection")*/) {
             return false;
         }
 
@@ -25,12 +25,18 @@ public class HeadScanCL extends SmuggleScanBox implements IScannerCheck {
         original = Utilities.addOrReplaceHeader(original, "User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36");
         //original = Utilities.setHeader(original, "Connection", "keep-alive");
         //original = Utilities.setMethod(original, "HEAD");
+        //original = Utilities.addOrReplaceHeader(original, "null\u0000", "13");
+        //original = Utilities.addOrReplaceHeader(original, ":connection", "Content-Length");
+        original = Utilities.addOrReplaceHeader(original, "Via", "x (comment\u0000hmmm)");
+
 
         HashSet<String> methods = new HashSet<>();
         methods.add("GET");
         methods.add("POST");
         methods.add("HEAD");
         methods.add("OPTIONS");
+        //original = Utilities.addOrReplaceHeader(original, ":method", "HEAD");
+        original = Utilities.addCacheBuster(original, Utilities.generateCanary());
 
         for (String method: methods) {
             HashMap<String, String> attacks = new HashMap<>();
@@ -56,12 +62,6 @@ public class HeadScanCL extends SmuggleScanBox implements IScannerCheck {
                 if (HeadScanTE.mixedResponse(resp)) {
                     report("Tunnel desync CLv2-1: " + method, "", resp);
                     break;
-                } else if (false && HeadScanTE.mixedResponse(resp, false)) {
-                    Resp followup = HTTP2Scan.h2request(service, Utilities.setMethod(attack, "GET"));
-                    if (!HeadScanTE.mixedResponse(followup, false)) {
-                        report("Tunnel desync CL-H1: " + method, "", resp, followup);
-                        break;
-                    }
                 }
             }
         }

@@ -35,12 +35,14 @@ public class HeadScanTE extends SmuggleScanBox implements IScannerCheck {
 
             ArrayList<String> methods = new ArrayList<>();
 
-            for (int i=0; i<5; i+=1) {
-                methods.add("HEAD");
-                methods.add("OPTIONS");
+            for (int i=0; i<1; i+=1) {
+                //methods.add("HEAD");
+                //methods.add("OPTIONS");
                 methods.add("GET");
                 methods.add("POST");
             }
+
+            //base = Utilities.addOrReplaceHeader(base, ":method", "HEAD ");
 
             //String foobar = "X\r\n\r\n";
             String foobar = "FOO BAR AAH\r\n\r\n";
@@ -58,6 +60,16 @@ public class HeadScanTE extends SmuggleScanBox implements IScannerCheck {
 
             for (String method: methods) {
                 base = Utilities.setMethod(base, method);
+
+                if (!"HEAD".equals(method)) {
+                    base = Utilities.addOrReplaceHeader(base, "x-http-method-override", "HEAD");
+                    base = Utilities.addOrReplaceHeader(base, "x-http-method", "HEAD");
+                    base = Utilities.addOrReplaceHeader(base, "x-method-override", "HEAD");
+                    base = Utilities.addOrReplaceHeader(base, "real-method", "HEAD");
+                    base = Utilities.addOrReplaceHeader(base, "request-method", "HEAD");
+                    base = Utilities.addOrReplaceHeader(base, "method", "HEAD");
+                }
+
                 ArrayList<String> attacks = new ArrayList<>();
                 attacks.add(foobar);
 //            attacks.put("invalid2", "GET / HTTP/1.2\r\nFoo: bar\r\n\r\n");
@@ -86,25 +98,6 @@ public class HeadScanTE extends SmuggleScanBox implements IScannerCheck {
 
                         report("Tunnel desync v9-6: TE-H2: " + attackCode, "", resp);
                         return true;
-                    } else if (false && mixedResponse(resp, false)) { // disabled as it's too sketchy
-                        recordCandidateFound();
-                        SmuggleHelper helper = new SmuggleHelper(service);
-                        helper.queue(Utilities.helpers.bytesToString(attack));
-                        List<Resp> results = helper.waitFor();
-                        if (mixedResponse(results.get(0), false)) {
-                            report("Tunnel desync v9 TE-H1: " + attackCode, "", resp, results.get(0));
-                        } else {
-                            report("Tunnel desync v9 TE-H1 maybe: " + attackCode, "", resp);
-                        }
-//                    recordCandidateFound();
-//                    Resp followup1 = request(service, Utilities.setMethod(attack, "GET"));
-//                    if (!mixedResponse(followup1, false)) {
-//
-//                        Resp followup2 = request(service, Utilities.setMethod(attack, "FOO"));
-//                        if (!mixedResponse(followup2, false)) {
-//                            report("Head desync TE-H1v2: " + entry.getKey(), "", resp, followup1, followup2);
-//                        }
-//                    }
                     } else if (resp.failed()) {
                         return false;
                     }
@@ -114,7 +107,7 @@ public class HeadScanTE extends SmuggleScanBox implements IScannerCheck {
             return false;
         }
 
-        private byte[] buildTEAttack(byte[] base, HashMap<String, Boolean> config, String attack) {
+        static byte[] buildTEAttack(byte[] base, HashMap<String, Boolean> config, String attack) {
             try {
 
                 //new ChunkContentScan("xyz").DualChunkTE().
@@ -133,10 +126,6 @@ public class HeadScanTE extends SmuggleScanBox implements IScannerCheck {
         }
 
         static boolean mixedResponse(Resp resp) {
-            return mixedResponse(resp, true);
-        }
-
-        static boolean mixedResponse(Resp resp, boolean requireHTTP2) {
             if (!Utilities.containsBytes(Utilities.getBody(resp.getReq().getResponse()).getBytes(), "HTTP/1".getBytes())) {
                 return false;
             }
@@ -145,42 +134,10 @@ public class HeadScanTE extends SmuggleScanBox implements IScannerCheck {
                 return false;
             }
 
-            if (requireHTTP2) {
-                if (!Utilities.containsBytes(resp.getReq().getResponse(), "HTTP/2 ".getBytes())) {
-                    return false;
-                }
-            } else {
 
-                // todo could use connection: close in first request?
-
-                // if the response is chunked, burp will rewrite using content-length
-                // if there's no content-length then burp will truncate randomly based on packet size
-                // no longer required thanks to turbo
-//                if ("".equals(Utilities.getHeader(resp.getReq().getResponse(), "Content-Length"))) {
-//                    return false;
-//                }
-
-                byte[] nestedResp = Utilities.getBodyBytes(resp.getReq().getResponse());
-                if (Utilities.containsBytes(nestedResp, ": chunked\r\n".getBytes())) {
-                    if (Utilities.containsBytes(nestedResp, "\r\n0\r\n".getBytes())) {
-                        return false;
-                    }
-                } else {
-                    // todo misses if the second response has no length
-                    try {
-                        int nestedCL = Integer.parseInt(Utilities.getHeader(nestedResp, "Content-Length"));
-                        int realLength = nestedResp.length - Utilities.getBodyStart(nestedResp);
-                        if (realLength+10 >= nestedCL) { // fixme +10 is workaround for 'real' not counting trailing whitespace
-                            return false;
-                        }
-                    } catch (Exception e) {
-                        return false;
-                    }
-
-                }
-
+            if (!Utilities.containsBytes(resp.getReq().getResponse(), "HTTP/2 ".getBytes())) {
+                return false;
             }
-
 
             return true;
         }
