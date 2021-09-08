@@ -67,11 +67,13 @@ public class H1TunnelScan extends SmuggleScanBox implements IScannerCheck {
         String naturalNested = String.valueOf(results.get(1).getStatus());
 
         if (naturalNested.equals(nestedRespCode)) {
-            report("Nested-diff: "+nonNestedCode+":"+nestedRespCode," ", resp, bad, results.get(0), results.get(1));
+            // warning: this approach misses targets that don't support pipelining
+            // to detect those, use SecondRequestScan instead
+            report("Nested-diff plus pipelining: "+nonNestedCode+":"+nestedRespCode," ", resp, bad, results.get(0), results.get(1));
             return false;
         }
 
-        // todo bail if turbo had to reconnect for the second request
+        // bail if turbo had to reconnect for the second request
         if (helper.getConnectionCount() > 1) {
             report("Keepalive-fail: "+nonNestedCode+":"+nestedRespCode," ", resp, bad, results.get(0), results.get(1));
             return false;
