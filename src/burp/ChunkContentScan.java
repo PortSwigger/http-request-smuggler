@@ -190,7 +190,12 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
                     throw new RuntimeException("Invalid poc type");
 
             }
-            results.add(launchPoc(base, technique, CLTE, inject, service, config));
+
+            boolean outcome = launchPoc(base, technique, CLTE, false, inject, service, config);
+            if (!outcome) {
+                outcome = launchPoc(base, technique, CLTE, true, inject, service, config);
+            }
+            results.add(outcome);
         }
 
         return results.contains(Boolean.TRUE);

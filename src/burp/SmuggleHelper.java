@@ -13,7 +13,6 @@ class SmuggleHelper {
     SmuggleHelper(IHttpService service, boolean reuseConnection) {
         this.service = service;
         String url = service.getProtocol()+"://"+service.getHost()+":"+service.getPort();
-        reuseConnection = false;
         if (reuseConnection) {
             this.engine = new ThreadedRequestEngine(url, 1, 20, 1, 50, 0, this::callback, 10, null, 1024, false);
         }

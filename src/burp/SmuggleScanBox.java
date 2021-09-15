@@ -34,7 +34,7 @@ public abstract class SmuggleScanBox extends Scan {
         DesyncBox.h1Settings.register("poc: collab-abs", false);
         DesyncBox.h1Settings.register("poc: collab-at", false);
         DesyncBox.h1Settings.register("poc: collab-blind", false);
-        DesyncBox.h1Settings.register("use turbo for autopoc", true);
+        //DesyncBox.h1Settings.register("use turbo for autopoc", true);
         DesyncBox.h1Settings.register("only report exploitable", false);
         DesyncBox.h1Settings.register("risky mode", false);
         
@@ -268,7 +268,7 @@ public abstract class SmuggleScanBox extends Scan {
 //    }
 
 
-    static boolean launchPoc(byte[] base, String name, boolean CLTE, String inject, IHttpService service, HashMap<String, Boolean> config) {
+    static boolean launchPoc(byte[] base, String name, boolean CLTE, boolean reuseConnection, String inject, IHttpService service, HashMap<String, Boolean> config) {
         Pair<String, Integer> attack;
         if (CLTE ) {
             attack = getCLTEAttack(base, inject, config);
@@ -286,7 +286,7 @@ public abstract class SmuggleScanBox extends Scan {
 
         try {
             Resp baseline = request(service, victim, 0, true);
-            SmuggleHelper helper = new SmuggleHelper(service, true);
+            SmuggleHelper helper = new SmuggleHelper(service, reuseConnection);
             helper.queue(setupAttack, attack.getRight());
             helper.queue(Utilities.helpers.bytesToString(victim));
             helper.queue(Utilities.helpers.bytesToString(victim));
@@ -331,7 +331,7 @@ public abstract class SmuggleScanBox extends Scan {
                 issueTitle = "HTTP Request Smuggling maybe";
             }
 
-            helper = new SmuggleHelper(service, true);
+            helper = new SmuggleHelper(service, reuseConnection);
             int randomCheckCount = 7;
             if (Utilities.globalSettings.getBoolean("skip straight to poc")) {
                 randomCheckCount = 14;
