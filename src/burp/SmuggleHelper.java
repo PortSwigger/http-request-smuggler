@@ -13,6 +13,7 @@ class SmuggleHelper {
     SmuggleHelper(IHttpService service, boolean reuseConnection) {
         this.service = service;
         String url = service.getProtocol()+"://"+service.getHost()+":"+service.getPort();
+        reuseConnection = false;
         if (reuseConnection) {
             this.engine = new ThreadedRequestEngine(url, 1, 20, 1, 50, 0, this::callback, 10, null, 1024, false);
         }
@@ -22,11 +23,11 @@ class SmuggleHelper {
     }
 
     void queue(String req) {
-        engine.queue(req); // , Integer.toString(id++)
+        queue(req, 0);
     }
 
     void queue(String req, int pauseBefore) {
-        engine.queue(req, new ArrayList<>(), 0, null, null, null, pauseBefore); // , Integer.toString(id++)
+        engine.queue(req, new ArrayList<>(), 0, null, null, null, pauseBefore, 2000); // , Integer.toString(id++)
     }
 
     private boolean callback(Request req, boolean interesting) {

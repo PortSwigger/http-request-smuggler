@@ -7,6 +7,9 @@ import java.io.IOException;
 import java.util.*;
 import java.util.zip.GZIPOutputStream;
 
+import static burp.ChunkContentScan.getCLTEAttack;
+import static burp.ChunkContentScan.getTECLAttack;
+
 public abstract class SmuggleScanBox extends Scan {
 
     SmuggleScanBox(String name) {
@@ -265,7 +268,14 @@ public abstract class SmuggleScanBox extends Scan {
 //    }
 
 
-    static boolean launchPoc(String name, Pair<String, Integer> attack, byte[] victim, IHttpService service, HashMap<String, Boolean> config) {
+    static boolean launchPoc(byte[] base, String name, boolean CLTE, String inject, IHttpService service, HashMap<String, Boolean> config) {
+        Pair<String, Integer> attack;
+        if (CLTE ) {
+            attack = getCLTEAttack(base, inject, config);
+        } else {
+            attack = getTECLAttack(base, inject, config);
+        }
+        byte[] victim = makeChunked(base, 0, 0, config, false);
 
         String setupAttack = attack.getLeft();
 
@@ -273,7 +283,6 @@ public abstract class SmuggleScanBox extends Scan {
             request(service, setupAttack.getBytes(), 0, true);
             return false;
         }
-
 
         try {
             Resp baseline = request(service, victim, 0, true);
@@ -346,9 +355,12 @@ public abstract class SmuggleScanBox extends Scan {
             report(issueTitle, issueDescription, cleanup, results.get(0), results.get(1));
 
             BurpExtender.hostsToSkip.putIfAbsent(service.getHost(), true);
+
+            Utils.out("Exiting try/catch");
             return true;
         }
         catch (Exception e) {
+            Utils.out("Error during poc");
             return false;
         }
     }

