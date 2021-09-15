@@ -1,5 +1,7 @@
 package burp;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.*;
@@ -254,16 +256,18 @@ public abstract class SmuggleScanBox extends Scan {
     }
 
 
-    static boolean sendPoc(String name, byte[] setupAttack, byte[] victim, IHttpService service) {
-        return sendPoc(name, Utilities.helpers.bytesToString(setupAttack), victim, service, new HashMap<>());
-    }
+//    static boolean sendPoc(String name, byte[] setupAttack, byte[] victim, IHttpService service) {
+//        return sendPoc(name, Utilities.helpers.bytesToString(setupAttack), victim, service, new HashMap<>());
+//    }
+//
+//    static boolean sendPoc(String name, byte[] setupAttack, byte[] victim, IHttpService service, HashMap<String, Boolean> config) {
+//        return sendPoc(name, Utilities.helpers.bytesToString(setupAttack), victim, service, config);
+//    }
 
-    static boolean sendPoc(String name, byte[] setupAttack, byte[] victim, IHttpService service, HashMap<String, Boolean> config) {
-        return sendPoc(name, Utilities.helpers.bytesToString(setupAttack), victim, service, config);
-    }
 
+    static boolean launchPoc(String name, Pair<String, Integer> attack, byte[] victim, IHttpService service, HashMap<String, Boolean> config) {
 
-    static boolean sendPoc(String name, String setupAttack, byte[] victim, IHttpService service, HashMap<String, Boolean> config) {
+        String setupAttack = attack.getLeft();
 
         if ("collab-blind".equals(name)) {
             request(service, setupAttack.getBytes(), 0, true);
@@ -273,8 +277,8 @@ public abstract class SmuggleScanBox extends Scan {
 
         try {
             Resp baseline = request(service, victim, 0, true);
-            SmuggleHelper helper = new SmuggleHelper(service);
-            helper.queue(setupAttack);
+            SmuggleHelper helper = new SmuggleHelper(service, true);
+            helper.queue(setupAttack, attack.getRight());
             helper.queue(Utilities.helpers.bytesToString(victim));
             helper.queue(Utilities.helpers.bytesToString(victim));
 
@@ -318,7 +322,7 @@ public abstract class SmuggleScanBox extends Scan {
                 issueTitle = "HTTP Request Smuggling maybe";
             }
 
-            helper = new SmuggleHelper(service);
+            helper = new SmuggleHelper(service, true);
             int randomCheckCount = 7;
             if (Utilities.globalSettings.getBoolean("skip straight to poc")) {
                 randomCheckCount = 14;

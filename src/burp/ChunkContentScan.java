@@ -1,5 +1,8 @@
 package burp;
 
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.HashMap;
@@ -26,8 +29,8 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
 
 
         if (Utilities.globalSettings.getBoolean("skip straight to poc")) {
-            sendPoc(original, service, true, config);
-            sendPoc(original, service, false, config);
+            tryPocs(original, service, true, config);
+            tryPocs(original, service, false, config);
             return false;
         }
 
@@ -73,7 +76,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
                                 "As such, it may be vulnerable to HTTP Desync attacks, aka Request Smuggling. <br/>" +
                                 "To attempt an actual Desync attack, right click on the attached request and choose 'Desync attack'. Please note that this is not risk-free - other genuine visitors to the site may be affected.<br/><br/>Please refer to the following posts for further information: <br/><a href=\"https://portswigger.net/blog/http-desync-attacks\">https://portswigger.net/blog/http-desync-attacks</a><br/><a href=\"https://portswigger.net/research/http-desync-attacks-what-happened-next\">https://portswigger.net/research/http-desync-attacks-what-happened-next</a><br/><a href=\"https://portswigger.net/research/breaking-the-chains-on-http-request-smuggler\">https://portswigger.net/research/breaking-the-chains-on-http-request-smuggler</a>",
                         syncedResp, syncedBreakResp, truncatedChunk);
-                sendPoc(original, service, true, config);
+                tryPocs(original, service, true, config);
                 return true;
             }
         }
@@ -114,14 +117,14 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
                             "As such, it may be vulnerable to HTTP Desync attacks, aka Request Smuggling. <br/>" +
                             "To attempt an actual Desync attack, right click on the attached request and choose 'Desync attack'. Please note that this is not risk-free - other genuine visitors to the site may be affected. <br/><br/><br/>Please refer to the following posts for further information: <br/><a href=\"https://portswigger.net/blog/http-desync-attacks\">https://portswigger.net/blog/http-desync-attacks</a><br/><a href=\"https://portswigger.net/research/http-desync-attacks-what-happened-next\">https://portswigger.net/research/http-desync-attacks-what-happened-next</a><br/><a href=\"https://portswigger.net/research/breaking-the-chains-on-http-request-smuggler\">https://portswigger.net/research/breaking-the-chains-on-http-request-smuggler</a>",
                     syncedResp, truncatedChunk);
-            sendPoc(original, service, false, config);
+            tryPocs(original, service, false, config);
             return true;
         }
 
         return false;
     }
 
-    static boolean sendPoc(byte[] base, IHttpService service, boolean CLTE, HashMap<String, Boolean> config) {
+    static boolean tryPocs(byte[] base, IHttpService service, boolean CLTE, HashMap<String, Boolean> config) {
 
         HashSet<Boolean> results = new LinkedHashSet<>();
         if (Utilities.globalSettings.getBoolean("poc: G")) {
@@ -192,13 +195,13 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
     }
 
 
-    static String getCLTEAttack(byte[] base, String inject, HashMap<String, Boolean> config) {
+    static Pair<String, Integer> getCLTEAttack(byte[] base, String inject, HashMap<String, Boolean> config) {
         byte[] prep = Utilities.setHeader(base, "Connection", "keep-alive");
         prep = bypassContentLengthFix(makeChunked(prep, inject.length(), 0, config, false));
-        return Utilities.helpers.bytesToString(prep)+inject;
+        return new ImmutablePair<>(Utilities.helpers.bytesToString(prep)+inject, inject.length() * -1);
     }
 
-    static String getTECLAttack(byte[] base, String inject, HashMap<String, Boolean> config) {
+    static Pair<String, Integer> getTECLAttack(byte[] base, String inject, HashMap<String, Boolean> config) {
         try {
             byte[] initial = Utilities.setHeader(base, "Connection", "keep-alive");
             ByteArrayOutputStream attackStream = new ByteArrayOutputStream();
@@ -212,7 +215,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
 
             attack = bypassContentLengthFix(attack);
             //Utils.out(Utilities.helpers.bytesToString(attack));
-            return Utilities.helpers.bytesToString(attack);
+            return new ImmutablePair<>(Utilities.helpers.bytesToString(attack), Utilities.getBodyStart(attack)+CL+2);
         } catch (IOException e) {
             return null;
         }
@@ -221,13 +224,15 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
 
     static boolean prepPoc(byte[] base, IHttpService service, boolean CLTE, String name, String inject, HashMap<String, Boolean> config) {
         String setupAttack;
+        int pauseAfter;
+        Pair<String, Integer> attack;
         if (CLTE ) {
-            setupAttack = getCLTEAttack(base, inject, config);
+            attack = getCLTEAttack(base, inject, config);
         } else {
-            setupAttack = getTECLAttack(base, inject, config);
+            attack = getTECLAttack(base, inject, config);
         }
         byte[] victim = makeChunked(base, 0, 0, config, false);
-        return sendPoc(name, setupAttack, victim, service, new HashMap<>());
+        return launchPoc(name, attack, victim, service, new HashMap<>());
     }
 
 

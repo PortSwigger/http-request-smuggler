@@ -50,7 +50,7 @@ public class H1TunnelScan extends SmuggleScanBox implements IScannerCheck {
             return false;
         }
 
-        SmuggleHelper helper = new SmuggleHelper(service);
+        SmuggleHelper helper = new SmuggleHelper(service, true);
         helper.queue(new String(original));
         helper.queue(TRIGGER);
         List<Resp> results = helper.waitFor();

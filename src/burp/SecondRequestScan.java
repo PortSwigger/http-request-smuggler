@@ -35,7 +35,7 @@ public class SecondRequestScan extends SmuggleScanBox implements IScannerCheck {
         Resp bad = request(service, TRIGGER.getBytes(), 0, true);
         String nonNestedCode = getPathFromRequest(bad.getReq().getResponse());
 
-        SmuggleHelper helper = new SmuggleHelper(service);
+        SmuggleHelper helper = new SmuggleHelper(service, true);
         helper.queue(new String(original));
         helper.queue(TRIGGER);
         List<Resp> results = helper.waitFor();

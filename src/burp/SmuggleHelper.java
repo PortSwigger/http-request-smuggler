@@ -1,4 +1,5 @@
 package burp;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -9,11 +10,11 @@ class SmuggleHelper {
     private IHttpService service;
     private int id = 0;
 
-    SmuggleHelper(IHttpService service) {
+    SmuggleHelper(IHttpService service, boolean reuseConnection) {
         this.service = service;
         String url = service.getProtocol()+"://"+service.getHost()+":"+service.getPort();
-        if (Utilities.globalSettings.getBoolean("use turbo for autopoc")) {
-            this.engine = new ThreadedRequestEngine(url, 1, 20, 1, 5, 0, this::callback, 10, null, 1024, false);
+        if (reuseConnection) {
+            this.engine = new ThreadedRequestEngine(url, 1, 20, 1, 50, 0, this::callback, 10, null, 1024, false);
         }
         else {
             this.engine = new BurpRequestEngine(url, 1, 20, 0, this::callback, null, true);
@@ -22,6 +23,10 @@ class SmuggleHelper {
 
     void queue(String req) {
         engine.queue(req); // , Integer.toString(id++)
+    }
+
+    void queue(String req, int pauseBefore) {
+        engine.queue(req, new ArrayList<>(), 0, null, null, null, pauseBefore); // , Integer.toString(id++)
     }
 
     private boolean callback(Request req, boolean interesting) {
