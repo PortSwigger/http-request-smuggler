@@ -1,4 +1,5 @@
 package burp;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -21,7 +22,7 @@ class SmuggleHelper {
     }
 
     void queue(String req) {
-        engine.queue(req); // , Integer.toString(id++)
+        engine.queue(req, new ArrayList<>(), 0, null, null, null, 0, 0); // , Integer.toString(id++)
     }
 
     private boolean callback(Request req, boolean interesting) {
