@@ -168,7 +168,7 @@ public abstract class SmuggleScanBox extends Scan {
 
     static byte[] makeChunked(byte[] baseReq, int contentLengthOffset, int chunkOffset) {
         HashMap<String, Boolean> settings = new HashMap<>();
-         DesyncBox.h1Settings.register("vanilla", true);
+        settings.put("vanilla", true);
         return makeChunked(baseReq, contentLengthOffset, chunkOffset, settings, false);
     }
 
