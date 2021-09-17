@@ -2,11 +2,12 @@ Uuid: aaaa60ef945341e8a450217a54a11646
 ExtensionType: 1
 Name: HTTP Request Smuggler
 RepoName: http-request-smuggler
-ScreenVersion: 2.0
-SerialVersion: 23
+ScreenVersion: 2.01
+SerialVersion: 25
 MinPlatformVersion: 0
 ProOnly: False
 Author: James Kettle
 ShortDescription: Helps you launch HTTP Request Smuggling attacks, supports scanning for Request Smuggling vulnerabilities and also aids exploitation by handling cumbersome offset-tweaking for you
 EntryPoint: build/libs/http-request-smuggler-all.jar
 BuildCommand: gradle fatJar
+SupportedProducts: Pro, Community

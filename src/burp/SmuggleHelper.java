@@ -26,9 +26,6 @@ class SmuggleHelper {
     }
 
     void queue(String req, int pauseBefore) {
-//        if (pauseBefore != 0) {
-//            Utils.out("Pausebefore: "+pauseBefore);
-//        }
         engine.queue(req, new ArrayList<>(), 0, null, null, null, pauseBefore, 4000); // , Integer.toString(id++)
     }
 
