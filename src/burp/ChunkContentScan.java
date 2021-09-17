@@ -23,7 +23,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
         original = setupRequest(original);
         original = Utilities.addOrReplaceHeader(original, "User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36");
         original = Utilities.addOrReplaceHeader(original, "Transfer-Encoding", "chunked");
-        original = Utilities.setHeader(original, "Connection", "close", true);
+        original = Utilities.addOrReplaceHeader(original, "Connection", "close");
 
 
         if (Utilities.globalSettings.getBoolean("skip straight to poc")) {
@@ -191,7 +191,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
 
             }
 
-            boolean outcome = launchPoc(base, technique, CLTE, false, inject, service, config);
+            boolean outcome = false;//launchPoc(base, technique, CLTE, false, inject, service, config);
             if (!outcome) {
                 outcome = launchPoc(base, technique, CLTE, true, inject, service, config);
             }
@@ -203,14 +203,14 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
 
 
     static Pair<String, Integer> getCLTEAttack(byte[] base, String inject, HashMap<String, Boolean> config) {
-        byte[] prep = Utilities.setHeader(base, "Connection", "keep-alive");
+        byte[] prep = Utilities.addOrReplaceHeader(base, "Connection", "keep-alive");
         prep = bypassContentLengthFix(makeChunked(prep, inject.length(), 0, config, false));
         return new ImmutablePair<>(Utilities.helpers.bytesToString(prep)+inject, inject.length() * -1);
     }
 
     static Pair<String, Integer> getTECLAttack(byte[] base, String inject, HashMap<String, Boolean> config) {
         try {
-            byte[] initial = Utilities.setHeader(base, "Connection", "keep-alive");
+            byte[] initial = Utilities.addOrReplaceHeader(base, "Connection", "keep-alive");
             ByteArrayOutputStream attackStream = new ByteArrayOutputStream();
             attackStream.write(initial);
             attackStream.write(inject.getBytes());

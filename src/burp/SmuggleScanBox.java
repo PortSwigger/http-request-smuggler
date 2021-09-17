@@ -129,7 +129,7 @@ public abstract class SmuggleScanBox extends Scan {
 
 
     Resp leftAlive(byte[] req, IHttpService service) {
-        byte[] keepalive = Utilities.setHeader(req, "Connection", "keep-alive");
+        byte[] keepalive = Utilities.addOrReplaceHeader(req, "Connection", "keep-alive");
         Resp resp = request(service, keepalive, 0, true);
         String connectionType = Utilities.getHeader(resp.getReq().getResponse(), "Connection");
         if (connectionType.toLowerCase().contains("alive")) {
@@ -276,12 +276,74 @@ public abstract class SmuggleScanBox extends Scan {
             attack = getTECLAttack(base, inject, config);
         }
         byte[] victim = makeChunked(base, 0, 0, config, false);
+        String victimString = Utilities.helpers.bytesToString(victim);
 
         String setupAttack = attack.getLeft();
 
         if ("collab-blind".equals(name)) {
             request(service, setupAttack.getBytes(), 0, true);
             return false;
+        }
+
+        if (reuseConnection) {
+
+            SmuggleHelper helper = new SmuggleHelper(service, reuseConnection);
+            helper.queue(setupAttack, attack.getRight());
+            helper.queue(setupAttack);
+            List<Resp> results = helper.waitFor();
+            Resp pauseReq = results.get(0);
+            Resp poisonedReq = results.get(1);
+            if (pauseReq.failed() || poisonedReq.failed() || pauseReq.getStatus() == poisonedReq.getStatus()) {
+                return false;
+            }
+            int pauseCode = pauseReq.getStatus();
+
+            // confirm pause doesn't affect status
+            helper = new SmuggleHelper(service, reuseConnection);
+            helper.queue(setupAttack);
+            helper.queue(setupAttack);
+            results = helper.waitFor();
+            if (results.get(0).failed() || results.get(1).failed() || results.get(0).getStatus() == results.get(1).getStatus() || results.get(0).getStatus() != pauseCode) {
+                return false;
+            }
+
+            // confirm status diff isn't second-request-fluff
+            helper = new SmuggleHelper(service, reuseConnection);
+            helper.queue(victimString);
+            helper.queue(setupAttack);
+            results = helper.waitFor();
+            int victimStatus = results.get(0).getStatus();
+            if (results.get(1).getStatus() == poisonedReq.getStatus()) {
+                return false;
+            }
+
+            // confirm pause-noresponse wasn't a one-off
+            helper = new SmuggleHelper(service, reuseConnection);
+            helper.queue(setupAttack, attack.getRight());
+            helper.queue(setupAttack);
+            results = helper.waitFor();
+            if (results.get(0).failed() || results.get(1).failed() || results.get(0).getStatus() == results.get(1).getStatus() || results.get(0).getStatus() != pauseCode) {
+                return false;
+            }
+
+            helper = new SmuggleHelper(service, reuseConnection);
+            for(int i=0;i<8;i++) {
+                helper.queue(victimString);
+            }
+
+            String amend = " | good?";
+            results = helper.waitFor();
+            for (Resp result: results) {
+                if (!result.failed() && result.getStatus() != victimStatus) {
+                    amend = "| wobbly";
+                    //Utils.out("Discounting random-status issue on "+service.getHost());
+                    break;
+                }
+            }
+
+            report("Connection-locked smuggling"+amend, "", pauseReq, poisonedReq);
+            BurpExtender.hostsToSkip.putIfAbsent(service.getHost(), true);
+            return true;
         }
 
         try {
@@ -356,7 +418,6 @@ public abstract class SmuggleScanBox extends Scan {
 
             BurpExtender.hostsToSkip.putIfAbsent(service.getHost(), true);
 
-            Utils.out("Exiting try/catch");
             return true;
         }
         catch (Exception e) {
