@@ -122,7 +122,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
         return false;
     }
 
-    static List<String> pocTechniques = Arrays.asList("G", "headerConcat", "bodyConcat", "collab", "collab-header", "collab-XFO-header", "collab-abs", "collab-at", "collab-blind");
+    static List<String> pocTechniques = Arrays.asList("G", "FOO", "headerConcat", "bodyConcat", "collab", "collab-header", "collab-XFO-header", "collab-abs", "collab-at", "collab-blind");
     static boolean tryPocs(byte[] base, IHttpService service, boolean CLTE, HashMap<String, Boolean> config) {
 
         HashSet<Boolean> results = new LinkedHashSet<>();
@@ -137,6 +137,9 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
             switch (technique) {
                 case "G":
                     inject = "G";
+                    break;
+                case "FOO":
+                    inject = "FOO BAR AAH\r\n\r\n";
                     break;
                 case "headerConcat":
                     inject = "GET /?x=5u0ddwptlhzwzk0kkdjae3bt9kfc31/"+service.getHost()+" HTTP/1.1\r\n" +

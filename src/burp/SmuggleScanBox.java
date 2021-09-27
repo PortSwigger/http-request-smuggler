@@ -26,6 +26,7 @@ public abstract class SmuggleScanBox extends Scan {
 
         DesyncBox.h1Settings.register("skip straight to poc", false);
         DesyncBox.h1Settings.register("poc: G", false);
+        DesyncBox.h1Settings.register("poc: FOO", false);
         DesyncBox.h1Settings.register("poc: headerConcat", false);
         DesyncBox.h1Settings.register("poc: bodyConcat", false);
         DesyncBox.h1Settings.register("poc: collab", false);
@@ -287,8 +288,9 @@ public abstract class SmuggleScanBox extends Scan {
 
         if (reuseConnection) {
 
+            int pauseTime = 4000;
             SmuggleHelper helper = new SmuggleHelper(service, reuseConnection);
-            helper.queue(setupAttack, attack.getRight());
+            helper.queue(setupAttack, attack.getRight(), pauseTime);
             helper.queue(setupAttack);
             List<Resp> results = helper.waitFor();
             Resp pauseReq = results.get(0);
@@ -307,6 +309,10 @@ public abstract class SmuggleScanBox extends Scan {
                 return false;
             }
 
+            if (results.get(0).getResponseTime() + 2000 > pauseReq.getResponseTime()) {
+                return false;
+            }
+
             // confirm status diff isn't second-request-fluff
             helper = new SmuggleHelper(service, reuseConnection);
             helper.queue(victimString);
@@ -319,7 +325,7 @@ public abstract class SmuggleScanBox extends Scan {
 
             // confirm pause-noresponse wasn't a one-off
             helper = new SmuggleHelper(service, reuseConnection);
-            helper.queue(setupAttack, attack.getRight());
+            helper.queue(setupAttack, attack.getRight(), pauseTime);
             helper.queue(setupAttack);
             results = helper.waitFor();
             if (results.get(0).failed() || results.get(1).failed() || results.get(0).getStatus() == results.get(1).getStatus() || results.get(0).getStatus() != pauseCode) {
@@ -349,7 +355,7 @@ public abstract class SmuggleScanBox extends Scan {
         try {
             Resp baseline = request(service, victim, 0, true);
             SmuggleHelper helper = new SmuggleHelper(service, reuseConnection);
-            helper.queue(setupAttack, attack.getRight());
+            helper.queue(setupAttack); // no need to pause here right?
             helper.queue(Utilities.helpers.bytesToString(victim));
             helper.queue(Utilities.helpers.bytesToString(victim));
 

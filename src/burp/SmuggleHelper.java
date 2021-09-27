@@ -22,11 +22,11 @@ class SmuggleHelper {
     }
 
     void queue(String req) {
-        queue(req, 0);
+        queue(req, 0, 0);
     }
 
-    void queue(String req, int pauseBefore) {
-        engine.queue(req, new ArrayList<>(), 0, null, null, null, pauseBefore, 4000); // , Integer.toString(id++)
+    void queue(String req, int pauseBefore, int pauseTime) {
+        engine.queue(req, new ArrayList<>(), 0, null, null, null, pauseBefore, pauseTime); // , Integer.toString(id++)
     }
 
     private boolean callback(Request req, boolean interesting) {
