@@ -77,6 +77,7 @@ public class DesyncBox {
         h1Permutations.register("0dspam", true);
         h1Permutations.register("badwrap", true);
         h1Permutations.register("bodysplit", true);
+        h1Permutations.register("h1case", true);
 
         h2Permutations.register("http2hide", true);
         h2Permutations.register("h2colon", true);
@@ -269,6 +270,8 @@ public class DesyncBox {
                 transformed = Utilities.replace(request, "Transfer-Encoding: chunked", "Transfer-Encoding chunked : chunked");
             } else if (technique.equals("notchunked")){
                 transformed = Utilities.replace(request, "Transfer-Encoding: chunked", "Nothing-interesting: 1");
+            } else if (technique.equals("h1case")) {
+                transformed = Utilities.replace(request, "Transfer-Encoding: chunked", "transfer-encoding: chunked");
             }
 
 
