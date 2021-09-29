@@ -207,7 +207,8 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
 
     static Pair<String, Integer> getCLTEAttack(byte[] base, String inject, HashMap<String, Boolean> config) {
         byte[] prep = Utilities.addOrReplaceHeader(base, "Connection", "keep-alive");
-        prep = bypassContentLengthFix(makeChunked(prep, inject.length(), 0, config, false));
+        makeChunked(prep, inject.length(), 0, config, false); // no need to bypass content-length fix
+        //prep = bypassContentLengthFix(makeChunked(prep, inject.length(), 0, config, false));
         return new ImmutablePair<>(Utilities.helpers.bytesToString(prep)+inject, inject.length() * -1);
     }
 

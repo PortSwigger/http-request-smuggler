@@ -287,18 +287,24 @@ public abstract class SmuggleScanBox extends Scan {
         }
 
         if (reuseConnection) {
+            String amend = " | good?";
 
             int pauseTime = 4000;
             SmuggleHelper helper = new SmuggleHelper(service, reuseConnection);
+            //Utils.out("Initial probe: "+attack.getRight() + "|" + pauseTime);
             helper.queue(setupAttack, attack.getRight(), pauseTime);
             helper.queue(setupAttack);
             List<Resp> results = helper.waitFor();
+            if (results.size() < 2) {
+                return false;
+            }
             Resp pauseReq = results.get(0);
             Resp poisonedReq = results.get(1);
             if (pauseReq.failed() || poisonedReq.failed() || pauseReq.getStatus() == poisonedReq.getStatus()) {
                 return false;
             }
             int pauseCode = pauseReq.getStatus();
+            BulkScanLauncher.getTaskEngine().candidates.incrementAndGet();
 
             // confirm pause doesn't affect status
             helper = new SmuggleHelper(service, reuseConnection);
@@ -306,11 +312,14 @@ public abstract class SmuggleScanBox extends Scan {
             helper.queue(setupAttack);
             results = helper.waitFor();
             if (results.get(0).failed() || results.get(1).failed() || results.get(0).getStatus() == results.get(1).getStatus() || results.get(0).getStatus() != pauseCode) {
+                Utils.out("Pause messed with response-status");
                 return false;
             }
+            long baseTime = results.get(0).getResponseTime();
 
-            if (results.get(0).getResponseTime() + 2000 > pauseReq.getResponseTime()) {
-                return false;
+            if (results.get(0).getResponseTime() + 3000 > pauseReq.getResponseTime()) {
+                Utils.out("Suss: "+results.get(0).getResponseTime() + "v" + pauseReq.getResponseTime());
+                amend += "suss: "+results.get(0).getResponseTime() + "v" + pauseReq.getResponseTime();
             }
 
             // confirm status diff isn't second-request-fluff
@@ -320,16 +329,20 @@ public abstract class SmuggleScanBox extends Scan {
             results = helper.waitFor();
             int victimStatus = results.get(0).getStatus();
             if (results.get(1).getStatus() == poisonedReq.getStatus()) {
+                Utils.out("Second-request fluff!");
                 return false;
             }
 
             // confirm pause-noresponse wasn't a one-off
-            helper = new SmuggleHelper(service, reuseConnection);
-            helper.queue(setupAttack, attack.getRight(), pauseTime);
-            helper.queue(setupAttack);
-            results = helper.waitFor();
-            if (results.get(0).failed() || results.get(1).failed() || results.get(0).getStatus() == results.get(1).getStatus() || results.get(0).getStatus() != pauseCode) {
-                return false;
+            for(int i=0;i<3;i++) {
+                helper = new SmuggleHelper(service, reuseConnection);
+                helper.queue(setupAttack, attack.getRight(), pauseTime);
+                helper.queue(setupAttack);
+                results = helper.waitFor();
+                if (results.get(0).failed() || results.get(1).failed() || results.get(0).getStatus() == results.get(1).getStatus() || results.get(0).getStatus() != pauseCode) {
+                    Utils.out("Pause response inconsistent");
+                    return false;
+                }
             }
 
             helper = new SmuggleHelper(service, reuseConnection);
@@ -337,7 +350,7 @@ public abstract class SmuggleScanBox extends Scan {
                 helper.queue(victimString);
             }
 
-            String amend = " | good?";
+
             results = helper.waitFor();
             for (Resp result: results) {
                 if (!result.failed() && result.getStatus() != victimStatus) {
@@ -347,7 +360,7 @@ public abstract class SmuggleScanBox extends Scan {
                 }
             }
 
-            report("Connection-locked smuggling"+amend, "", pauseReq, poisonedReq);
+            report("Connection-locked smuggling"+amend, "PauseAfter: "+attack.getRight() + "<br/>Pausetime: " + pauseTime +"<br/>Actual-time: "+pauseReq.getResponseTime()+"<br/>Basetime "+baseTime, pauseReq, poisonedReq);
             BurpExtender.hostsToSkip.putIfAbsent(service.getHost(), true);
             return true;
         }

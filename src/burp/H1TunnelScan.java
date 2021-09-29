@@ -1,9 +1,13 @@
 package burp;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import java.util.HashMap;
 import java.util.List;
 
+import static burp.ChunkContentScan.getTECLAttack;
 import static burp.Utilities.getPathFromRequest;
+import static burp.Utilities.helpers;
 
 public class H1TunnelScan extends SmuggleScanBox implements IScannerCheck {
 
@@ -37,11 +41,15 @@ public class H1TunnelScan extends SmuggleScanBox implements IScannerCheck {
 
         final String TRIGGER = "FOO BAR AAH\r\n\r\n";
         byte[] attack = HeadScanTE.buildTEAttack(base, config, TRIGGER);
+        //byte[] attack = Utilities.setBody(base, TRIGGER);
         Resp resp = request(service, attack, 0, true);
         byte[] nestedRespBytes = burp.Utilities.getNestedResponse(resp.getReq().getResponse());
         if (nestedRespBytes == null) {
             return false;
         }
+
+        boolean timeWorked = H1TimeTunnel(base, service, config);
+
         String nestedRespCode = getPathFromRequest(nestedRespBytes);
         Resp bad = request(service, TRIGGER.getBytes(), 3, true);
         String nonNestedCode = getPathFromRequest(bad.getReq().getResponse());
@@ -88,7 +96,41 @@ public class H1TunnelScan extends SmuggleScanBox implements IScannerCheck {
         if (!"".equals(nonNestedCode)) {
             title += " good";
         }
+        if (timeWorked) {
+            title += " [time-confirmed]";
+        }
+
         report(title, "", resp, bad, results.get(0), results.get(1));
+        return true;
+    }
+
+    private boolean H1TimeTunnel(byte[] base, IHttpService service, HashMap<String, Boolean> config) {
+        final String TRIGGER = "FOO BAR AAH\r\n\r\n";
+        //byte[] attack = Utilities.setBody(base, TRIGGER);
+        byte[] attack = HeadScanTE.buildTEAttack(base, config, TRIGGER);
+        //Pair<String, Integer> attack = getTECLAttack(base, TRIGGER, config);
+
+        SmuggleHelper helper = new SmuggleHelper(service, true);
+        helper.queue(helpers.bytesToString(attack), -15, 4000);
+        List<Resp> results = helper.waitFor();
+        Resp pauseReq = results.get(0);
+        if (pauseReq.failed()) {
+            return false;
+        }
+
+        byte[] nestedRespBytes = burp.Utilities.getNestedResponse(pauseReq.getReq().getResponse());
+        if (nestedRespBytes == null) {
+            return false;
+        }
+
+        helper = new SmuggleHelper(service, true);
+        helper.queue(helpers.bytesToString(attack));
+        results = helper.waitFor();
+        if (results.get(0).getResponseTime() + 2000 > pauseReq.getResponseTime()) {
+            return false;
+        }
+
+        report("H1-timetunnel v2: "+pauseReq.getResponseTime(), "", pauseReq);
         return true;
     }
 
