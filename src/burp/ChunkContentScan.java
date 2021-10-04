@@ -193,14 +193,14 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
 
 
     static String getCLTEAttack(byte[] base, String inject, HashMap<String, Boolean> config) {
-        byte[] prep = Utilities.setHeader(base, "Connection", "keep-alive");
+        byte[] prep = Utilities.setHeader(base, "Connection", "keep-alive", true);
         prep = bypassContentLengthFix(makeChunked(prep, inject.length(), 0, config, false));
         return Utilities.helpers.bytesToString(prep)+inject;
     }
 
     static String getTECLAttack(byte[] base, String inject, HashMap<String, Boolean> config) {
         try {
-            byte[] initial = Utilities.setHeader(base, "Connection", "keep-alive");
+            byte[] initial = Utilities.setHeader(base, "Connection", "keep-alive", true);
             ByteArrayOutputStream attackStream = new ByteArrayOutputStream();
             attackStream.write(initial);
             attackStream.write(inject.getBytes());
