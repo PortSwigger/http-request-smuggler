@@ -16,10 +16,6 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
     }
 
     public boolean doConfiguredScan(byte[] original, IHttpService service, HashMap<String, Boolean> config) {
-        if (Utilities.globalSettings.getBoolean("skip vulnerable hosts") && BurpExtender.hostsToSkip.containsKey(service.getHost())) {
-            return false;
-        }
-
         original = setupRequest(original);
         original = Utilities.addOrReplaceHeader(original, "User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36");
         original = Utilities.addOrReplaceHeader(original, "Transfer-Encoding", "chunked");
@@ -205,16 +201,18 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
     }
 
 
+
     static Pair<String, Integer> getCLTEAttack(byte[] base, String inject, HashMap<String, Boolean> config) {
-        byte[] prep = Utilities.addOrReplaceHeader(base, "Connection", "keep-alive");
+        byte[] prep = Utilities.setHeader(base, "Connection", "keep-alive", true);
         makeChunked(prep, inject.length(), 0, config, false); // no need to bypass content-length fix
         //prep = bypassContentLengthFix(makeChunked(prep, inject.length(), 0, config, false));
         return new ImmutablePair<>(Utilities.helpers.bytesToString(prep)+inject, inject.length() * -1);
+
     }
 
     static Pair<String, Integer> getTECLAttack(byte[] base, String inject, HashMap<String, Boolean> config) {
         try {
-            byte[] initial = Utilities.addOrReplaceHeader(base, "Connection", "keep-alive");
+            byte[] initial = Utilities.setHeader(base, "Connection", "keep-alive", true);
             ByteArrayOutputStream attackStream = new ByteArrayOutputStream();
             attackStream.write(initial);
             attackStream.write(inject.getBytes());
