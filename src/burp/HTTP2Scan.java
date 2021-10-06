@@ -15,10 +15,6 @@ public class HTTP2Scan extends SmuggleScanBox implements IScannerCheck {
     }
 
     public boolean doConfiguredScan(byte[] original, IHttpService service, HashMap<String, Boolean> config) {
-        if (Utilities.globalSettings.getBoolean("skip vulnerable hosts") && BurpExtender.hostsToSkip.containsKey(service.getHost())) {
-            return false;
-        }
-
         original = setupRequest(original);
         if (!Utilities.isHTTP2(original)) {
             original = Utilities.replaceFirst(original, " HTTP/1.1\r\n", " HTTP/2\r\n");

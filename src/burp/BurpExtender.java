@@ -9,7 +9,7 @@ public class BurpExtender implements IBurpExtender, IExtensionStateListener {
     static final String name = "HTTP Request Smuggler";
     private static final String version = "2.01";
     public boolean unloaded = false;
-    static ConcurrentHashMap<String, Boolean> hostsToSkip = new ConcurrentHashMap<>();
+    static ConcurrentHashMap<String, Boolean> hostsToSkip = BulkScan.hostsToSkip;
 
     @Override
     public void registerExtenderCallbacks(final IBurpExtenderCallbacks callbacks) {
