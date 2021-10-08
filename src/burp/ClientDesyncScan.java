@@ -11,9 +11,6 @@ public class ClientDesyncScan  extends Scan {
 
     @Override
     List<IScanIssue> doScan(byte[] baseReq, IHttpService service) {
-        if (Utilities.globalSettings.getBoolean("skip vulnerable hosts") && BurpExtender.hostsToSkip.containsKey(service.getHost())) {
-            return null;
-        }
 
         if (service.getHost().contains(".acss.att.com")) {
             return null;

@@ -18,9 +18,6 @@ public class H1TunnelScan extends SmuggleScanBox implements IScannerCheck {
     }
 
     public boolean doConfiguredScan(byte[] original, IHttpService service, HashMap<String, Boolean> config) {
-        if (Utilities.globalSettings.getBoolean("skip vulnerable hosts") && BurpExtender.hostsToSkip.containsKey(service.getHost())) {
-            return false;
-        }
 
         if(service.getHost().contains(".acss.att.com")) {
             return false;

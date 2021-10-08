@@ -115,13 +115,17 @@ public class HTTP2Scan extends SmuggleScanBox implements IScannerCheck {
        return false;
     }
 
-    // based on BulkScan.request()
     public static Resp h2request(IHttpService service, byte[] req) {
+        return h2request(service, req, true);
+    }
+
+    // based on BulkScan.request()
+    public static Resp h2request(IHttpService service, byte[] req, boolean transform) {
         if (Utilities.unloaded.get()) {
             throw new RuntimeException("Aborting request due to extension unload");
         }
 
-        LinkedList<Pair<String, String>> h2headers = Connection.Companion.buildReq(new HTTP2Request(Utilities.helpers.bytesToString(req)));
+        LinkedList<Pair<String, String>> h2headers = Connection.Companion.buildReq(new HTTP2Request(Utilities.helpers.bytesToString(req)), transform);
         ArrayList<IHttpHeader> headers = new ArrayList<>();
         h2headers.forEach(entry -> { headers.add(Utilities.helpers.buildHeader(entry.getFirst(), entry.getSecond())); });
         byte[] body = Utilities.getBodyBytes(req);

@@ -18,10 +18,6 @@ public class SecondRequestScan extends SmuggleScanBox implements IScannerCheck {
             return false;
         }
 
-        if (Utilities.globalSettings.getBoolean("skip vulnerable hosts") && BurpExtender.hostsToSkip.containsKey(service.getHost())) {
-            return false;
-        }
-
         if(service.getHost().contains(".acss.att.com")) {
             return false;
         }
