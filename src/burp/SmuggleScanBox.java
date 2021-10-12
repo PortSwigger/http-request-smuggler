@@ -273,7 +273,7 @@ public abstract class SmuggleScanBox extends Scan {
 
         try {
             Resp baseline = request(service, victim, 0, true);
-            SmuggleHelper helper = new SmuggleHelper(service);
+            TurboHelper helper = new TurboHelper(service, true);
             helper.queue(setupAttack);
             helper.queue(Utilities.helpers.bytesToString(victim));
             helper.queue(Utilities.helpers.bytesToString(victim));
@@ -318,7 +318,7 @@ public abstract class SmuggleScanBox extends Scan {
                 issueTitle = "HTTP Request Smuggling maybe";
             }
 
-            helper = new SmuggleHelper(service);
+            helper = new TurboHelper(service, true);
             int randomCheckCount = 7;
             if (Utilities.globalSettings.getBoolean("skip straight to poc")) {
                 randomCheckCount = 14;

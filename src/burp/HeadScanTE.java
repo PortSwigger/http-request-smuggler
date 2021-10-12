@@ -88,7 +88,7 @@ public class HeadScanTE extends SmuggleScanBox implements IScannerCheck {
                         return true;
                     } else if (false && mixedResponse(resp, false)) { // disabled as it's too sketchy
                         recordCandidateFound();
-                        SmuggleHelper helper = new SmuggleHelper(service);
+                        TurboHelper helper = new TurboHelper(service, true);
                         helper.queue(Utilities.helpers.bytesToString(attack));
                         List<Resp> results = helper.waitFor();
                         if (mixedResponse(results.get(0), false)) {
