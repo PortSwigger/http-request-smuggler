@@ -369,8 +369,10 @@ public abstract class SmuggleScanBox extends Scan {
 
         try {
             Resp baseline = request(service, victim, 0, true);
+
             TurboHelper helper = new TurboHelper(service, reuseConnection);
             helper.queue(setupAttack); // no need to pause here right?
+
             helper.queue(Utilities.helpers.bytesToString(victim));
             helper.queue(Utilities.helpers.bytesToString(victim));
 
@@ -415,6 +417,7 @@ public abstract class SmuggleScanBox extends Scan {
             }
 
             helper = new TurboHelper(service, reuseConnection);
+
             int randomCheckCount = 7;
             if (Utilities.globalSettings.getBoolean("skip straight to poc")) {
                 randomCheckCount = 14;
