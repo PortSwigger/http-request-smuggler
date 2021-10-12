@@ -292,7 +292,7 @@ public abstract class SmuggleScanBox extends Scan {
             String amend = " | good?";
 
             int pauseTime = 4000;
-            SmuggleHelper helper = new SmuggleHelper(service, reuseConnection);
+            TurboHelper helper = new TurboHelper(service, reuseConnection);
             //Utils.out("Initial probe: "+attack.getRight() + "|" + pauseTime);
             helper.queue(setupAttack, attack.getRight(), pauseTime);
             helper.queue(setupAttack);
@@ -309,7 +309,7 @@ public abstract class SmuggleScanBox extends Scan {
             BulkScanLauncher.getTaskEngine().candidates.incrementAndGet();
 
             // confirm pause doesn't affect status
-            helper = new SmuggleHelper(service, reuseConnection);
+            helper = new TurboHelper(service, reuseConnection);
             helper.queue(setupAttack);
             helper.queue(setupAttack);
             results = helper.waitFor();
@@ -325,7 +325,7 @@ public abstract class SmuggleScanBox extends Scan {
             }
 
             // confirm status diff isn't second-request-fluff
-            helper = new SmuggleHelper(service, reuseConnection);
+            helper = new TurboHelper(service, reuseConnection);
             helper.queue(victimString);
             helper.queue(setupAttack);
             results = helper.waitFor();
@@ -337,7 +337,7 @@ public abstract class SmuggleScanBox extends Scan {
 
             // confirm pause-noresponse wasn't a one-off
             for(int i=0;i<3;i++) {
-                helper = new SmuggleHelper(service, reuseConnection);
+                helper = new TurboHelper(service, reuseConnection);
                 helper.queue(setupAttack, attack.getRight(), pauseTime);
                 helper.queue(setupAttack);
                 results = helper.waitFor();
@@ -347,7 +347,7 @@ public abstract class SmuggleScanBox extends Scan {
                 }
             }
 
-            helper = new SmuggleHelper(service, reuseConnection);
+            helper = new TurboHelper(service, reuseConnection);
             for(int i=0;i<8;i++) {
                 helper.queue(victimString);
             }
@@ -369,7 +369,7 @@ public abstract class SmuggleScanBox extends Scan {
 
         try {
             Resp baseline = request(service, victim, 0, true);
-            SmuggleHelper helper = new SmuggleHelper(service, reuseConnection);
+            TurboHelper helper = new TurboHelper(service, reuseConnection);
             helper.queue(setupAttack); // no need to pause here right?
             helper.queue(Utilities.helpers.bytesToString(victim));
             helper.queue(Utilities.helpers.bytesToString(victim));
@@ -414,7 +414,7 @@ public abstract class SmuggleScanBox extends Scan {
                 issueTitle = "HTTP Request Smuggling maybe";
             }
 
-            helper = new SmuggleHelper(service, reuseConnection);
+            helper = new TurboHelper(service, reuseConnection);
             int randomCheckCount = 7;
             if (Utilities.globalSettings.getBoolean("skip straight to poc")) {
                 randomCheckCount = 14;

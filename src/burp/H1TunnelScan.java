@@ -55,7 +55,7 @@ public class H1TunnelScan extends SmuggleScanBox implements IScannerCheck {
             return false;
         }
 
-        SmuggleHelper helper = new SmuggleHelper(service, true);
+        TurboHelper helper = new TurboHelper(service, true);
         helper.queue(new String(original));
         helper.queue(TRIGGER);
         List<Resp> results = helper.waitFor();
@@ -107,7 +107,7 @@ public class H1TunnelScan extends SmuggleScanBox implements IScannerCheck {
         byte[] attack = HeadScanTE.buildTEAttack(base, config, TRIGGER);
         //Pair<String, Integer> attack = getTECLAttack(base, TRIGGER, config);
 
-        SmuggleHelper helper = new SmuggleHelper(service, true);
+        TurboHelper helper = new TurboHelper(service, true);
         helper.queue(helpers.bytesToString(attack), -15, 4000);
         List<Resp> results = helper.waitFor();
         Resp pauseReq = results.get(0);
@@ -120,7 +120,7 @@ public class H1TunnelScan extends SmuggleScanBox implements IScannerCheck {
             return false;
         }
 
-        helper = new SmuggleHelper(service, true);
+        helper = new TurboHelper(service, true);
         helper.queue(helpers.bytesToString(attack));
         results = helper.waitFor();
         if (results.get(0).getResponseTime() + 2000 > pauseReq.getResponseTime()) {

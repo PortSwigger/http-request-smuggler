@@ -11,41 +11,56 @@ public class ClientDesyncKeepaliveScan extends Scan {
 
     @Override
     List<IScanIssue> doScan(byte[] baseReq, IHttpService service) {
-        String TRIGGER = "x=y\r\nZ";
+        String POISON = "dlvywmzk";
+        String HARMLESS = "boringzz";
+        String TRIGGER = "GET /"+POISON+" HTTP/1.1\r\nX: Y";
+        String VICTIM = "GET /"+HARMLESS+" HTTP/1.1\r\nX: Y";
         byte[] base = Utilities.setMethod(baseReq, "POST");
         base = Utilities.addOrReplaceHeader(base, "Content-Length", String.valueOf(TRIGGER.length()));
-        List<String> contentTypes = Arrays.asList("application/x-www-form-urlencoded"); // , "multipart/form-data", "text/plain"
+        List<String> contentTypes = Arrays.asList("multipart/form-data"); // application/x-www-form-urlencoded, "multipart/form-data", "text/plain"
 
+        trytechnique:
         for (String contentType: contentTypes) {
             base = Utilities.addOrReplaceHeader(base, "Content-Type", contentType);
 
             byte[] attack = Utilities.setBody(base, TRIGGER);
-            SmuggleHelper helper = new SmuggleHelper(service, true);
+            byte[] followup = Utilities.setBody(base, VICTIM);
 
-            helper.queue(new String(attack));
-            helper.queue(new String(attack));
-            List<Resp> results = helper.waitFor();
-            if (results.size() < 1) {
-                return null;
-            }
+            Resp first = null;
+            Resp second = null;
+            boolean reflectConfirmed = false;
+            for (int i=0; i<4; i++) {
+                TurboHelper helper = new TurboHelper(service, true);
+                helper.queue(new String(attack));
+                helper.queue(new String(followup));
+                List<Resp> results = helper.waitFor();
+                if (results.size() < 1) {
+                    return null;
+                }
 
-            if (results.size() < 2) {
-                continue;
-            }
+                if (results.size() < 2) {
+                    continue trytechnique;
+                }
 
-            Resp first = results.get(0);
-            Resp second = results.get(1);
+                first = results.get(0);
+                second = results.get(1);
 
-            if (first.failed() || second.failed()) {
-                continue;
-            }
+                if (first.failed() || second.failed()) {
+                    continue trytechnique;
+                }
 
-            if (helper.getConnectionCount() > 1) {
-                continue;
-            }
+                if (Utilities.contains(second, POISON)) {
+                    reflectConfirmed = true;
+                    break;
+                }
 
-            if (first.getStatus() == second.getStatus()) {
-                continue;
+                if (helper.getConnectionCount() > 1) {
+                    continue trytechnique;
+                }
+
+                if (first.getStatus() == second.getStatus()) {
+                    continue trytechnique;
+                }
             }
 
             String prefix = "h1-confirmed";
@@ -63,7 +78,14 @@ public class ClientDesyncKeepaliveScan extends Scan {
                 }
             }
 
-            report("Browser desync (line2): "+ contentType.substring(0, 4) +"/"+prefix+ " |" + first.getStatus() + "|" + second.getStatus(), "", baseReq, first, second);
+            String evidence = "";
+            if (reflectConfirmed) {
+                evidence = "reflected";
+            } else {
+                evidence =  first.getStatus() + "|" + second.getStatus();
+            }
+
+            report("Browser desync: "+ contentType.substring(0, 4) +"/"+prefix+ " |"+evidence, "", baseReq, first, second);
             return null;
         }
         return null;
