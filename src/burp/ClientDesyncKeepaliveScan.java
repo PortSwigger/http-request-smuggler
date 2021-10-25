@@ -11,16 +11,22 @@ public class ClientDesyncKeepaliveScan extends Scan {
 
     @Override
     List<IScanIssue> doScan(byte[] baseReq, IHttpService service) {
-        String POISON = "dlvywmzk";
-        String HARMLESS = "boringzz";
+
+        // won't work, breaks SSL
+        String POISON = service.getHost()+".vkj193x6bpt14pbeyinhs9j50w6oud.psres.net";
+        String HARMLESS = service.getHost()+".vkj193x6bpt15pbeyinhs9j50w6oud.psres.net";
         String TRIGGER = "GET /"+POISON+" HTTP/1.1\r\nX: Y";
         String VICTIM = "GET /"+HARMLESS+" HTTP/1.1\r\nX: Y";
         byte[] base = Utilities.setMethod(baseReq, "POST");
+        base = Utilities.setPath(base, "/");
         base = Utilities.addOrReplaceHeader(base, "Content-Length", String.valueOf(TRIGGER.length()));
-        List<String> contentTypes = Arrays.asList("multipart/form-data"); // application/x-www-form-urlencoded, "multipart/form-data", "text/plain"
+        List<String> paths = Arrays.asList("/robots.txt"); // "//", "/%", "/index.html" "/robots.txt"
+        List<String> contentTypes = Arrays.asList("application/x-www-form-urlencoded"); // application/x-www-form-urlencoded, "multipart/form-data", "text/plain"
+        String contentType = contentTypes.get(0);
 
         trytechnique:
-        for (String contentType: contentTypes) {
+        for (String path: paths) {
+            base = Utilities.setPath(base, path);
             base = Utilities.addOrReplaceHeader(base, "Content-Type", contentType);
 
             byte[] attack = Utilities.setBody(base, TRIGGER);
@@ -85,7 +91,15 @@ public class ClientDesyncKeepaliveScan extends Scan {
                 evidence =  first.getStatus() + "|" + second.getStatus();
             }
 
-            report("Browser desync: "+ contentType.substring(0, 4) +"/"+prefix+ " |"+evidence, "", baseReq, first, second);
+            String redirLocation = Utilities.getHeader(first.getReq().getResponse(), "Location");
+            if (redirLocation.startsWith("https://www."+service.getHost()) || redirLocation.equals("") || redirLocation.startsWith("/") || redirLocation.startsWith("https://"+service.getHost())) {
+                report("Browser desync (good target): "+ contentType.substring(0, 4) +"/"+prefix+ " |"+evidence, "", baseReq, first, second);
+            }
+            else {
+                if (!BulkScan.domainAlreadyFlagged(service)) {
+                    report("Browser desync (bad target): " + contentType.substring(0, 4) + "/" + prefix + " |" + evidence, "", baseReq, first, second);
+                }
+            }
             return null;
         }
         return null;
