@@ -10,8 +10,15 @@ The easiest way to install this is in Burp Suite, via `Extender -> BApp Store`.
 If you prefer to load the jar manually, in Burp Suite (community or pro), use `Extender -> Extensions -> Add` to load `build/libs/http-request-smuggler-all.jar`
 
 ### Compile
-* [Turbo Intruder](https://github.com/PortSwigger/turbo-intruder) is a dependency of this project, add it to the root of this source tree as `turbo-intruder-all.jar`
-* Build with `gradle fatJar`
+[Turbo Intruder](https://github.com/PortSwigger/turbo-intruder) is a dependency of this project, add it to the root of this source tree as `turbo-intruder-all.jar`
+
+Build using:
+
+Linux: `./gradlew build fatjar`
+
+Windows: `gradlew.bat build fatjar`
+
+Grab the output from `build/libs/desynchronize-all.jar`
 
 ### Use
 Right click on a request and click `Launch Smuggle probe`, then watch the extension's output pane under `Extender->Extensions->HTTP Request Smuggler`
