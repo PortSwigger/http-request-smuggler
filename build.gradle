@@ -5,7 +5,7 @@ repositories {
 }
 
 dependencies {
-    //compile 'net.portswigger.burp.extender:burp-extender-api:1.7.13'
+    //implementation 'net.portswigger.burp.extender:burp-extender-api:2.3'
     implementation files('burp-extender-api_2021_8-2021.5.jar')
     implementation 'org.apache.commons:commons-lang3:3.5'
     implementation group: 'org.apache.commons', name: 'commons-collections4', version: '4.1'
@@ -35,3 +35,5 @@ compileJava {
     targetCompatibility '1.8'
     sourceCompatibility '1.8'
 }
+sourceCompatibility = JavaVersion.VERSION_11
+targetCompatibility = JavaVersion.VERSION_11

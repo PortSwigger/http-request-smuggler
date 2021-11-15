@@ -1,8 +1,6 @@
 package burp;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class BurpExtender implements IBurpExtender, IExtensionStateListener {
@@ -21,8 +19,9 @@ public class BurpExtender implements IBurpExtender, IExtensionStateListener {
 
         new DesyncBox();
 
-        new BrowserH2DesyncScan("Browser H/2 desync");
-        new ClientDesyncKeepaliveScan("Browser desync");
+        new ImplicitZeroScan("Implicit zero");
+        new ClientDesyncScan("Client desync");
+        new OldClientDesyncScan("Old client desync");
         //new ClientDesyncScan("Client-desync probe");
         new ChunkContentScan("Smuggle probe");
         new H1TunnelScan("H/1 Tunnel probe TE");
@@ -30,7 +29,7 @@ public class BurpExtender implements IBurpExtender, IExtensionStateListener {
 
         new HTTP2Scan("HTTP/2 probe");
         new HeadScanTE("HTTP/2 Tunnel probe TE");
-        new HeadScanCL("HTTP/2 Tunnel probe CL");
+        new H2TunnelScan("HTTP/2 Tunnel probe CL");
         new HiddenHTTP2("HTTP/2-hidden probe");
         new HTTP2Scheme("HTTP/2 :scheme probe");
         new HTTP2DualPath("HTTP/2 dual :path probe");
