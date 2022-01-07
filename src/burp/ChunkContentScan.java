@@ -59,7 +59,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
                         continue;
                     }
 
-                    Resp timeoutplz = SecondRequestScan.desyncRequest(service, syncedBreakReq, 0, true, nestRequest);
+                    Resp timeoutplz = SecondRequestScan.desyncRequest(service, reverseLength, 0, true, nestRequest);
                     if (!timeoutplz.timedOut()) {
                         return false;
                     }
@@ -109,6 +109,23 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
 
             if (SecondRequestScan.desyncRequest(service, syncedReq, 0, true, nestRequest).timedOut()) {
                 return false;
+            }
+
+            // do some repeats to confirm the behaviour is consistent
+            for (int i=0; i<5; i++) {
+                Resp timeoutplz = SecondRequestScan.desyncRequest(service, reverseLength, 0, true, nestRequest);
+                if (!timeoutplz.timedOut()) {
+                    return false;
+                }
+
+                if (i % 2 == 0) {
+                    continue;
+                }
+
+                Resp workplz = SecondRequestScan.desyncRequest(service, syncedReq, 0, true, nestRequest);
+                if (workplz.timedOut()) {
+                    return false;
+                }
             }
 
             String title = "Possible HTTP Request Smuggling: TE.CL " + String.join("|", config.keySet());
