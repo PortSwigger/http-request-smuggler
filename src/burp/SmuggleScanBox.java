@@ -108,6 +108,7 @@ public abstract class SmuggleScanBox extends Scan {
             validPermutations.addAll(relevantPermutations);
         }
 
+        boolean TRYNESTED = false;
         for (String permutation: validPermutations) {
             if (!Utilities.globalSettings.getBoolean(permutation)) {
                 continue;
@@ -121,13 +122,24 @@ public abstract class SmuggleScanBox extends Scan {
                 if (Utilities.globalSettings.getBoolean("skip obsolete permutations")) {
                     break;
                 }
+            } else if (TRYNESTED) {
+                boolean nestedWorked = doConfiguredScan(baseReq, service, config, true);
+                if (nestedWorked) {
+                    String key = permutation+service.getProtocol()+service.getHost();
+                    report("Nested worked: "+key, "", baseReq, new Resp(new Req(baseReq, null, service), 0));
+                }
             }
         }
         return null;
     }
 
-    abstract boolean doConfiguredScan(byte[] baseReq, IHttpService service, HashMap<String, Boolean> config);
+    boolean doConfiguredScan(byte[] baseReq, IHttpService service, HashMap<String, Boolean> config) {
+        return doConfiguredScan(baseReq, service, config, false);
+    }
 
+    boolean doConfiguredScan(byte[] baseReq, IHttpService service, HashMap<String, Boolean> config, boolean nestRequest) {
+        return false;
+    }
 
     Resp leftAlive(byte[] req, IHttpService service) {
 
@@ -319,6 +331,7 @@ public abstract class SmuggleScanBox extends Scan {
             }
             long baseTime = results.get(0).getResponseTime();
 
+            // todo work out what this actually means
             if (results.get(0).getResponseTime() + 3000 > pauseReq.getResponseTime()) {
                 Utils.out("Suss: "+results.get(0).getResponseTime() + "v" + pauseReq.getResponseTime());
                 amend += "suss: "+results.get(0).getResponseTime() + "v" + pauseReq.getResponseTime();
@@ -356,13 +369,14 @@ public abstract class SmuggleScanBox extends Scan {
             results = helper.waitFor();
             for (Resp result: results) {
                 if (!result.failed() && result.getStatus() != victimStatus) {
-                    amend = "| wobbly";
+                    return false;
+                    // amend = "| wobbly";
                     //Utils.out("Discounting random-status issue on "+service.getHost());
-                    break;
+                    //break;
                 }
             }
 
-            report("Connection-locked smuggling"+amend, "PauseAfter: "+attack.getRight() + "<br/>Pausetime: " + pauseTime +"<br/>Actual-time: "+pauseReq.getResponseTime()+"<br/>Basetime "+baseTime, pauseReq, poisonedReq);
+            report("Connection-locked smuggling"+amend, "PauseBefore: "+attack.getRight() + "<br/>Pausetime: " + pauseTime +"<br/>Actual-time: "+pauseReq.getResponseTime()+"<br/>Basetime "+baseTime, pauseReq, poisonedReq);
             BurpExtender.hostsToSkip.putIfAbsent(service.getHost(), true);
             return true;
         }

@@ -15,7 +15,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
         scanSettings.importSettings(DesyncBox.h1Settings);
     }
 
-    public boolean doConfiguredScan(byte[] original, IHttpService service, HashMap<String, Boolean> config) {
+    public boolean doConfiguredScan(byte[] original, IHttpService service, HashMap<String, Boolean> config, boolean nestRequest) {
         original = setupRequest(original);
         original = Utilities.addOrReplaceHeader(original, "User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36");
         original = Utilities.addOrReplaceHeader(original, "Transfer-Encoding", "chunked");
@@ -29,22 +29,22 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
         }
 
         byte[] syncedReq = makeChunked(original, 0, 0, config, false);
-        Resp syncedResp = request(service, syncedReq, 0, true);
+        Resp syncedResp = SecondRequestScan.desyncRequest(service, syncedReq, 0, true, nestRequest);
         if (syncedResp.failed() || (Utilities.globalSettings.getBoolean("only report exploitable") && (syncedResp.getStatus() == 400 || syncedResp.getStatus() == 501))) {
             Utilities.log("Timeout on first request. Aborting.");
             return false;
         }
 
         byte[] syncedBreakReq = makeChunked(original, 0, 0, config, true);
-        Resp syncedBreakResp = request(service, syncedBreakReq, 0, true);
+        Resp syncedBreakResp = SecondRequestScan.desyncRequest(service, syncedBreakReq, 0, true, nestRequest);
         if (!syncedBreakResp.failed()) {
 
             byte[] reverseLength = makeChunked(original, -6, 0, config, true);
 
-            Resp truncatedChunk = request(service, reverseLength, 3, true);
+            Resp truncatedChunk = SecondRequestScan.desyncRequest(service, reverseLength, 3, true, nestRequest);
             if (truncatedChunk.timedOut()) {
 
-                if (request(service, syncedBreakReq, 0, true).timedOut()) {
+                if (SecondRequestScan.desyncRequest(service, syncedBreakReq, 0, true, nestRequest).timedOut()) {
                     return false;
                 }
 
@@ -85,11 +85,11 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
         } catch (IOException e) {
 
         }
-        Resp truncatedChunk = request(service, reverseLength, 3, true);
+        Resp truncatedChunk = SecondRequestScan.desyncRequest(service, reverseLength, 3, true, nestRequest);
 
         if (truncatedChunk.timedOut()) {
 
-            if (request(service, syncedReq, 0, true).timedOut()) {
+            if (SecondRequestScan.desyncRequest(service, syncedReq, 0, true, nestRequest).timedOut()) {
                 return false;
             }
 
@@ -190,10 +190,12 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
 
             }
 
-            boolean outcome = false;//launchPoc(base, technique, CLTE, false, inject, service, config);
-            if (!outcome) {
-                outcome = launchPoc(base, technique, CLTE, true, inject, service, config);
-            }
+            boolean outcome = launchPoc(base, technique, CLTE, false, inject, service, config);
+            outcome = outcome || launchPoc(base, technique, CLTE, true, inject, service, config);
+//            if (!outcome) {
+//                outcome = launchPoc(base, technique, CLTE, true, inject, service, config);
+//            }
+
             results.add(outcome);
         }
 
@@ -212,7 +214,8 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
 
     static Pair<String, Integer> getTECLAttack(byte[] base, String inject, HashMap<String, Boolean> config) {
         try {
-            byte[] initial = Utilities.setHeader(base, "Connection", "keep-alive", true);
+            byte[] initial = Utilities.addOrReplaceHeader(base, "Connection", "keep-alive");
+            initial = Utilities.convertToHttp1(initial);
             ByteArrayOutputStream attackStream = new ByteArrayOutputStream();
             attackStream.write(initial);
             attackStream.write(inject.getBytes());
@@ -224,7 +227,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
 
             attack = bypassContentLengthFix(attack);
             //Utils.out(Utilities.helpers.bytesToString(attack));
-            return new ImmutablePair<>(Utilities.helpers.bytesToString(attack), Utilities.getBodyStart(attack)+CL+2);
+            return new ImmutablePair<>(Utilities.helpers.bytesToString(attack), Utilities.getBodyStart(attack)+CL+1);
         } catch (IOException e) {
             return null;
         }

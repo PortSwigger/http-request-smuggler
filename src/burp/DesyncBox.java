@@ -78,6 +78,7 @@ public class DesyncBox {
         h1Permutations.register("badwrap", true);
         h1Permutations.register("bodysplit", true);
         h1Permutations.register("h1case", true);
+        h1Permutations.register("http1.0", true);
 
         h2Permutations.register("http2hide", true);
         h2Permutations.register("h2colon", true);
@@ -216,6 +217,10 @@ public class DesyncBox {
             } catch (IOException e) {
 
             }
+        }
+
+        if (technique.equals("http1.0")) {
+            transformed = Utilities.replaceFirst(transformed, "HTTP/1.1", "HTTP/1.0");
         }
 
         if (header.equals("Transfer-Encoding: ")) {
