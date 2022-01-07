@@ -48,6 +48,24 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
                     return false;
                 }
 
+                // do some repeats to confirm the behaviour is consistent
+                for (int i=0; i<5; i++) {
+                    Resp workplz = SecondRequestScan.desyncRequest(service, syncedBreakReq, 0, true, nestRequest);
+                    if (workplz.failed()) {
+                        return false;
+                    }
+
+                    if (i % 2 == 0) {
+                        continue;
+                    }
+
+                    Resp timeoutplz = SecondRequestScan.desyncRequest(service, syncedBreakReq, 0, true, nestRequest);
+                    if (!timeoutplz.timedOut()) {
+                        return false;
+                    }
+                }
+
+
                 if (truncatedChunk.getReq().getResponse() != null) {
                     Utilities.out("Unexpected report with response");
                 }
