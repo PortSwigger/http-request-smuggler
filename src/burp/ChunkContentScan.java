@@ -37,11 +37,11 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
 
         byte[] syncedBreakReq = makeChunked(original, 0, 0, config, true);
         Resp syncedBreakResp = SecondRequestScan.desyncRequest(service, syncedBreakReq, 0, true, nestRequest);
-        if (!syncedBreakResp.failed()) {
+        if (!syncedBreakResp.timedOut()) {
 
             byte[] reverseLength = makeChunked(original, -6, 0, config, true);
 
-            Resp truncatedChunk = SecondRequestScan.desyncRequest(service, reverseLength, 3, true, nestRequest);
+            Resp truncatedChunk = SecondRequestScan.desyncRequest(service, reverseLength, 0, true, nestRequest);
             if (truncatedChunk.timedOut()) {
 
                 if (SecondRequestScan.desyncRequest(service, syncedBreakReq, 0, true, nestRequest).timedOut()) {
@@ -51,7 +51,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
                 // do some repeats to confirm the behaviour is consistent
                 for (int i=0; i<5; i++) {
                     Resp workplz = SecondRequestScan.desyncRequest(service, syncedBreakReq, 0, true, nestRequest);
-                    if (workplz.failed()) {
+                    if (workplz.timedOut()) {
                         return false;
                     }
 
@@ -106,6 +106,8 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
         Resp truncatedChunk = SecondRequestScan.desyncRequest(service, reverseLength, 3, true, nestRequest);
 
         if (truncatedChunk.timedOut()) {
+
+            Resp syncedChunk = SecondRequestScan.desyncRequest(service, reverseLength, 3, true, nestRequest);
 
             if (SecondRequestScan.desyncRequest(service, syncedReq, 0, true, nestRequest).timedOut()) {
                 return false;
@@ -225,7 +227,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
 
             }
 
-            boolean outcome = launchPoc(base, technique, CLTE, false, inject, service, config);
+            boolean outcome = false;//launchPoc(base, technique, CLTE, false, inject, service, config);
             outcome = outcome || launchPoc(base, technique, CLTE, true, inject, service, config);
 //            if (!outcome) {
 //                outcome = launchPoc(base, technique, CLTE, true, inject, service, config);
