@@ -301,8 +301,6 @@ public abstract class SmuggleScanBox extends Scan {
         }
 
         if (reuseConnection) {
-            String amend = " | good?";
-
             int pauseTime = 4000;
             TurboHelper helper = new TurboHelper(service, reuseConnection);
             //Utils.out("Initial probe: "+attack.getRight() + "|" + pauseTime);
@@ -320,7 +318,7 @@ public abstract class SmuggleScanBox extends Scan {
             int pauseCode = pauseReq.getStatus();
             BulkScanLauncher.getTaskEngine().candidates.incrementAndGet();
 
-            // confirm pause doesn't affect status
+            // replay attack without pause to confirm pause doesn't affect status
             helper = new TurboHelper(service, reuseConnection);
             helper.queue(setupAttack);
             helper.queue(setupAttack);
@@ -331,19 +329,21 @@ public abstract class SmuggleScanBox extends Scan {
             }
             long baseTime = results.get(0).getResponseTime();
 
-            // todo work out what this actually means
+            // filter FPs caused by slow response-time breaking the pause technique
             if (results.get(0).getResponseTime() + 3000 > pauseReq.getResponseTime()) {
                 Utils.out("Suss: "+results.get(0).getResponseTime() + "v" + pauseReq.getResponseTime());
-                amend += "suss: "+results.get(0).getResponseTime() + "v" + pauseReq.getResponseTime();
+                return false;
             }
 
             // confirm status diff isn't second-request-fluff
+            // todo does this happen? when?
             helper = new TurboHelper(service, reuseConnection);
             helper.queue(victimString);
             helper.queue(setupAttack);
             results = helper.waitFor();
             int victimStatus = results.get(0).getStatus();
             if (results.get(1).getStatus() == poisonedReq.getStatus()) {
+                report("Second-request fluff?", "", pauseReq, poisonedReq, results.get(0), results.get(1));
                 Utils.out("Second-request fluff!");
                 return false;
             }
@@ -370,13 +370,11 @@ public abstract class SmuggleScanBox extends Scan {
             for (Resp result: results) {
                 if (!result.failed() && result.getStatus() != victimStatus) {
                     return false;
-                    // amend = "| wobbly";
                     //Utils.out("Discounting random-status issue on "+service.getHost());
-                    //break;
                 }
             }
 
-            report("Connection-locked smuggling"+amend, "PauseBefore: "+attack.getRight() + "<br/>Pausetime: " + pauseTime +"<br/>Actual-time: "+pauseReq.getResponseTime()+"<br/>Basetime "+baseTime, pauseReq, poisonedReq);
+            report("Connection-locked smuggling", "PauseBefore: "+attack.getRight() + "<br/>Pausetime: " + pauseTime +"<br/>Actual-time: "+pauseReq.getResponseTime()+"<br/>Basetime "+baseTime, pauseReq, poisonedReq);
             BurpExtender.hostsToSkip.putIfAbsent(service.getHost(), true);
             return true;
         }

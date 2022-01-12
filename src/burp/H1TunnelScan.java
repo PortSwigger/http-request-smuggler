@@ -37,6 +37,10 @@ public class H1TunnelScan extends SmuggleScanBox implements IScannerCheck {
         base = Utilities.addOrReplaceHeader(base, "Transfer-Encoding", "chunked");
 
         final String TRIGGER = "FOO BAR AAH\r\n\r\n";
+
+        // todo mimic approach from launchPoc
+        // get attack & offset, then continue CLTE/TECL-agnostic
+
         byte[] attack = HeadScanTE.buildTEAttack(base, config, TRIGGER);
         //byte[] attack = Utilities.setBody(base, TRIGGER);
         Resp resp = request(service, attack, 0, true);
@@ -46,6 +50,9 @@ public class H1TunnelScan extends SmuggleScanBox implements IScannerCheck {
         }
 
         boolean timeWorked = H1TimeTunnel(base, service, config);
+        if (!timeWorked) {
+            return false;
+        }
 
         String nestedRespCode = getPathFromRequest(nestedRespBytes);
         Resp bad = request(service, TRIGGER.getBytes(), 3, true);

