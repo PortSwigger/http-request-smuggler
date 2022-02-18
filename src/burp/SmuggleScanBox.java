@@ -46,7 +46,7 @@ public abstract class SmuggleScanBox extends Scan {
         //DesyncBox.sharedSettings.register();
     }
 
-    byte[] setupRequest(byte[] baseReq) {
+    static byte[] setupRequest(byte[] baseReq) {
         if (baseReq[0] == 'G') {
             if (Utilities.globalSettings.getBoolean("convert GET to POST")) {
                 baseReq = Utilities.helpers.toggleRequestMethod(baseReq);

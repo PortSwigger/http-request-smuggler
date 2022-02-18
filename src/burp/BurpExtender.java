@@ -24,7 +24,7 @@ public class BurpExtender implements IBurpExtender, IExtensionStateListener {
         new OldClientDesyncScan("Old client desync");
         //new ClientDesyncScan("Client-desync probe");
         new ChunkContentScan("Smuggle probe");
-        new H1TunnelScan("H/1 Tunnel probe TE");
+        new H1TunnelScan("H/1 Tunnel probe");
         new SecondRequestScan("Second-request scan");
 
         new HTTP2Scan("HTTP/2 probe");

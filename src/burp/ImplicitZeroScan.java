@@ -8,27 +8,27 @@ import java.util.List;
 public class ImplicitZeroScan extends Scan {
     ImplicitZeroScan(String name) {
         super(name);
+        scanSettings.importSettings(DesyncBox.sharedSettings);
     }
 
     @Override
     List<IScanIssue> doScan(byte[] baseReq, IHttpService service) {
         Utilities.supportsHTTP2 = true;
-        byte[] req = Utilities.setMethod(baseReq, "POST");
+        byte[] req = SmuggleScanBox.setupRequest(baseReq);
         if (Utilities.isHTTP2(req)) {
             req = Utilities.replaceFirst(req, " HTTP/2\r\n", " HTTP/1.1\r\n");
         }
 
-        String targetPath = "/robots.txt";
         String baseCanary = "cj83kz9z";
+        req = Utilities.setMethod(req, "GET");
         req = Utilities.appendToQuery(req, baseCanary);
         //req = Utilities.setPath(req, targetPath);
-        req = Utilities.addOrReplaceHeader(req, "Content-Type", "application/x-www-form-urlencoded");
         req = Utilities.addOrReplaceHeader(req, "Connection", "keep-alive");
         String leftAnchor = "xyzaaa";
         String rightAnchor = "bbbrlv";
         String basePath = "/"+leftAnchor+"!"+rightAnchor+"?query="+leftAnchor+"!"+rightAnchor;
 
-        String target = service.getHost().replaceAll("[.]", "-") + ".z115tud61jj185qizgq6guzkobu1iq.psres.net";
+        String target = service.getHost().replaceAll("[.]", "-") + "."+Utilities.globalSettings.getString("collab-domain");
         String smuggle = String.format(
                 "GET "+basePath+" HTTP/1.1\r\n" +
                         "Referer: http://ref.%s/\r\n" +
@@ -39,6 +39,7 @@ public class ImplicitZeroScan extends Scan {
 
         req = Utilities.setBody(req, smuggle);
         req = Utilities.addOrReplaceHeader(req, "Content-Length", ""+smuggle.length());
+        req = Utilities.addOrReplaceHeader(req, "Connection", "Content-Length");
 
         //req = Utilities.replaceFirst(req, "Content-Length: ", "Content-Length: +");
         //req = Utilities.replaceFirst(req, "Content-Length: ", "Content-Length: 0");

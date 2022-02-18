@@ -5,6 +5,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import java.util.HashMap;
 import java.util.List;
 
+import static burp.ChunkContentScan.getCLTEAttack;
 import static burp.ChunkContentScan.getTECLAttack;
 import static burp.Utilities.getPathFromRequest;
 import static burp.Utilities.helpers;
@@ -38,104 +39,120 @@ public class H1TunnelScan extends SmuggleScanBox implements IScannerCheck {
 
         final String TRIGGER = "FOO BAR AAH\r\n\r\n";
 
-        // todo mimic approach from launchPoc
-        // get attack & offset, then continue CLTE/TECL-agnostic
+        timeTunnel(service, config, base, TRIGGER, true);
+        timeTunnel(service, config, base, TRIGGER, false);
 
-        byte[] attack = HeadScanTE.buildTEAttack(base, config, TRIGGER);
-        //byte[] attack = Utilities.setBody(base, TRIGGER);
-        Resp resp = request(service, attack, 0, true);
-        byte[] nestedRespBytes = burp.Utilities.getNestedResponse(resp.getReq().getResponse());
-        if (nestedRespBytes == null) {
-            return false;
-        }
+        return false;
 
-        boolean timeWorked = H1TimeTunnel(base, service, config);
-        if (!timeWorked) {
-            return false;
-        }
 
-        String nestedRespCode = getPathFromRequest(nestedRespBytes);
-        Resp bad = request(service, TRIGGER.getBytes(), 3, true);
-        String nonNestedCode = getPathFromRequest(bad.getReq().getResponse());
 
-        if (nestedRespCode.equals(nonNestedCode)) {
-            return false;
-        }
 
-        TurboHelper helper = new TurboHelper(service, true);
-        helper.queue(new String(original));
-        helper.queue(TRIGGER);
-        List<Resp> results = helper.waitFor();
-        if (results.size() < 2) {
-            return false;
-        }
 
-        if ("null".equals(new String(results.get(0).getReq().getResponse()))) {
-            return false;
-        }
 
-        // followup - send two requests non-smuggled, turbo-style. confirm second is different
-        // second is gonna be null unless I use turbo
-        String naturalNested = String.valueOf(results.get(1).getStatus());
-
-        if (naturalNested.equals(nestedRespCode)) {
-            // warning: this approach misses targets that don't support pipelining
-            // to detect those, use SecondRequestScan instead
-            report("Nested-diff plus pipelining: "+nonNestedCode+":"+nestedRespCode," ", resp, bad, results.get(0), results.get(1));
-            return false;
-        }
-
-        // bail if turbo had to reconnect for the second request
-        if (helper.getConnectionCount() > 1) {
-            report("Keepalive-fail: "+nonNestedCode+":"+nestedRespCode," ", resp, bad, results.get(0), results.get(1));
-            return false;
-        }
-
-        //if (Utilities.getHeader(results.get(0).getReq().getResponse()))
-
-        // byte[] brokenAttackReq = Utilities.replace(attackReq, "ransfer", "zansfer");
-        // byte[] brokenAttackReq = Utilities.replace(attackReq, "Content-Length", "Content-Cake");
-
-        String title = "H1-Tunnel "+nonNestedCode+":"+nestedRespCode;
-        if (!"".equals(nonNestedCode)) {
-            title += " good";
-        }
-        if (timeWorked) {
-            title += " [time-confirmed]";
-        }
-
-        report(title, "", resp, bad, results.get(0), results.get(1));
-        return true;
+//        boolean timeWorked = H1TimeTunnel(base, service, config);
+//        if (!timeWorked) {
+//            return false;
+//        }
+//
+//        String nestedRespCode = getPathFromRequest(nestedRespBytes);
+//        Resp bad = request(service, TRIGGER.getBytes(), 3, true);
+//        String nonNestedCode = getPathFromRequest(bad.getReq().getResponse());
+//
+//        if (nestedRespCode.equals(nonNestedCode)) {
+//            return false;
+//        }
+//
+//        TurboHelper helper = new TurboHelper(service, true);
+//        helper.queue(new String(original));
+//        helper.queue(TRIGGER);
+//        List<Resp> results = helper.waitFor();
+//        if (results.size() < 2) {
+//            return false;
+//        }
+//
+//        if ("null".equals(new String(results.get(0).getReq().getResponse()))) {
+//            return false;
+//        }
+//
+//        // followup - send two requests non-smuggled, turbo-style. confirm second is different
+//        // second is gonna be null unless I use turbo
+//        String naturalNested = String.valueOf(results.get(1).getStatus());
+//
+//        if (naturalNested.equals(nestedRespCode)) {
+//            // warning: this approach misses targets that don't support pipelining
+//            // to detect those, use SecondRequestScan instead
+//            report("Nested-diff plus pipelining: "+nonNestedCode+":"+nestedRespCode," ", resp, bad, results.get(0), results.get(1));
+//            return false;
+//        }
+//
+//        // bail if turbo had to reconnect for the second request
+//        if (helper.getConnectionCount() > 1) {
+//            report("Keepalive-fail: "+nonNestedCode+":"+nestedRespCode," ", resp, bad, results.get(0), results.get(1));
+//            return false;
+//        }
+//
+//        //if (Utilities.getHeader(results.get(0).getReq().getResponse()))
+//
+//        // byte[] brokenAttackReq = Utilities.replace(attackReq, "ransfer", "zansfer");
+//        // byte[] brokenAttackReq = Utilities.replace(attackReq, "Content-Length", "Content-Cake");
+//
+//        String title = "H1-Tunnel "+nonNestedCode+":"+nestedRespCode;
+//        if (!"".equals(nonNestedCode)) {
+//            title += " good";
+//        }
+//        if (timeWorked) {
+//            title += " [time-confirmed]";
+//        }
+//
+//        report(title, "", resp, bad, results.get(0), results.get(1));
+//        return true;
     }
 
-    private boolean H1TimeTunnel(byte[] base, IHttpService service, HashMap<String, Boolean> config) {
-        final String TRIGGER = "FOO BAR AAH\r\n\r\n";
-        //byte[] attack = Utilities.setBody(base, TRIGGER);
-        byte[] attack = HeadScanTE.buildTEAttack(base, config, TRIGGER);
-        //Pair<String, Integer> attack = getTECLAttack(base, TRIGGER, config);
+    private boolean timeTunnel(IHttpService service, HashMap<String, Boolean> config, byte[] base, String TRIGGER, boolean CLTE) {
+        // todo support CL.0
+        Pair<String, Integer> attack;
+        if (CLTE) {
+            attack = getCLTEAttack(base, TRIGGER, config);
+        } else {
+            attack = getTECLAttack(base, TRIGGER, config);
+        }
+
+        Resp resp = request(service, helpers.stringToBytes(attack.getLeft()), 0, true);
+        byte[] nestedRespBytes = Utilities.getNestedResponse(resp.getReq().getResponse());
+        if (nestedRespBytes == null) {
+            return true;
+        }
+
 
         TurboHelper helper = new TurboHelper(service, true);
-        helper.queue(helpers.bytesToString(attack), -15, 4000);
+        helper.queue(attack.getLeft(), attack.getRight(), 4000);
         List<Resp> results = helper.waitFor();
         Resp pauseReq = results.get(0);
         if (pauseReq.failed()) {
-            return false;
+            return true;
         }
 
-        byte[] nestedRespBytes = burp.Utilities.getNestedResponse(pauseReq.getReq().getResponse());
+        nestedRespBytes = Utilities.getNestedResponse(pauseReq.getReq().getResponse());
         if (nestedRespBytes == null) {
-            return false;
+            return true;
         }
 
         helper = new TurboHelper(service, true);
-        helper.queue(helpers.bytesToString(attack));
+        helper.queue(attack.getLeft());
         results = helper.waitFor();
-        if (results.get(0).getResponseTime() + 2000 > pauseReq.getResponseTime()) {
-            return false;
+        if (results.get(0).getResponseTime() + 3000 > pauseReq.getResponseTime()) {
+            return true;
         }
 
-        report("H1-timetunnel v2: "+pauseReq.getResponseTime(), "", pauseReq);
-        return true;
+        // repeat for confirmation
+        helper = new TurboHelper(service, true);
+        helper.queue(attack.getLeft(), attack.getRight(), 4000);
+        if (helper.waitFor().get(0).failed()) {
+            return true;
+        }
+
+        report("H1-timetunnel v4: "+pauseReq.getResponseTime() +" vs "+results.get(0).getResponseTime(), "", pauseReq);
+        return false;
     }
 
 }
