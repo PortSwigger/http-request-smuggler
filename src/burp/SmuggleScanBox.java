@@ -301,6 +301,7 @@ public abstract class SmuggleScanBox extends Scan {
         }
 
         if (reuseConnection) {
+            // todo this could be reimplemented with native connection-reuse?
             int pauseTime = 4000;
             TurboHelper helper = new TurboHelper(service, reuseConnection);
             //Utils.out("Initial probe: "+attack.getRight() + "|" + pauseTime);
@@ -337,6 +338,7 @@ public abstract class SmuggleScanBox extends Scan {
 
             // confirm status diff isn't second-request-fluff
             // todo does this happen? when?
+            // fixme this is caused by ignoring CL
             helper = new TurboHelper(service, reuseConnection);
             helper.queue(victimString);
             helper.queue(setupAttack);

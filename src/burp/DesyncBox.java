@@ -89,6 +89,7 @@ public class DesyncBox {
         h2Permutations.register("h2name", true);
         h2Permutations.register("h2method", true);
         h2Permutations.register("h2space", true);
+        h2Permutations.register("h2prefix", true);
 
 
         supportedPermutations = new HashSet<>();
@@ -277,6 +278,8 @@ public class DesyncBox {
                 transformed = Utilities.replace(request, "Transfer-Encoding: chunked", "Nothing-interesting: 1");
             } else if (technique.equals("h1case")) {
                 transformed = Utilities.replace(request, "Transfer-Encoding: chunked", "transfer-encoding: chunked");
+            } else if (technique.equals("h2prefix")) {
+                transformed = Utilities.replace(request, "Transfer-Encoding: chunked", ":transfer-encoding: chunked");
             }
 
 

@@ -34,6 +34,7 @@ public class BurpExtender implements IBurpExtender, IExtensionStateListener {
         new HTTP2Scheme("HTTP/2 :scheme probe");
         new HTTP2DualPath("HTTP/2 dual :path probe");
         new HTTP2Method("HTTP/2 :method probe");
+        new HTTP2FakePseudo("HTTP/2 fake-pseudo probe");
 
         new SmuggleMenu();
         new BulkScanLauncher(BulkScan.scans);
