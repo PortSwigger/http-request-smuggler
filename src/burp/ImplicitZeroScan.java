@@ -1,5 +1,6 @@
 package burp;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
@@ -12,117 +13,75 @@ public class ImplicitZeroScan extends Scan {
     }
 
     @Override
+    // fixme before attempting any major work, clean this up!
     List<IScanIssue> doScan(byte[] baseReq, IHttpService service) {
         Utilities.supportsHTTP2 = true;
-        byte[] req = SmuggleScanBox.setupRequest(baseReq);
-        if (Utilities.isHTTP2(req)) {
-            req = Utilities.replaceFirst(req, " HTTP/2\r\n", " HTTP/1.1\r\n");
+        boolean h2 = Utilities.isHTTP2(baseReq);
+
+        if (!"GET".equals(Utilities.getMethod(baseReq))) {
+            return null;
         }
 
-        String baseCanary = "cj83kz9z";
+        byte[] req = SmuggleScanBox.setupRequest(baseReq);
+        req = Utilities.replaceFirst(req, "Content-Type: ", "X-Content-Type: ");
         req = Utilities.setMethod(req, "GET");
-        req = Utilities.appendToQuery(req, baseCanary);
-        //req = Utilities.setPath(req, targetPath);
-        req = Utilities.addOrReplaceHeader(req, "Connection", "keep-alive");
-        String leftAnchor = "xyzaaa";
-        String rightAnchor = "bbbrlv";
-        String basePath = "/"+leftAnchor+"!"+rightAnchor+"?query="+leftAnchor+"!"+rightAnchor;
 
-        String target = service.getHost().replaceAll("[.]", "-") + "."+Utilities.globalSettings.getString("collab-domain");
-        String smuggle = String.format(
-                "GET "+basePath+" HTTP/1.1\r\n" +
-                        "Referer: http://ref.%s/\r\n" +
-                        "X-Forwarded-For: xff.%s\r\n" +
-                        "Dud: dud.%s\r\n" +
-                        "True-Client-IP: tci.%s\r\n" +
-                        "Aa: bb", target, target, target, target);
+        if (h2) {
+            req = Utilities.replaceFirst(req, " HTTP/2\r\n", " HTTP/1.1\r\n");
+            req = Utilities.replaceFirst(req, "Content-Length: ", "X-CL: ");
+            req = Utilities.replaceFirst(req, "Connection: ", "X-Connection: ");
+        } else {
+            req = Utilities.addOrReplaceHeader(req, "Connection", "keep-alive");
+        }
 
-        req = Utilities.setBody(req, smuggle);
-        req = Utilities.addOrReplaceHeader(req, "Content-Length", ""+smuggle.length());
-        req = Utilities.addOrReplaceHeader(req, "Connection", "Content-Length");
+        String smuggle = String.format("GET %s HTTP/1.1\r\nX-YzB: ", Utilities.getPathFromRequest(baseReq));
+        req = Utilities.fixContentLength(Utilities.setBody(req, smuggle));
+        //req = Utilities.addOrReplaceHeader(req, "Content-Length", ""+smuggle.length());
+        //req = Utilities.addOrReplaceHeader(req, "Connection", "Content-Length");
 
-        //req = Utilities.replaceFirst(req, "Content-Length: ", "Content-Length: +");
-        //req = Utilities.replaceFirst(req, "Content-Length: ", "Content-Length: 0");
-        //req = Utilities.replaceFirst(req, "Content-Length:", "Content-Length :");
-        //req = Utilities.replaceFirst(req, "Content-Length:", "Foo x: x\r\nContent-Length:");
-        //req = Utilities.replaceFirst(req, "Content-Length:", "Foo: x\nContent-Length:");
+        Resp untampered = request(service, baseReq);
+        Pair<String, String> gadget = selectGadget(service, req, untampered);
 
-        Resp baseResp = null;
-        Resp lastResp = null;
-        int code = 0;
-        boolean codeChangeDetected = false;
+        if (gadget == null) {
+            return null;
+        }
 
-        // do not set i over 9
-        for (int i=0; i<9; i++) {
+        int attempts = 9;
 
-            byte[] attack = Utilities.setBody(req, smuggle.replace("!", String.valueOf(i)));
+        for (int i=0; i<attempts; i++) {
+            smuggle = String.format("%s HTTP/1.1\r\nX-YzB: ", gadget.getLeft());
+            byte[] attack = Utilities.setBody(req, smuggle);
+            attack = Utilities.fixContentLength(attack);
+
             Resp resp = request(service, attack);
             if (resp.failed()) {
                 return null;
             }
 
-            byte[] data = resp.getReq().getResponse();
-            int start = Utilities.helpers.indexOf(data, leftAnchor.getBytes(), false, 0, data.length);
-            if (start != -1) {
-                byte x = data[start+leftAnchor.length()];
-                int reflectionID = Integer.parseInt(Character.toString((char)x));
-                if (reflectionID < i) {
-                    report("CL.0 desync: reflection", "", baseReq, resp);
+            if (Utilities.contains(resp, gadget.getRight())) {
+                if ("wrtztrw".equals(gadget.getRight()) && Utilities.contains(resp, "X-YzB") ) {
                     return null;
                 }
+
+                report("CL.0 desync: "+i+"/"+gadget.getLeft(), "", baseReq, resp);
+                return null;
             }
-
-            if (resp.getStatus() != code && code != 0) {
-                if (Utilities.contains(resp, leftAnchor+i) || Utilities.contains(resp, baseCanary)) {
-                    return null;
-                }
-                codeChangeDetected = true;
-                lastResp = resp;
-                break;
-            }
-            code = resp.getStatus();
-            baseResp = resp;
         }
-
-        if (!codeChangeDetected) {
-            return null;
-        }
-
-        Utils.out("Fingerprinting 404 code badly");
-        byte[] get404 = Utilities.setPath(baseReq, basePath.replace("!", "0"));
-        get404 = Utilities.setMethod(get404, "GET");
-        Resp notFound = request(service, get404);
-        int notFoundCode = notFound.getStatus();
-        if (notFoundCode != lastResp.getStatus()) {
-            return null;
-        }
-
-        Utils.out("Trying known-response followup");
-        if (knownResponse(service, req, baseReq, baseResp, lastResp, basePath)) {
-            return null;
-        }
-//
-//        req = Utilities.replaceFirst(req, "Content-Length", "x");
-//        req = Utilities.setBody(req, "");
-//        for (int i=0; i<10; i++) {
-//            Resp resp = request(service, req);
-//            if (resp.getStatus() == notFound.getStatus()) {
-//                return null;
-//            }
-//        }
-//
-//        report("CL.0 desync: 404-code", "", baseReq, baseResp, lastResp, notFound);
 
         return null;
     }
 
-    boolean knownResponse(IHttpService service, byte[] req, byte[] baseReq, Resp baseResp, Resp lastResp, String basePath) {
-
+    Pair<String, String> selectGadget(IHttpService service, byte[] req, Resp untampered) {
+        Resp baseResp = request(service, req);
+        String basePath = "GET "+Utilities.getPathFromRequest(req);
         ArrayList<Pair<String, String>> mappings = new ArrayList<>();
-        mappings.add(new ImmutablePair<>("/robots.txt", "Disallow:"));
-        mappings.add(new ImmutablePair<>("/favicon.ico", "Content-Type: image/"));
-        mappings.add(new ImmutablePair<>("/sitemap.xml", "Content-Type: application/xml"));
-        mappings.add(new ImmutablePair<>("/../", "400 Bad Request"));
+        // remember the response will come from the back-end, so don't use malformed requests
+        mappings.add(new ImmutablePair<>("GET /robots.txt", "llow:"));
+        mappings.add(new ImmutablePair<>("GET /wrtztrw?wrtztrw=wrtztrw", "wrtztrw"));
+        mappings.add(new ImmutablePair<>("GET /favicon.ico", "Content-Type: image/"));
+        mappings.add(new ImmutablePair<>("GET /sitemap.xml", "Content-Type: application/xml"));
+        mappings.add(new ImmutablePair<>("TRACE /", "405 Method Not Allowed"));
+        //mappings.add(new ImmutablePair<>("GET /../", "400 Bad Request"));
 
         for (Pair<String, String> known: mappings) {
             String knownPath = known.getLeft();
@@ -131,27 +90,32 @@ public class ImplicitZeroScan extends Scan {
                 continue;
             }
 
-            if (Utilities.contains(baseResp, knownContent) || Utilities.contains(lastResp, knownContent) ) {
+            if (Utilities.contains(baseResp, knownContent) || Utilities.contains(untampered, knownContent)) {
                 continue;
             }
 
-            for (int i=0; i<16; i++) {
+            byte[] attack = Utilities.fixContentLength(Utilities.replaceFirst(req, basePath, knownPath));
 
-                byte[] attack = Utilities.replaceFirst(req, basePath, knownPath+("a".repeat(basePath.length()-knownPath.length())));
-                Resp resp = request(service, attack);
-                if (resp.failed()) {
-                    return false;
-                }
-
-                if (Utilities.contains(resp, knownContent)) {
-                    report("CL.0 desync: known-response", "", baseReq, baseResp, lastResp, resp);
-                    return true;
-                }
+            Resp resp = request(service, attack);
+            if (resp.failed()) {
+                return null;
             }
+
+            if (!Utilities.contains(resp, knownContent)) {
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+
+                }
+                continue;
+            }
+
+            return known;
         }
 
-        return false;
+        return null;
     }
+
 }
 
 
