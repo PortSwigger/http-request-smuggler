@@ -16,11 +16,15 @@ public class ImplicitZeroScan extends Scan {
     // fixme before attempting any major work, clean this up!
     List<IScanIssue> doScan(byte[] baseReq, IHttpService service) {
         Utilities.supportsHTTP2 = true;
-        boolean h2 = Utilities.isHTTP2(baseReq);
 
         if (!"GET".equals(Utilities.getMethod(baseReq))) {
             return null;
         }
+
+        boolean h2 = Utilities.isHTTP2(baseReq);
+
+        baseReq = Utilities.addCacheBuster(baseReq, null);
+
 
         byte[] req = SmuggleScanBox.setupRequest(baseReq);
         req = Utilities.replaceFirst(req, "Content-Type: ", "X-Content-Type: ");
