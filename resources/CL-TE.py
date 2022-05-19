@@ -5,11 +5,9 @@ def queueRequests(target, wordlists):
                            resumeSSL=False,
                            timeout=10,
                            pipeline=False,
-                           engine=Engine.BURP,
+                           engine=Engine.THREADED,
                            maxRetriesPerRequest=0
                            )
-    engine.start()
-
     # This will prefix the victim's request. Edit it to achieve the desired effect.
     prefix = '''GET /robots.txt HTTP/1.1
 X-Ignore: X'''
