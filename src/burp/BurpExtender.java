@@ -19,6 +19,7 @@ public class BurpExtender implements IBurpExtender, IExtensionStateListener {
 
         new DesyncBox();
 
+        new PauseDesyncScan("Sketchy pause");
         new ImplicitZeroScan("Implicit zero");
         new ClientDesyncScan("Client desync");
         new OldClientDesyncScan("Old client desync");

@@ -100,6 +100,8 @@ public class ClientDesyncScan extends Scan {
                 delayTime = "-"+delay;
             }
             report("Client-side tunnel-desync v4b "+prefix + " |"+burpTimeout+delayTime, "", baseReq, r1, r2);
+
+
             return;
         }
     }
