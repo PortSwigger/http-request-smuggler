@@ -14,15 +14,17 @@ public class PauseDesyncScan extends Scan {
         baseReq = Utilities.replaceFirst(baseReq, "Connection: close", "Connection: keep-alive");
         baseReq = Utilities.convertToHttp1(baseReq);
 
-
-        byte[] targetExpect = "Content-Type: image/".getBytes();
+        // This is where we POST to
+        String targetPath = Utilities.getPathFromRequest(baseReq); // +"?"+targetCanary;
         String targetCanary = "wrtz"+Utilities.generateCanary();
-        String targetPath = "/favicon.ico?"+targetCanary+"=1";
+        byte[] targetExpect = targetCanary.getBytes();
+        //String targetPath = "/favicon.ico?"+targetCanary+"=1";
+
         baseReq = Utilities.setPath(baseReq, targetPath);
 
-        String canary = "wrtz"+Utilities.generateCanary();
-        String poisonPath = "/robots.txt?"+canary+"=1";
-        byte[] poisonExpect = "llow:".getBytes();
+        String poisonCanary = "wrtz"+Utilities.generateCanary();
+        String poisonPath = "/favicon.ico?"+poisonCanary+"=1";
+        byte[] poisonExpect = "ype: image/".getBytes();
         byte[] followUp = Utilities.setPath(baseReq, targetPath);
 
         Resp resp = request(service, followUp, 0, true);
@@ -30,17 +32,20 @@ public class PauseDesyncScan extends Scan {
             return null;
         }
 
-        String victim = Utilities.helpers.bytesToString(Utilities.setPath(baseReq, poisonPath));
+        String payload = "GET "+poisonPath+" HTTP/1.1\r\nX: Y";
+        //String victim = Utilities.helpers.bytesToString(Utilities.setPath(baseReq, poisonPath));
         byte[] base = Utilities.addOrReplaceHeader(baseReq, "Content-Type", "application/x-www-form-urlencoded");
         base = Utilities.addOrReplaceHeader(base, "Content-Length", "20");
         //base = Utilities.setMethod(base, "POST");
-        base = Utilities.setBody(base, victim);
+        base = Utilities.setBody(base, payload);
         //base = Utilities.fixContentLength(base);
 
         int burpTimeout = Integer.parseInt(Utilities.getSetting("project_options.connections.timeouts.normal_timeout"));
         TurboHelper helper = new TurboHelper(service, true, burpTimeout+1);
-        int pauseBefore = victim.length() * -1;
-        Resp r1 = helper.blockingRequest(base, pauseBefore, burpTimeout*1000); // TODO make sure we delay body & explode on early response
+        int pauseBefore = payload.length() * -1;
+
+        // TODO make this configurable
+        Resp r1 = helper.blockingRequest(base, pauseBefore, 61000);
         //Resp r1 = helper.blockingRequest(base);
         if (r1.failed() || Utilities.contains(r1, "Connection: close")) {
             helper.waitFor(1);
@@ -53,14 +58,14 @@ public class PauseDesyncScan extends Scan {
             return null;
         }
 
-        // if we get to here, either the server timeout is higher than ours or something is sketchy
+        // todo filter out regular CSD
         String title = null;
-        if (Utilities.containsBytes(r2.getReq().getResponse(), canary.getBytes())) {
-            title = "Unknown-side CL.0 desync reflect";
+        if (Utilities.containsBytes(r2.getReq().getResponse(), poisonCanary.getBytes())) {
+            title = "Pause-based desync - reflect";
         } else if (Utilities.containsBytes(r2.getReq().getResponse(), poisonExpect)) {
-            title = "Unknown-side CL.0 desync good";
+            title = "Pause-based desync - expected-response";
         } else if (!(resp.getStatus() == r2.getStatus()) && !Utilities.containsBytes(r2.getReq().getResponse(), targetExpect) && !Utilities.containsBytes(r2.getReq().getResponse(), targetCanary.getBytes())) {
-            title = "Unknown-side CL.0 desync status";
+            title = "Pause-based desync - status";
         }
 
         if (title == null) {

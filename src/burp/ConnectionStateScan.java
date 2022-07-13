@@ -1,15 +1,16 @@
 package burp;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 
 import static burp.Utilities.*;
 
-public class SecondRequestScan extends Scan {
+public class ConnectionStateScan extends Scan {
 
-    SecondRequestScan(String name) {
+    final static String DETAIL = "The websites appears to treat requests differently depending on whether they're the first request on a connection, or the second. " +
+            "To investigate, place attached requests 1 and 2 in a tab group in repeater, and expriment using 'Send request sequence (single connection)'.";
+
+    ConnectionStateScan(String name) {
         super(name);
         //scanSettings.importSettings(DesyncBox.h1Permutations);
         //scanSettings.importSettings(DesyncBox.h1Settings);
@@ -17,8 +18,8 @@ public class SecondRequestScan extends Scan {
 
     public List<IScanIssue> doScan(byte[] original, IHttpService service) {
         dnsScan(original, service);
-//        statusScan(original, service);
-//        reflectScan(original, service);
+        statusScan(original, service);
+        reflectScan(original, service);
 //        sslScan(original, service);
         return null;
     }
@@ -33,13 +34,15 @@ public class SecondRequestScan extends Scan {
             helper.waitFor();
             return null;
         }
+
+        // todo try XFF too
         Resp second = helper.blockingRequest(Utilities.addOrReplaceHeader(base, "Host", nestedPing));
         helper.waitFor();
 
         int connections = helper.getConnectionCount();
-//        if (helper.getConnectionCount() > 1) {
-//            return null;
-//        }
+        if (connections > 1) {
+            return null;
+        }
 
         if (!BasicCollab.checkPayload(nestedPing)) {
             return null;
@@ -52,7 +55,7 @@ public class SecondRequestScan extends Scan {
             return null;
         }
 
-        report("Suss ping: "+connections, "", base, first, second);
+        report("Connection state (pingback evidence): "+connections, DETAIL, base, first, second);
         return null;
     }
 
@@ -137,7 +140,7 @@ public class SecondRequestScan extends Scan {
             return null;
         }
 
-        report("Connection contamination", "", base, first, second);
+        report("Connection contamination", DETAIL, base, first, second);
 
         return null;
     }
@@ -190,11 +193,11 @@ public class SecondRequestScan extends Scan {
 
         String title;
         if (Utilities.contains(indirect, canary) || Utilities.contains(indirect404, canary) ) {
-            title = "Second-request code diff w/reflection"+directCode+"/"+indirectCode;
+            title = "Connection state (Second-request status code diff w/reflection"+directCode+"/"+indirectCode;
         } else {
-            title = "Second-request code diff: "+directCode+"/"+indirectCode;//+naturalNested;
+            title = "Connection state (code diff): "+directCode+"/"+indirectCode;//+naturalNested;
         }
-        report(title, "", original, direct, indirect, indirect404);
+        report(title, DETAIL, original, direct, indirect, indirect404);
 
         return null;
     }
@@ -258,7 +261,7 @@ public class SecondRequestScan extends Scan {
         Resp notFound = helper.blockingRequest(Utilities.setPath(secondResp.getReq().getRequest(), "/.well-known/cake"));
         helper.waitFor();
 
-        String title = "Second-request reflection: "+badMatches+"/"+secondMatches;
+        String title = "Connection state - input reflection: "+badMatches+"/"+secondMatches;
         int notFoundMatches = Utilities.countMatches(notFound, canary);
         if (notFound.getStatus() != secondResp.getStatus() || secondMatches != notFoundMatches) {
             title += " |good";
@@ -266,7 +269,7 @@ public class SecondRequestScan extends Scan {
 
         // todo add repeats to prevent random-code FPs
 
-        report(title, "", original, results.get(0), secondResp, notFound);
+        report(title, DETAIL, original, results.get(0), secondResp, notFound);
         return null;
     }
 

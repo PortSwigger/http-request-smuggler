@@ -29,28 +29,28 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
         }
 
         byte[] syncedReq = makeChunked(original, 0, 0, config, false);
-        Resp syncedResp = SecondRequestScan.desyncRequest(service, syncedReq, 0, true, nestRequest);
+        Resp syncedResp = ConnectionStateScan.desyncRequest(service, syncedReq, 0, true, nestRequest);
         if (syncedResp.failed()) {
             Utilities.log("Timeout on first request. Aborting.");
             return false;
         }
 
         byte[] syncedBreakReq = makeChunked(original, 0, 0, config, true);
-        Resp syncedBreakResp = SecondRequestScan.desyncRequest(service, syncedBreakReq, 0, true, nestRequest);
+        Resp syncedBreakResp = ConnectionStateScan.desyncRequest(service, syncedBreakReq, 0, true, nestRequest);
         if (!syncedBreakResp.timedOut()) {
 
             byte[] reverseLength = makeChunked(original, -6, 0, config, true);
 
-            Resp truncatedChunk = SecondRequestScan.desyncRequest(service, reverseLength, 0, true, nestRequest);
+            Resp truncatedChunk = ConnectionStateScan.desyncRequest(service, reverseLength, 0, true, nestRequest);
             if (truncatedChunk.timedOut()) {
 
-                if (SecondRequestScan.desyncRequest(service, syncedBreakReq, 0, true, nestRequest).timedOut()) {
+                if (ConnectionStateScan.desyncRequest(service, syncedBreakReq, 0, true, nestRequest).timedOut()) {
                     return false;
                 }
 
                 // do some repeats to confirm the behaviour is consistent
                 for (int i=0; i<5; i++) {
-                    Resp workplz = SecondRequestScan.desyncRequest(service, syncedBreakReq, 0, true, nestRequest);
+                    Resp workplz = ConnectionStateScan.desyncRequest(service, syncedBreakReq, 0, true, nestRequest);
                     if (workplz.timedOut()) {
                         return false;
                     }
@@ -59,7 +59,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
                         continue;
                     }
 
-                    Resp timeoutplz = SecondRequestScan.desyncRequest(service, reverseLength, 0, true, nestRequest);
+                    Resp timeoutplz = ConnectionStateScan.desyncRequest(service, reverseLength, 0, true, nestRequest);
                     if (!timeoutplz.timedOut()) {
                         return false;
                     }
@@ -105,19 +105,19 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
         } catch (IOException e) {
 
         }
-        Resp truncatedChunk = SecondRequestScan.desyncRequest(service, reverseLength, 3, true, nestRequest);
+        Resp truncatedChunk = ConnectionStateScan.desyncRequest(service, reverseLength, 3, true, nestRequest);
 
         if (truncatedChunk.timedOut()) {
 
-            Resp syncedChunk = SecondRequestScan.desyncRequest(service, reverseLength, 3, true, nestRequest);
+            Resp syncedChunk = ConnectionStateScan.desyncRequest(service, reverseLength, 3, true, nestRequest);
 
-            if (SecondRequestScan.desyncRequest(service, syncedReq, 0, true, nestRequest).timedOut()) {
+            if (ConnectionStateScan.desyncRequest(service, syncedReq, 0, true, nestRequest).timedOut()) {
                 return false;
             }
 
             // do some repeats to confirm the behaviour is consistent
             for (int i=0; i<5; i++) {
-                Resp timeoutplz = SecondRequestScan.desyncRequest(service, reverseLength, 0, true, nestRequest);
+                Resp timeoutplz = ConnectionStateScan.desyncRequest(service, reverseLength, 0, true, nestRequest);
                 if (!timeoutplz.timedOut()) {
                     return false;
                 }
@@ -126,7 +126,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
                     continue;
                 }
 
-                Resp workplz = SecondRequestScan.desyncRequest(service, syncedReq, 0, true, nestRequest);
+                Resp workplz = ConnectionStateScan.desyncRequest(service, syncedReq, 0, true, nestRequest);
                 if (workplz.timedOut()) {
                     return false;
                 }
