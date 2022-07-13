@@ -231,11 +231,8 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
 
             }
 
-            boolean outcome = false;//launchPoc(base, technique, CLTE, false, inject, service, config);
+            boolean outcome = launchPoc(base, technique, CLTE, false, inject, service, config);
             outcome = outcome || launchPoc(base, technique, CLTE, true, inject, service, config);
-//            if (!outcome) {
-//                outcome = launchPoc(base, technique, CLTE, true, inject, service, config);
-//            }
 
             results.add(outcome);
         }
