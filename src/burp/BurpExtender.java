@@ -23,7 +23,7 @@ public class BurpExtender implements IBurpExtender, IExtensionStateListener {
         new ConnectionStateScan("Connection-state");
 
 
-        new ImplicitZeroScan("Implicit zero");
+        new ImplicitZeroScan("CL.0");
         new ClientDesyncScan("Client-side desync");
         //new OldClientDesyncScan("Old client desync");
         //new ClientDesyncScan("Client-desync probe");

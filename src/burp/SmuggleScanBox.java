@@ -25,10 +25,10 @@ public abstract class SmuggleScanBox extends Scan {
         DesyncBox.sharedSettings.register("collab-domain", Utilities.generateCanary()+".burpcollaborator.net");
 
         DesyncBox.h1Settings.register("skip straight to poc", false);
-        DesyncBox.h1Settings.register("poc: G", false);
-        DesyncBox.h1Settings.register("poc: FOO", false);
-        DesyncBox.h1Settings.register("poc: headerConcat", false);
-        DesyncBox.h1Settings.register("poc: bodyConcat", false);
+        DesyncBox.h1Settings.register("poc: G", true);
+        DesyncBox.h1Settings.register("poc: FOO", true);
+        DesyncBox.h1Settings.register("poc: headerConcat", true);
+        DesyncBox.h1Settings.register("poc: bodyConcat", true);
         DesyncBox.h1Settings.register("poc: collab", false);
         DesyncBox.h1Settings.register("poc: collab-header", false);
         DesyncBox.h1Settings.register("poc: collab-XFO-header", false);
@@ -376,7 +376,7 @@ public abstract class SmuggleScanBox extends Scan {
                 }
             }
 
-            report("Connection-locked smuggling", "PauseBefore: "+attack.getRight() + "<br/>Pausetime: " + pauseTime +"<br/>Actual-time: "+pauseReq.getResponseTime()+"<br/>Basetime "+baseTime, pauseReq, poisonedReq);
+            report("Connection-locked smuggling", "The website may be vulnerable to connection-locked request smuggling. For further details please refer to https://portswigger.net/research/browser-powered-desync-attacks.<br/>PauseBefore: "+attack.getRight() + "<br/>Pausetime: " + pauseTime +"<br/>Actual-time: "+pauseReq.getResponseTime()+"<br/>Basetime "+baseTime, pauseReq, poisonedReq);
             BurpExtender.hostsToSkip.putIfAbsent(service.getHost(), true);
             return true;
         }

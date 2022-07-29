@@ -67,7 +67,7 @@ public class ImplicitZeroScan extends Scan {
                     return null;
                 }
 
-                report("CL.0 desync: "+i+"/"+gadget.getLeft(), "", baseReq, resp);
+                report("CL.0 desync: "+gadget.getLeft(), "HTTP Request Smuggler repeatedly issued the attached request. After "+i+ " attempts, it got a response that appears to have been poisoned by the body of the previous request.", baseReq, resp);
                 return null;
             }
         }
@@ -98,7 +98,9 @@ public class ImplicitZeroScan extends Scan {
                 continue;
             }
 
-            byte[] attack = Utilities.fixContentLength(Utilities.replaceFirst(req, basePath, knownPath));
+            byte[] attack = Utilities.replaceFirst(req, basePath, knownPath);
+            attack = Utilities.setBody(attack, ""); // required to avoid poisoning the socket during gadget detection
+            attack = Utilities.fixContentLength(attack);
 
             Resp resp = request(service, attack);
             if (resp.failed()) {
