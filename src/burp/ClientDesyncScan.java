@@ -45,10 +45,10 @@ public class ClientDesyncScan extends Scan {
                 continue;
             }
 
-            if (Utilities.contains(burpResp, "HTTP/2")) {
-                BulkScan.hostsToSkip.put(service.getHost(), true);
-                return;
-            }
+//            if (Utilities.contains(burpResp, "HTTP/2")) {
+//                BulkScan.hostsToSkip.put(service.getHost(), true);
+//                return;
+//            }
 
             int burpTimeout = Integer.parseInt(Utilities.getSetting("project_options.connections.timeouts.normal_timeout")) / 1000;
             TurboHelper helper = new TurboHelper(service, true, burpTimeout);
@@ -85,22 +85,24 @@ public class ClientDesyncScan extends Scan {
             }
 
             if (helper.getConnectionCount() > 1) {
-                report("hmmmm", "", base, r1, r2);
+                //report("hmmmm", "", base, r1, r2);
                 return;
             }
 
             String prefix = "h1";;
-//            Resp h2test = HTTP2Scan.h2request(service, base, false);
-//            if (!h2test.failed() && Utilities.contains(h2test, "HTTP/2")) {
-//                prefix = "h2-blocked";
-//            }
-            int delay = (int) Math.round(r1.getResponseTime()/1000.0);
-            String delayTime = "";
-            if (delay != 0) {
-                delayTime = "-"+delay;
+            Resp h2test = HTTP2Scan.h2request(service, base, false);
+            if (!h2test.failed() && Utilities.contains(h2test, "HTTP/2")) {
+                prefix = "h2-blocked";
             }
-            report("Client-side tunnel-desync v4b "+prefix + " |"+burpTimeout+delayTime, "", baseReq, r1, r2);
+//            int delay = (int) Math.round(r1.getResponseTime()/1000.0);
+//            String delayTime = "";
+//            if (delay != 0) {
+//                delayTime = "-"+delay;
+//            }
+            report("Client-side desync "+prefix, "HTTP Request Smuggler issued a single crafted POST request, and recieved two responses from the server. This strongly indicates that the server is vulnerable to client-side desync (CSD) attacks. Please note that the single request has been split into two from Burp's perspective. To test it, send the two requests to the repeater then place them in a group and use 'Send request sequence over single connection'. For further details and information on remediation, please refer to https://portswigger.net/research/browser-powered-desync-attacks", baseReq, r1, r2);
 
+            // todo add follow-up using gadget from ImplicitZeroScan
+            //ImplicitZeroScan.selectGadget(service, )
 
             return;
         }

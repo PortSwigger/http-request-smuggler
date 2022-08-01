@@ -76,7 +76,7 @@ public class ImplicitZeroScan extends Scan {
         return null;
     }
 
-    Pair<String, String> selectGadget(IHttpService service, byte[] req, Resp untampered) {
+    static Pair<String, String> selectGadget(IHttpService service, byte[] req, Resp untampered) {
         Resp baseResp = request(service, req);
         String basePath = "GET "+Utilities.getPathFromRequest(req);
         ArrayList<Pair<String, String>> mappings = new ArrayList<>();
