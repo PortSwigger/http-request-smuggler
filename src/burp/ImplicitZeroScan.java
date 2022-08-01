@@ -38,7 +38,8 @@ public class ImplicitZeroScan extends Scan {
             req = Utilities.addOrReplaceHeader(req, "Connection", "keep-alive");
         }
 
-        String smuggle = String.format("GET %s HTTP/1.1\r\nX-YzB: ", Utilities.getPathFromRequest(baseReq));
+        final String justBodyReflectionCanary = "YzBqv";
+        String smuggle = String.format("GET %s HTTP/1.1\r\nX-"+justBodyReflectionCanary+": ", Utilities.getPathFromRequest(baseReq));
         req = Utilities.fixContentLength(Utilities.setBody(req, smuggle));
         //req = Utilities.addOrReplaceHeader(req, "Content-Length", ""+smuggle.length());
         //req = Utilities.addOrReplaceHeader(req, "Connection", "Content-Length");
@@ -53,7 +54,7 @@ public class ImplicitZeroScan extends Scan {
         int attempts = 9;
 
         for (int i=0; i<attempts; i++) {
-            smuggle = String.format("%s HTTP/1.1\r\nX-YzB: ", gadget.getLeft());
+            smuggle = String.format("%s HTTP/1.1\r\nX-"+justBodyReflectionCanary+": ", gadget.getLeft());
             byte[] attack = Utilities.setBody(req, smuggle);
             attack = Utilities.fixContentLength(attack);
 
@@ -63,11 +64,11 @@ public class ImplicitZeroScan extends Scan {
             }
 
             if (Utilities.contains(resp, gadget.getRight())) {
-                if ("wrtztrw".equals(gadget.getRight()) && Utilities.contains(resp, "X-YzB") ) {
+                if ("wrtztrw".equals(gadget.getRight()) && Utilities.contains(resp, justBodyReflectionCanary) ) {
                     return null;
                 }
 
-                report("CL.0 desync: "+gadget.getLeft(), "HTTP Request Smuggler repeatedly issued the attached request. After "+i+ " attempts, it got a response that appears to have been poisoned by the body of the previous request.", baseReq, resp);
+                report("CL.0 desync: "+gadget.getLeft(), "HTTP Request Smuggler repeatedly issued the attached request. After "+i+ " attempts, it got a response that appears to have been poisoned by the body of the previous request. For further details and information on remediation, please refer to https://portswigger.net/research/browser-powered-desync-attacks", baseReq, resp);
                 return null;
             }
         }

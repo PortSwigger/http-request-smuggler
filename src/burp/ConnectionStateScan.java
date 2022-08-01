@@ -8,7 +8,8 @@ import static burp.Utilities.*;
 public class ConnectionStateScan extends Scan {
 
     final static String DETAIL = "The websites appears to treat requests differently depending on whether they're the first request on a connection, or the second. " +
-            "To investigate, place attached requests 1 and 2 in a tab group in repeater, and expriment using 'Send request sequence (single connection)'.";
+            "To investigate, place attached requests 1 and 2 in a tab group in repeater, and experiment using 'Send request sequence (single connection)'. " +
+            "For further details and information on remediation, please refer to https://portswigger.net/research/browser-powered-desync-attacks";
 
     ConnectionStateScan(String name) {
         super(name);

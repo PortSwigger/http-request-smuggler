@@ -80,7 +80,7 @@ public class PauseDesyncScan extends Scan {
             return null;
         }
 
-        report(title, "", baseReq, r1, r2, resp);
+        report(title, "The website appears to be vulnerable to a pause-based desync. For further details and information on remediation, please refer to https://portswigger.net/research/browser-powered-desync-attacks", baseReq, r1, r2, resp);
 
         return null;
     }
