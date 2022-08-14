@@ -313,6 +313,9 @@ public class DesyncBox {
         }
         
         if (Arrays.equals(transformed, request) && !technique.equals("vanilla")) {
+            if (header.equals("Content-Length: ")) {
+                return null;
+            }
             Utilities.err("Requested desync technique had no effect: "+technique);
         }
 

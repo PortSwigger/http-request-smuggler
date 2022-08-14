@@ -4,31 +4,31 @@ import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
-public class ImplicitZeroScan extends Scan {
+public class ImplicitZeroScan extends SmuggleScanBox {
+    HashMap<String, Pair<String,String>> recordedGasget = new HashMap<>();
+
     ImplicitZeroScan(String name) {
         super(name);
         scanSettings.importSettings(DesyncBox.sharedSettings);
+        scanSettings.importSettings(DesyncBox.sharedPermutations);
+        // todo add h1 and h2 permutations
     }
 
     @Override
     // fixme before attempting any major work, clean this up!
-    List<IScanIssue> doScan(byte[] baseReq, IHttpService service) {
-        Utilities.supportsHTTP2 = true;
+    public boolean doConfiguredScan(byte[] baseReq, IHttpService service, HashMap<String, Boolean> config) {
 
-        if (!"GET".equals(Utilities.getMethod(baseReq))) {
-            return null;
-        }
+        Utilities.supportsHTTP2 = true;
 
         boolean h2 = Utilities.isHTTP2(baseReq);
 
         baseReq = Utilities.addCacheBuster(baseReq, null);
 
-
         byte[] req = SmuggleScanBox.setupRequest(baseReq);
         req = Utilities.replaceFirst(req, "Content-Type: ", "X-Content-Type: ");
-        req = Utilities.setMethod(req, "GET");
 
         if (h2) {
             req = Utilities.replaceFirst(req, " HTTP/2\r\n", " HTTP/1.1\r\n");
@@ -37,6 +37,15 @@ public class ImplicitZeroScan extends Scan {
         } else {
             req = Utilities.addOrReplaceHeader(req, "Connection", "keep-alive");
         }
+
+        // skip permutations that don't have any effect
+        String technique = config.keySet().iterator().next();
+        if (null == DesyncBox.applyDesync(baseReq, "Content-Length", technique)) {
+            Utils.out("Skipping permutation: "+technique);
+            return false;
+        }
+
+        Utilities.out("Technique: "+technique);
 
         final String justBodyReflectionCanary = "YzBqv";
         String smuggle = String.format("GET %s HTTP/1.1\r\nX-"+justBodyReflectionCanary+": ", Utilities.getPathFromRequest(baseReq));
@@ -48,7 +57,7 @@ public class ImplicitZeroScan extends Scan {
         Pair<String, String> gadget = selectGadget(service, req, untampered);
 
         if (gadget == null) {
-            return null;
+            return false;
         }
 
         int attempts = 9;
@@ -57,28 +66,35 @@ public class ImplicitZeroScan extends Scan {
             smuggle = String.format("%s HTTP/1.1\r\nX-"+justBodyReflectionCanary+": ", gadget.getLeft());
             byte[] attack = Utilities.setBody(req, smuggle);
             attack = Utilities.fixContentLength(attack);
+            attack = DesyncBox.applyDesync(attack, "Content-Length", technique);
 
             Resp resp = request(service, attack);
             if (resp.failed()) {
-                return null;
+                return false;
             }
 
             if (Utilities.contains(resp, gadget.getRight())) {
                 if ("wrtztrw".equals(gadget.getRight()) && Utilities.contains(resp, justBodyReflectionCanary) ) {
-                    return null;
+                    return false;
                 }
 
                 report("CL.0 desync: "+gadget.getLeft(), "HTTP Request Smuggler repeatedly issued the attached request. After "+i+ " attempts, it got a response that appears to have been poisoned by the body of the previous request. For further details and information on remediation, please refer to https://portswigger.net/research/browser-powered-desync-attacks", baseReq, resp);
-                return null;
+                return true;
             }
         }
 
-        return null;
+        return false;
     }
 
-    static Pair<String, String> selectGadget(IHttpService service, byte[] req, Resp untampered) {
+    Pair<String, String> selectGadget(IHttpService service, byte[] req, Resp untampered) {
+        String host = service.getHost();
+        if (recordedGasget.containsKey(host)) {
+            return recordedGasget.get(host);
+        }
+
+
         Resp baseResp = request(service, req);
-        String basePath = "GET "+Utilities.getPathFromRequest(req);
+        String basePath = Utilities.getMethod(req)+ " "+Utilities.getPathFromRequest(req);
         ArrayList<Pair<String, String>> mappings = new ArrayList<>();
         // remember the response will come from the back-end, so don't use malformed requests
         mappings.add(new ImmutablePair<>("GET /robots.txt", "llow:"));
@@ -117,9 +133,11 @@ public class ImplicitZeroScan extends Scan {
                 continue;
             }
 
+            recordedGasget.put(host, known);
             return known;
         }
 
+        recordedGasget.put(host, null);
         return null;
     }
 
