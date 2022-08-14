@@ -13,6 +13,8 @@ public class DesyncBox {
     static SettingsBox sharedPermutations = new SettingsBox();
     static SettingsBox h1Permutations = new SettingsBox();
     static SettingsBox h2Permutations = new SettingsBox();
+
+    static SettingsBox clPermutations = new SettingsBox();
     static SettingsBox sharedSettings = new SettingsBox();
     static SettingsBox h1Settings = new SettingsBox();
     static SettingsBox h2Settings= new SettingsBox();
@@ -91,11 +93,14 @@ public class DesyncBox {
         h2Permutations.register("h2space", true);
         h2Permutations.register("h2prefix", true);
 
+        clPermutations.register("CL-plus", true);
+        clPermutations.register("CL-pad", true);
 
         supportedPermutations = new HashSet<>();
         supportedPermutations.addAll(sharedPermutations.getSettings());
         supportedPermutations.addAll(h1Permutations.getSettings());
         supportedPermutations.addAll(h2Permutations.getSettings());
+        supportedPermutations.addAll(clPermutations.getSettings());
     }
 
     static byte[] applyDesync(byte[] request, String header, String technique) {
@@ -282,7 +287,6 @@ public class DesyncBox {
                 transformed = Utilities.replace(request, "Transfer-Encoding: chunked", ":transfer-encoding: chunked");
             }
 
-
             for (int i: getSpecialChars()) {
                 if (technique.equals("suffix1:"+i)) {
                     transformed = Utilities.replace(request, "Transfer-Encoding: chunked".getBytes(), ("Transfer-Encoding: chunked"+(char) i).getBytes());
@@ -309,6 +313,14 @@ public class DesyncBox {
                 } catch (IOException e) {
 
                 }
+            }
+        }
+
+        if(header.equals(("Content-Length: "))) {
+            if (technique.equals("CL-plus")) {
+                transformed = Utilities.replace(request, "Content-Length: ", "Content-Length: +");
+            } else if (technique.equals("CL-pad")) {
+                transformed = Utilities.replace(request, "Content-Length: ", "Content-Length: 0");
             }
         }
         

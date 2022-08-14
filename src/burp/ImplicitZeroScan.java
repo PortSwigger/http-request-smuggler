@@ -14,6 +14,7 @@ public class ImplicitZeroScan extends SmuggleScanBox {
         super(name);
         scanSettings.importSettings(DesyncBox.sharedSettings);
         scanSettings.importSettings(DesyncBox.sharedPermutations);
+        scanSettings.importSettings(DesyncBox.clPermutations);
         // todo add h1 and h2 permutations
     }
 
@@ -45,16 +46,13 @@ public class ImplicitZeroScan extends SmuggleScanBox {
             return false;
         }
 
-        Utilities.out("Technique: "+technique);
-
         final String justBodyReflectionCanary = "YzBqv";
         String smuggle = String.format("GET %s HTTP/1.1\r\nX-"+justBodyReflectionCanary+": ", Utilities.getPathFromRequest(baseReq));
         req = Utilities.fixContentLength(Utilities.setBody(req, smuggle));
         //req = Utilities.addOrReplaceHeader(req, "Content-Length", ""+smuggle.length());
         //req = Utilities.addOrReplaceHeader(req, "Connection", "Content-Length");
 
-        Resp untampered = request(service, baseReq);
-        Pair<String, String> gadget = selectGadget(service, req, untampered);
+        Pair<String, String> gadget = selectGadget(service, req, baseReq);
 
         if (gadget == null) {
             return false;
@@ -86,13 +84,13 @@ public class ImplicitZeroScan extends SmuggleScanBox {
         return false;
     }
 
-    Pair<String, String> selectGadget(IHttpService service, byte[] req, Resp untampered) {
+    Pair<String, String> selectGadget(IHttpService service, byte[] req, byte[] base) {
         String host = service.getHost();
         if (recordedGasget.containsKey(host)) {
             return recordedGasget.get(host);
         }
 
-
+        Resp untampered = request(service, base);
         Resp baseResp = request(service, req);
         String basePath = Utilities.getMethod(req)+ " "+Utilities.getPathFromRequest(req);
         ArrayList<Pair<String, String>> mappings = new ArrayList<>();
