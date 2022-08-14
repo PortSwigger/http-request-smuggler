@@ -40,7 +40,7 @@ public class ImplicitZeroScan extends SmuggleScanBox {
 
         // skip permutations that don't have any effect
         String technique = config.keySet().iterator().next();
-        if (null == DesyncBox.applyDesync(baseReq, "Content-Length", technique)) {
+        if (null == DesyncBox.applyDesync(req, "Content-Length", technique)) {
             Utils.out("Skipping permutation: "+technique);
             return false;
         }
