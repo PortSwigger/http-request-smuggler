@@ -15,7 +15,8 @@ public class ImplicitZeroScan extends SmuggleScanBox {
         scanSettings.importSettings(DesyncBox.sharedSettings);
         scanSettings.importSettings(DesyncBox.sharedPermutations);
         scanSettings.importSettings(DesyncBox.clPermutations);
-        // todo add h1 and h2 permutations
+        scanSettings.importSettings(DesyncBox.h2Permutations);
+        scanSettings.importSettings(DesyncBox.h1Permutations);
     }
 
     @Override
