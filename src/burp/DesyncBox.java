@@ -48,7 +48,7 @@ public class DesyncBox {
         sharedPermutations.register("encode", true);
         sharedPermutations.register("accentTE", true);
         sharedPermutations.register("accentCH", true);
-        sharedPermutations.register("notchunked", true);
+        sharedPermutations.register("removed", true);
 
 
         for(int i: DesyncBox.getSpecialChars()) {
@@ -262,6 +262,9 @@ public class DesyncBox {
             case "h2method":
                 transformed = Utilities.replace(request, header + value, ":method: POST " + Utilities.getPathFromRequest(request) + " HTTP/1.1^~" + header + value + "^~x: x");
                 break;
+            case "removed":
+                transformed = Utilities.replace(request, header+value, "Nothing-interesting: 1");
+                break;
         }
 
         for (int i: getSpecialChars()) {
@@ -306,8 +309,6 @@ public class DesyncBox {
                 transformed = Utilities.replace(request, header+value, "Transfer-Encoding`chunked^~xz: x");
             } else if (technique.equals("h2space")) {
                 transformed = Utilities.replace(request, header+value, "Transfer-Encoding chunked : chunked");
-            } else if (technique.equals("notchunked")){
-                transformed = Utilities.replace(request, header+value, "Nothing-interesting: 1");
             } else if (technique.equals("h1case")) {
                 transformed = Utilities.replace(request, header+value, header.toUpperCase()+value);
             } else if (technique.equals("h2prefix")) {

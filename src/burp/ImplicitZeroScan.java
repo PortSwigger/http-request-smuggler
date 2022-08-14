@@ -29,15 +29,9 @@ public class ImplicitZeroScan extends SmuggleScanBox {
         baseReq = Utilities.addCacheBuster(baseReq, null);
 
         byte[] req = SmuggleScanBox.setupRequest(baseReq);
-        req = Utilities.replaceFirst(req, "Content-Type: ", "X-Content-Type: ");
+        //req = Utilities.replaceFirst(req, "Content-Type: ", "X-Content-Type: ");
 
-        if (h2) {
-            req = Utilities.replaceFirst(req, " HTTP/2\r\n", " HTTP/1.1\r\n");
-            req = Utilities.replaceFirst(req, "Content-Length: ", "X-CL: ");
-            req = Utilities.replaceFirst(req, "Connection: ", "X-Connection: ");
-        } else {
-            req = Utilities.addOrReplaceHeader(req, "Connection", "keep-alive");
-        }
+
 
         // skip permutations that don't have any effect
         String technique = config.keySet().iterator().next();
@@ -45,6 +39,25 @@ public class ImplicitZeroScan extends SmuggleScanBox {
             Utils.out("Skipping permutation: "+technique);
             return false;
         }
+        boolean forceHTTP1 = false;
+        boolean forceHTTP2 = false;
+        if (DesyncBox.h1Permutations.contains(technique)) {
+            forceHTTP1 = true;
+        } else if (DesyncBox.h2Permutations.contains(technique)) {
+            if (!h2) {
+                return false;
+            }
+            forceHTTP2 = true;
+        }
+
+        if (h2 && !forceHTTP1) {
+            req = Utilities.replaceFirst(req, " HTTP/2\r\n", " HTTP/1.1\r\n");
+            //req = Utilities.replaceFirst(req, "Content-Length: ", "X-CL: ");
+            req = Utilities.replaceFirst(req, "Connection: ", "X-Connection: ");
+        } else {
+            req = Utilities.addOrReplaceHeader(req, "Connection", "keep-alive");
+        }
+
 
         final String justBodyReflectionCanary = "YzBqv";
         String smuggle = String.format("GET %s HTTP/1.1\r\nX-"+justBodyReflectionCanary+": ", Utilities.getPathFromRequest(baseReq));
@@ -66,7 +79,13 @@ public class ImplicitZeroScan extends SmuggleScanBox {
             attack = Utilities.fixContentLength(attack);
             attack = DesyncBox.applyDesync(attack, "Content-Length", technique);
 
-            Resp resp = request(service, attack);
+            Resp resp;
+            if (forceHTTP2) {
+                resp = HTTP2Scan.h2request(service, attack, true);
+            } else {
+                resp = request(service, attack, 0, forceHTTP1);
+            }
+
             if (resp.failed()) {
                 return false;
             }
