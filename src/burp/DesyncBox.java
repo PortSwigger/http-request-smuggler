@@ -95,6 +95,11 @@ public class DesyncBox {
 
         clPermutations.register("CL-plus", true);
         clPermutations.register("CL-pad", true);
+        clPermutations.register("CL-bigpad", true);
+        clPermutations.register("CL-e", true);
+        clPermutations.register("CL-dec", true);
+        clPermutations.register("CL-commaprefix", true);
+        clPermutations.register("CL-commasuffix", true);
 
         supportedPermutations = new HashSet<>();
         supportedPermutations.addAll(sharedPermutations.getSettings());
@@ -106,6 +111,15 @@ public class DesyncBox {
     static byte[] applyDesync(byte[] request, String header, String technique) {
         String headerValue = Utilities.getHeader(request, header);
         header = header + ": ";
+        String value = "";
+        if(header.equals(("Content-Length: "))) {
+            value = Utilities.getHeader(request, "Content-Length");
+        } else if (header.equals("Transfer-Encoding: ")) {
+             value = "chunked";
+        } else {
+            throw new RuntimeException("Unsupported target header: "+header);
+        }
+
         String permuted = null;
         byte[] transformed = request;
 
@@ -229,6 +243,33 @@ public class DesyncBox {
             transformed = Utilities.replaceFirst(transformed, "HTTP/1.1", "HTTP/1.0");
         }
 
+        switch (technique) {
+            case "0dsuffix":
+                transformed = Utilities.replace(request, header + value, header + value + "\r");
+                break;
+            case "tabsuffix":
+                transformed = Utilities.replace(request, header + value, header + value + "\t");
+                break;
+            case "h2auth":
+                transformed = Utilities.replace(request, header + value, ":authority: " + Utilities.getHeader(request, "Host") + ":443^~" + header + value + "^~x: x");
+                break;
+            case "h2path":
+                transformed = Utilities.replace(request, header + value, ":path: " + Utilities.getPathFromRequest(request) + " HTTP/1.1^~" + header + value + "^~x: x");
+                break;
+            case "h2scheme":
+                transformed = Utilities.replace(request, header + value, ":scheme: https://" + Utilities.getHeader(request, "Host") + Utilities.getPathFromRequest(request) + " HTTP/1.1^~" + header + value + "^~x: x");
+                break;
+            case "h2method":
+                transformed = Utilities.replace(request, header + value, ":method: POST " + Utilities.getPathFromRequest(request) + " HTTP/1.1^~" + header + value + "^~x: x");
+                break;
+        }
+
+        for (int i: getSpecialChars()) {
+            if (technique.equals("suffix1:"+i)) {
+                transformed = Utilities.replace(request, (header+value).getBytes(), (header+value+(char) i).getBytes());
+            }
+        }
+
         if (header.equals("Transfer-Encoding: ")) {
             if (technique.equals("commaCow")) {
                 transformed = Utilities.replace(request, "Transfer-Encoding: chunked".getBytes(), "Transfer-Encoding: chunked, identity".getBytes());
@@ -244,18 +285,12 @@ public class DesyncBox {
                 transformed = Utilities.addOrReplaceHeader(request, "Transfer-encoding", "identity");
             } else if (technique.equals("lazygrep")) {
                 transformed = Utilities.replace(request, "Transfer-Encoding: chunked", "Transfer-Encoding: chunk");
-            } else if (technique.equals("0dsuffix")) {
-                transformed = Utilities.replace(request, "Transfer-Encoding: chunked", "Transfer-Encoding: chunked\r");
-            } else if (technique.equals("tabsuffix")) {
-                transformed = Utilities.replace(request, "Transfer-Encoding: chunked", "Transfer-Encoding: chunked\t");
             } else if (technique.equals("revdualchunk")) {
                 transformed = Utilities.replace(request, "Transfer-Encoding: chunked", "Transfer-Encoding: identity\r\nTransfer-Encoding: chunked");
-
             } else if (technique.equals("bodysplit")) {
                 transformed = Utilities.replace(request, "Transfer-Encoding: chunked", "X: y");
                 transformed = Utilities.addOrReplaceHeader(transformed, "Foo", "barzxaazz");
                 transformed = Utilities.replace(transformed, "barzxaazz", "barn\n\nTransfer-Encoding: chunked");
-
             } else if (technique.equals("nested")) {
                 transformed = Utilities.replace(request, "Transfer-Encoding: chunked", "Transfer-Encoding: identity, chunked, identity");
             } else if (technique.equals("http2hide")) {
@@ -264,33 +299,19 @@ public class DesyncBox {
                 transformed = Utilities.replace(request, "Transfer-Encoding: chunked", "Transfer-%45ncoding: chunked");
             } else if (technique.equals("h2colon")) {
                 transformed = Utilities.replace(request, "Transfer-Encoding: chunked", "Transfer-Encoding`chunked : chunked");
-            } else if (technique.equals("h2auth")) {
-                transformed = Utilities.replace(request, "Transfer-Encoding: chunked", ":authority: "+ Utilities.getHeader(request, "Host") +":443^~Transfer-Encoding: chunked^~x: x");
-            } else if (technique.equals("h2path")) {
-                transformed = Utilities.replace(request, "Transfer-Encoding: chunked", ":path: "+Utilities.getPathFromRequest(request)+" HTTP/1.1^~Transfer-Encoding: chunked^~x: x");
-            }  else if (technique.equals("http2case")) {
+            } else if (technique.equals("http2case")) {
                 request = (new String(request)).toLowerCase().getBytes();
-                transformed = Utilities.replace(request, "transfer-encoding: chunked", "x-reject: 1\r\ntransfer-Encoding: chunked");
-            } else if (technique.equals("h2scheme")) {
-                transformed = Utilities.replace(request, "Transfer-Encoding: chunked", ":scheme: https://"+Utilities.getHeader(request, "Host")+Utilities.getPathFromRequest(request)+" HTTP/1.1^~Transfer-Encoding: chunked^~x: x");
+                transformed = Utilities.replace(request, header+value, "x-reject: 1\r\ntransfer-Encoding: chunked");
             } else if (technique.equals("h2name")) {
-                transformed = Utilities.replace(request, "Transfer-Encoding: chunked", "Transfer-Encoding`chunked^~xz: x");
-            } else if (technique.equals("h2method")) {
-                transformed = Utilities.replace(request, "Transfer-Encoding: chunked", ":method: POST "+Utilities.getPathFromRequest(request)+" HTTP/1.1^~Transfer-Encoding: chunked^~x: x");
+                transformed = Utilities.replace(request, header+value, "Transfer-Encoding`chunked^~xz: x");
             } else if (technique.equals("h2space")) {
-                transformed = Utilities.replace(request, "Transfer-Encoding: chunked", "Transfer-Encoding chunked : chunked");
+                transformed = Utilities.replace(request, header+value, "Transfer-Encoding chunked : chunked");
             } else if (technique.equals("notchunked")){
-                transformed = Utilities.replace(request, "Transfer-Encoding: chunked", "Nothing-interesting: 1");
+                transformed = Utilities.replace(request, header+value, "Nothing-interesting: 1");
             } else if (technique.equals("h1case")) {
-                transformed = Utilities.replace(request, "Transfer-Encoding: chunked", "transfer-encoding: chunked");
+                transformed = Utilities.replace(request, header+value, header.toUpperCase()+value);
             } else if (technique.equals("h2prefix")) {
-                transformed = Utilities.replace(request, "Transfer-Encoding: chunked", ":transfer-encoding: chunked");
-            }
-
-            for (int i: getSpecialChars()) {
-                if (technique.equals("suffix1:"+i)) {
-                    transformed = Utilities.replace(request, "Transfer-Encoding: chunked".getBytes(), ("Transfer-Encoding: chunked"+(char) i).getBytes());
-                }
+                transformed = Utilities.replace(request, header+value, ":transfer-encoding: chunked");
             }
 
             if (technique.equals("accentTE")) {
@@ -299,7 +320,7 @@ public class DesyncBox {
                     encoded.write("Transf".getBytes());
                     encoded.write((byte) 0x82);
                     encoded.write("r-Encoding: ".getBytes());
-                    transformed = Utilities.replace(request, "Transfer-Encoding: ".getBytes(), encoded.toByteArray());
+                    transformed = Utilities.replace(request, header.getBytes(), encoded.toByteArray());
                 } catch (IOException e) {
 
                 }
@@ -321,6 +342,16 @@ public class DesyncBox {
                 transformed = Utilities.replace(request, "Content-Length: ", "Content-Length: +");
             } else if (technique.equals("CL-pad")) {
                 transformed = Utilities.replace(request, "Content-Length: ", "Content-Length: 0");
+            } else if (technique.equals("CL-bigpad")) {
+                transformed = Utilities.replace(request, "Content-Length: ", "Content-Length: 00000000000");
+            } else if (technique.equals("CL-e")) {
+                transformed = Utilities.replace(request, "Content-Length: "+value, "Content-Length: "+value+"e0");
+            } else if (technique.equals("CL-dec")) {
+                transformed = Utilities.replace(request, "Content-Length: "+value, "Content-Length: "+value+".0");
+            } else if (technique.equals("CL-commaprefix")) {
+                transformed = Utilities.replace(request, "Content-Length: ", "Content-Length: 0, ");
+            } else if (technique.equals("CL-commasuffix")) {
+                transformed = Utilities.replace(request, "Content-Length: "+value, "Content-Length: "+value+", 0");
             }
         }
         
