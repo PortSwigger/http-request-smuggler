@@ -49,6 +49,9 @@ public class DesyncBox {
         sharedPermutations.register("accentTE", true);
         sharedPermutations.register("accentCH", true);
         sharedPermutations.register("removed", true);
+        sharedPermutations.register("get", true);
+        sharedPermutations.register("options", true);
+        sharedPermutations.register("head", true);
 
 
         for(int i: DesyncBox.getSpecialChars()) {
@@ -100,6 +103,7 @@ public class DesyncBox {
         clPermutations.register("CL-dec", true);
         clPermutations.register("CL-commaprefix", true);
         clPermutations.register("CL-commasuffix", true);
+        clPermutations.register("CL-expect", true);
 
         supportedPermutations = new HashSet<>();
         supportedPermutations.addAll(sharedPermutations.getSettings());
@@ -265,6 +269,18 @@ public class DesyncBox {
             case "removed":
                 transformed = Utilities.replace(request, header+value, "Nothing-interesting: 1");
                 break;
+            case "get":
+                transformed = Utilities.setMethod(request, "GET");
+                break;
+            case "options":
+                transformed = Utilities.setMethod(request, "OPTIONS");
+                break;
+            case "head":
+                transformed = Utilities.setMethod(request, "HEAD");
+                break;
+//            case "range":
+//                transformed = Utilities.setMethod(request, "RANGE");
+//                break;
         }
 
         for (int i: getSpecialChars()) {
@@ -339,20 +355,30 @@ public class DesyncBox {
         }
 
         if(header.equals(("Content-Length: "))) {
-            if (technique.equals("CL-plus")) {
-                transformed = Utilities.replace(request, "Content-Length: ", "Content-Length: +");
-            } else if (technique.equals("CL-pad")) {
-                transformed = Utilities.replace(request, "Content-Length: ", "Content-Length: 0");
-            } else if (technique.equals("CL-bigpad")) {
-                transformed = Utilities.replace(request, "Content-Length: ", "Content-Length: 00000000000");
-            } else if (technique.equals("CL-e")) {
-                transformed = Utilities.replace(request, "Content-Length: "+value, "Content-Length: "+value+"e0");
-            } else if (technique.equals("CL-dec")) {
-                transformed = Utilities.replace(request, "Content-Length: "+value, "Content-Length: "+value+".0");
-            } else if (technique.equals("CL-commaprefix")) {
-                transformed = Utilities.replace(request, "Content-Length: ", "Content-Length: 0, ");
-            } else if (technique.equals("CL-commasuffix")) {
-                transformed = Utilities.replace(request, "Content-Length: "+value, "Content-Length: "+value+", 0");
+            switch (technique) {
+                case "CL-plus":
+                    transformed = Utilities.replace(request, "Content-Length: ", "Content-Length: +");
+                    break;
+                case "CL-pad":
+                    transformed = Utilities.replace(request, "Content-Length: ", "Content-Length: 0");
+                    break;
+                case "CL-bigpad":
+                    transformed = Utilities.replace(request, "Content-Length: ", "Content-Length: 00000000000");
+                    break;
+                case "CL-e":
+                    transformed = Utilities.replace(request, "Content-Length: " + value, "Content-Length: " + value + "e0");
+                    break;
+                case "CL-dec":
+                    transformed = Utilities.replace(request, "Content-Length: " + value, "Content-Length: " + value + ".0");
+                    break;
+                case "CL-commaprefix":
+                    transformed = Utilities.replace(request, "Content-Length: ", "Content-Length: 0, ");
+                    break;
+                case "CL-commasuffix":
+                    transformed = Utilities.replace(request, "Content-Length: " + value, "Content-Length: " + value + ", 0");
+                    break;
+                case "CL-expect":
+                    transformed = Utilities.addOrReplaceHeader(request, "Expect", "100-continue");
             }
         }
         
