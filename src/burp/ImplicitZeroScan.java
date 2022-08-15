@@ -5,10 +5,12 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 
 public class ImplicitZeroScan extends SmuggleScanBox {
     HashMap<String, Pair<String,String>> recordedGasget = new HashMap<>();
+    HashSet<String> reportedStatus = new HashSet<>();
 
     ImplicitZeroScan(String name) {
         super(name);
@@ -73,7 +75,7 @@ public class ImplicitZeroScan extends SmuggleScanBox {
         }
 
         int attempts = 9;
-
+        short status = 0;
         for (int i=0; i<attempts; i++) {
             smuggle = String.format("%s HTTP/1.1\r\nX-"+justBodyReflectionCanary+": ", gadget.getLeft());
             byte[] attack = Utilities.setBody(req, smuggle);
@@ -99,6 +101,12 @@ public class ImplicitZeroScan extends SmuggleScanBox {
                 report("CL.0 desync: "+gadget.getLeft(), "HTTP Request Smuggler repeatedly issued the attached request. After "+i+ " attempts, it got a response that appears to have been poisoned by the body of the previous request. For further details and information on remediation, please refer to https://portswigger.net/research/browser-powered-desync-attacks", baseReq, resp);
                 return true;
             }
+
+            if (resp.getStatus() == 400 && status != 400 && status != 0 && !reportedStatus.contains(service.getHost())) {
+                reportedStatus.add(service.getHost());
+                report("Mystery 400/"+status, i+" attempts", baseReq, resp);
+            }
+            status = resp.getStatus();
         }
 
         return false;

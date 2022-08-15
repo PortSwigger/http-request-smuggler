@@ -52,6 +52,7 @@ public class DesyncBox {
         sharedPermutations.register("get", true);
         sharedPermutations.register("options", true);
         sharedPermutations.register("head", true);
+        sharedPermutations.register("range", true);
 
 
         for(int i: DesyncBox.getSpecialChars()) {
@@ -97,6 +98,7 @@ public class DesyncBox {
         h2Permutations.register("h2prefix", true);
 
         clPermutations.register("CL-plus", true);
+        clPermutations.register("CL-minus", true);
         clPermutations.register("CL-pad", true);
         clPermutations.register("CL-bigpad", true);
         clPermutations.register("CL-e", true);
@@ -278,9 +280,9 @@ public class DesyncBox {
             case "head":
                 transformed = Utilities.setMethod(request, "HEAD");
                 break;
-//            case "range":
-//                transformed = Utilities.setMethod(request, "RANGE");
-//                break;
+            case "range":
+                transformed = Utilities.addOrReplaceHeader(request, "Range", "bytes=0-0");
+                break;
         }
 
         for (int i: getSpecialChars()) {
@@ -358,6 +360,9 @@ public class DesyncBox {
             switch (technique) {
                 case "CL-plus":
                     transformed = Utilities.replace(request, "Content-Length: ", "Content-Length: +");
+                    break;
+                case "CL-minus":
+                    transformed = Utilities.replace(request, "Content-Length: ", "Content-Length: -");
                     break;
                 case "CL-pad":
                     transformed = Utilities.replace(request, "Content-Length: ", "Content-Length: 0");
