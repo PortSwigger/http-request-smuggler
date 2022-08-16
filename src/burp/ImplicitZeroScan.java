@@ -39,7 +39,7 @@ public class ImplicitZeroScan extends SmuggleScanBox {
         // skip permutations that don't have any effect
         String technique = config.keySet().iterator().next();
         if (null == DesyncBox.applyDesync(req, "Content-Length", technique)) {
-            Utils.out("Skipping permutation: "+technique);
+            //Utils.out("Skipping permutation: "+technique);
             return false;
         }
         boolean forceHTTP1 = false;
@@ -76,6 +76,9 @@ public class ImplicitZeroScan extends SmuggleScanBox {
 
         int attempts = 9;
         short status = 0;
+        boolean badFirstStatus = false;
+        Resp lastResp = null;
+
         for (int i=0; i<attempts; i++) {
             smuggle = String.format("%s HTTP/1.1\r\nX-"+justBodyReflectionCanary+": ", gadget.getLeft());
             byte[] attack = Utilities.setBody(req, smuggle);
@@ -98,15 +101,24 @@ public class ImplicitZeroScan extends SmuggleScanBox {
                     return false;
                 }
 
-                report("CL.0 desync: "+gadget.getLeft(), "HTTP Request Smuggler repeatedly issued the attached request. After "+i+ " attempts, it got a response that appears to have been poisoned by the body of the previous request. For further details and information on remediation, please refer to https://portswigger.net/research/browser-powered-desync-attacks", baseReq, resp);
+                // this gadget will get FPs on this endpoint
+                if (i == 0) {
+                    return false;
+                }
+
+                report("CL.0 desync: "+technique+"|"+gadget.getLeft(), "HTTP Request Smuggler repeatedly issued the attached request. After "+i+ " attempts, it got a response that appears to have been poisoned by the body of the previous request. For further details and information on remediation, please refer to https://portswigger.net/research/browser-powered-desync-attacks", baseReq, lastResp, resp);
                 return true;
             }
 
-            if (resp.getStatus() == 400 && status != 400 && status != 0 && !reportedStatus.contains(service.getHost())) {
+            if (i == 0) {
+                badFirstStatus = (resp.getStatus() == 400);
+            } else if (!badFirstStatus && resp.getStatus() == 400 && status != 400 && !reportedStatus.contains(service.getHost())) {
                 reportedStatus.add(service.getHost());
-                report("Mystery 400/"+status, i+" attempts", baseReq, resp);
+                report("Mystery 400/"+status, i+" attempts", baseReq, lastResp, resp);
             }
+
             status = resp.getStatus();
+            lastResp = resp;
         }
 
         return false;
