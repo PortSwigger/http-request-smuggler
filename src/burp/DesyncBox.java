@@ -54,7 +54,6 @@ public class DesyncBox {
         sharedPermutations.register("head", true);
         sharedPermutations.register("range", true);
 
-
         for(int i: DesyncBox.getSpecialChars()) {
             sharedPermutations.register("spacefix1:"+i, true);
         }
@@ -96,6 +95,7 @@ public class DesyncBox {
         h2Permutations.register("h2method", true);
         h2Permutations.register("h2space", true);
         h2Permutations.register("h2prefix", true);
+        h2Permutations.register("h2CL", true);
 
         clPermutations.register("CL-plus", true);
         clPermutations.register("CL-minus", true);
@@ -106,6 +106,8 @@ public class DesyncBox {
         clPermutations.register("CL-commaprefix", true);
         clPermutations.register("CL-commasuffix", true);
         clPermutations.register("CL-expect", true);
+        clPermutations.register("CL-error", true);
+        clPermutations.register("CL-spacepad", true);
 
         supportedPermutations = new HashSet<>();
         supportedPermutations.addAll(sharedPermutations.getSettings());
@@ -283,6 +285,10 @@ public class DesyncBox {
             case "range":
                 transformed = Utilities.addOrReplaceHeader(request, "Range", "bytes=0-0");
                 break;
+            case "h2CL":
+                transformed = Utilities.setHeader(request, "Content-Length", "0");
+                // we have to bypass the no-effect check
+                return transformed;
         }
 
         for (int i: getSpecialChars()) {
@@ -370,6 +376,9 @@ public class DesyncBox {
                 case "CL-bigpad":
                     transformed = Utilities.replace(request, "Content-Length: ", "Content-Length: 00000000000");
                     break;
+                case "CL-spacepad":
+                    transformed = Utilities.replace(request, "Content-Length: ", "Content-Length: 0 ");
+                    break;
                 case "CL-e":
                     transformed = Utilities.replace(request, "Content-Length: " + value, "Content-Length: " + value + "e0");
                     break;
@@ -384,6 +393,9 @@ public class DesyncBox {
                     break;
                 case "CL-expect":
                     transformed = Utilities.addOrReplaceHeader(request, "Expect", "100-continue");
+                    break;
+                case "CL-error":
+                    transformed =  Utilities.replace(request, "Content-Length: " + value, "X-Invalid Y: \r\nContent-Length: " + value);
             }
         }
         

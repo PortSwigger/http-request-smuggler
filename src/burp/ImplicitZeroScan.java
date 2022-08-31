@@ -14,6 +14,7 @@ public class ImplicitZeroScan extends SmuggleScanBox {
 
     ImplicitZeroScan(String name) {
         super(name);
+        scanSettings.register("report mystery 400", false);
         scanSettings.importSettings(DesyncBox.sharedSettings);
         scanSettings.importSettings(DesyncBox.sharedPermutations);
         scanSettings.importSettings(DesyncBox.clPermutations);
@@ -34,21 +35,24 @@ public class ImplicitZeroScan extends SmuggleScanBox {
         byte[] req = SmuggleScanBox.setupRequest(baseReq);
         //req = Utilities.replaceFirst(req, "Content-Type: ", "X-Content-Type: ");
 
-
-
         // skip permutations that don't have any effect
         String technique = config.keySet().iterator().next();
         if (null == DesyncBox.applyDesync(req, "Content-Length", technique)) {
             //Utils.out("Skipping permutation: "+technique);
             return false;
         }
+
         boolean forceHTTP1 = false;
         boolean forceHTTP2 = false;
         if (DesyncBox.h1Permutations.contains(technique)) {
             forceHTTP1 = true;
         } else if (DesyncBox.h2Permutations.contains(technique)) {
             if (!h2) {
-                return false;
+                Resp h2test = HTTP2Scan.h2request(service, baseReq);
+                if (h2test.failed() || !Utilities.containsBytes(h2test.getReq().getResponse(), "HTTP/2".getBytes())) {
+                    return false;
+                }
+                h2 = true;
             }
             forceHTTP2 = true;
         }
@@ -60,7 +64,6 @@ public class ImplicitZeroScan extends SmuggleScanBox {
         } else {
             req = Utilities.addOrReplaceHeader(req, "Connection", "keep-alive");
         }
-
 
         final String justBodyReflectionCanary = "YzBqv";
         String smuggle = String.format("GET %s HTTP/1.1\r\nX-"+justBodyReflectionCanary+": ", Utilities.getPathFromRequest(baseReq));
@@ -112,9 +115,27 @@ public class ImplicitZeroScan extends SmuggleScanBox {
 
             if (i == 0) {
                 badFirstStatus = (resp.getStatus() == 400);
-            } else if (!badFirstStatus && resp.getStatus() == 400 && status != 400 && !reportedStatus.contains(service.getHost())) {
+            } else if (Utilities.globalSettings.getBoolean("report mystery 400") && !badFirstStatus && resp.getStatus() == 400 && status != 400 && !reportedStatus.contains(service.getHost())) {
                 reportedStatus.add(service.getHost());
-                report("Mystery 400/"+status, i+" attempts", baseReq, lastResp, resp);
+                byte[] fakeAttack = Utilities.setBody(req, " ");
+                fakeAttack = Utilities.fixContentLength(fakeAttack);
+                fakeAttack = DesyncBox.applyDesync(fakeAttack, "Content-Length", technique);
+                boolean worked = true;
+                for (int k=0; k<30; k++) {
+                    Resp resp2;
+                    if (forceHTTP2) {
+                        resp2 = HTTP2Scan.h2request(service, fakeAttack, true);
+                    } else {
+                        resp2 = request(service, fakeAttack, 0, forceHTTP1);
+                    }
+                    if (resp2.failed() || resp2.getStatus() == 400) {
+                        worked = false;
+                        break;
+                    }
+                }
+                if (worked) {
+                    report("Mystery 400: " + technique + "| 400/" + status, i + " attempts", baseReq, lastResp, resp);
+                }
             }
 
             status = resp.getStatus();
@@ -135,6 +156,9 @@ public class ImplicitZeroScan extends SmuggleScanBox {
         String basePath = Utilities.getMethod(req)+ " "+Utilities.getPathFromRequest(req);
         ArrayList<Pair<String, String>> mappings = new ArrayList<>();
         // remember the response will come from the back-end, so don't use malformed requests
+//        String collab = Utilities.globalSettings.getString("collab-domain");
+//        return new ImmutablePair<>("GET https://"+collab+"/?"+service.getHost(), collab);
+
         mappings.add(new ImmutablePair<>("GET /robots.txt", "llow:"));
         mappings.add(new ImmutablePair<>("GET /wrtztrw?wrtztrw=wrtztrw", "wrtztrw"));
         mappings.add(new ImmutablePair<>("GET /favicon.ico", "Content-Type: image/"));
