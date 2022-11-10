@@ -18,7 +18,9 @@ public class ConnectionStateScan extends Scan {
     }
 
     public List<IScanIssue> doScan(byte[] original, IHttpService service) {
-        dnsScan(original, service);
+        if (Utilities.isBurpPro()) {
+            dnsScan(original, service);
+        }
         statusScan(original, service);
         reflectScan(original, service);
 //        sslScan(original, service);
