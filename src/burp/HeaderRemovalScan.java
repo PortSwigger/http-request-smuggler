@@ -21,7 +21,7 @@ public class HeaderRemovalScan extends Scan {
         baseReq = Utilities.addOrReplaceHeader(baseReq, "Connection", "keep-alive");
 
         byte[] attack = Utilities.addOrReplaceHeader(baseReq, "Keep-Alive", "timeout=5, max=1000");
-        attack = Utilities.addOrReplaceHeader(attack, " Host", CANARY);
+        //attack = Utilities.addOrReplaceHeader(attack, " Host", CANARY);
 
         byte[] harmless = Utilities.replaceFirst(attack, "Keep-Alive: ", "Eat-Alive: ");
         // attack = Utilities.replaceFirst(attack, "\r\n\r\n", "\n\n");
