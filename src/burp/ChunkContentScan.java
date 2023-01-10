@@ -204,7 +204,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
                             "X-Forwarded-Host: "+collabWithHost+"\r\n" +
                             "X-Foo: X";
                     break;
-                case "poc: collab-abs":
+                case "collab-abs":
                     inject = "GET http://"+collabWithHost+"/ HTTP/1.1\r\n" +
                 "X-Foo: X";
                     break;
