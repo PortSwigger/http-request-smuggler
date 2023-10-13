@@ -1,5 +1,8 @@
 apply plugin: 'java-library'
 
+sourceCompatibility = 17
+targetCompatibility = 17
+
 repositories {
     mavenCentral()
 }
@@ -7,6 +10,7 @@ repositories {
 dependencies {
     implementation 'org.apache.commons:commons-lang3:3.5'
     implementation group: 'org.apache.commons', name: 'commons-collections4', version: '4.1'
+    implementation files('bulkScan-all.jar') // includes albinowaxUtils and Burp
     implementation files('turbo-intruder-all.jar') // includes albinowaxUtils and Burp
 }
 
@@ -27,10 +31,3 @@ task fatJar(type: Jar) {
     from { configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
     with jar
 }
-
-compileJava {
-    targetCompatibility '1.8'
-    sourceCompatibility '1.8'
-}
-sourceCompatibility = JavaVersion.VERSION_11
-targetCompatibility = JavaVersion.VERSION_11
