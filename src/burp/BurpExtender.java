@@ -1,14 +1,22 @@
 package burp;
 
+import burp.api.montoya.BurpExtension;
+import burp.api.montoya.MontoyaApi;
+
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class BurpExtender implements IBurpExtender, IExtensionStateListener {
+public class BurpExtender implements IBurpExtender, IExtensionStateListener, BurpExtension {
     static final String name = "HTTP Request Smuggler";
-    private static final String version = "2.15";
+    private static final String version = "2.16";
     public boolean unloaded = false;
     static ConcurrentHashMap<String, Boolean> hostsToSkip = BulkScan.hostsToSkip;
 
+    @Override
+    public void initialize(MontoyaApi api) {
+        Utilities.montoyaApi = api;
+        Utils.montoyaApi = api;
+    }
     @Override
     public void registerExtenderCallbacks(final IBurpExtenderCallbacks callbacks) {
         HashMap<String, Object> settings = new HashMap<>();

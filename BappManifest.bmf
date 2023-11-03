@@ -2,8 +2,8 @@ Uuid: aaaa60ef945341e8a450217a54a11646
 ExtensionType: 1
 Name: HTTP Request Smuggler
 RepoName: http-request-smuggler
-ScreenVersion: 2.15
-SerialVersion: 38
+ScreenVersion: 2.16
+SerialVersion: 39
 MinPlatformVersion: 0
 ProOnly: False
 Author: James 'albinowax' Kettle, PortSwigger
