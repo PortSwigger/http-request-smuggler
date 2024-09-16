@@ -25,13 +25,13 @@ public class HiddenHTTP2 extends Scan {
 
         if (noForce.failed() || Utilities.contains(noForce, "HTTP/2\r\n")) {
             //Utilities.callbacks.addToSiteMap(noForce.getReq());
-            BurpExtender.hostsToSkip.put(service.getHost(), true);
+            BulkScan.hostsToSkip.put(service.getHost(), true);
             return null;
         }
 
         Resp freshBase = HTTP2Scan.h2request(service, baseRequestResponse.getRequest());
         if (freshBase.failed() || !Utilities.contains(freshBase, "HTTP/2")) {
-            BurpExtender.hostsToSkip.put(service.getHost(), true);
+            BulkScan.hostsToSkip.put(service.getHost(), true);
             return null;
         }
 

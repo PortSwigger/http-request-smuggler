@@ -45,7 +45,7 @@ public class HeaderRemovalScan extends Scan {
             return null;
         }
 
-        BurpExtender.hostsToSkip.put(service.getHost(), true);
+        BulkScan.hostsToSkip.put(service.getHost(), true);
         report("Bad header removal v2", "", baseReq, harmlessResp, attackResp);
         return null;
     }

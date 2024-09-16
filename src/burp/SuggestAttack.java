@@ -134,7 +134,7 @@ class LaunchSuggestedAttack implements ActionListener {
             }
         }
 
-        new TurboIntruderFrame(message, new int[]{}, script, Utilities.helpers.stringToBytes(request)).actionPerformed(e);
+        new TurboIntruderFrame(message, new int[]{}, script, Utilities.helpers.stringToBytes(request), null).actionPerformed(e);
     }
 
 }

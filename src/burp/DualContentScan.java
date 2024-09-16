@@ -55,7 +55,7 @@
 //    }
 //
 //    boolean doConfiguredScan(byte[] baseReq, IHttpService service, HashMap<String, Boolean> config) {
-//        if (Utilities.globalSettings.getBoolean("skip vulnerable hosts") && BurpExtender.hostsToSkip.containsKey(service.getProtocol()+service.getHost())) {
+//        if (Utilities.globalSettings.getBoolean("skip vulnerable hosts") && BulkScan.hostsToSkip.containsKey(service.getProtocol()+service.getHost())) {
 //            return false;
 //        }
 //
@@ -118,7 +118,7 @@
 //        } catch (IOException e) {
 //
 //        }
-//        BurpExtender.hostsToSkip.put(service.getProtocol()+service.getHost(), true);
+//        BulkScan.hostsToSkip.put(service.getProtocol()+service.getHost(), true);
 //        return true;
 //    }
 //}

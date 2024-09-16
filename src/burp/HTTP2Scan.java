@@ -29,7 +29,7 @@ public class HTTP2Scan extends SmuggleScanBox implements IScannerCheck {
         Resp syncedResp = h2request(service, syncedReq);
         if (!syncedResp.failed()) {
             if (!Utilities.containsBytes(syncedResp.getReq().getResponse(), "HTTP/2 ".getBytes())) {
-                BurpExtender.hostsToSkip.put(service.getHost(), true);
+                BulkScan.hostsToSkip.put(service.getHost(), true);
                 return false;
             }
 
@@ -94,7 +94,7 @@ public class HTTP2Scan extends SmuggleScanBox implements IScannerCheck {
 ////        }
 //
 //        if (!Utilities.containsBytes(syncedResp.getReq().getResponse(), "HTTP/2 ".getBytes())) {
-//            BurpExtender.hostsToSkip.put(service.getHost(), true);
+//            BulkScan.hostsToSkip.put(service.getHost(), true);
 //            return false;
 //        }
 //

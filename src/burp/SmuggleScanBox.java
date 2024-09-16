@@ -94,7 +94,7 @@ public abstract class SmuggleScanBox extends Scan {
         ArrayList<String> validPermutations = new ArrayList<>();
         for (String permutation: relevantPermutations) {
             String key = permutation+service.getProtocol()+service.getHost();
-            if (BurpExtender.hostsToSkip.containsKey(key)) {
+            if (BulkScan.hostsToSkip.containsKey(key)) {
                 if (Utilities.globalSettings.getBoolean("skip vulnerable hosts")) {
                     return null;
                 }
@@ -118,7 +118,7 @@ public abstract class SmuggleScanBox extends Scan {
             boolean worked = doConfiguredScan(baseReq, service, config);
             if (worked) {
                 String key = permutation+service.getProtocol()+service.getHost();
-                BurpExtender.hostsToSkip.putIfAbsent(key, true);
+                BulkScan.hostsToSkip.putIfAbsent(key, true);
                 if (Utilities.globalSettings.getBoolean("skip obsolete permutations")) {
                     break;
                 }
@@ -377,7 +377,7 @@ public abstract class SmuggleScanBox extends Scan {
             }
 
             report("Connection-locked smuggling", "The website may be vulnerable to connection-locked request smuggling. For further details please refer to https://portswigger.net/research/browser-powered-desync-attacks.<br/>PauseBefore: "+attack.getRight() + "<br/>Pausetime: " + pauseTime +"<br/>Actual-time: "+pauseReq.getResponseTime()+"<br/>Basetime "+baseTime, pauseReq, poisonedReq);
-            BurpExtender.hostsToSkip.putIfAbsent(service.getHost(), true);
+            BulkScan.hostsToSkip.putIfAbsent(service.getHost(), true);
             return true;
         }
 
@@ -454,7 +454,7 @@ public abstract class SmuggleScanBox extends Scan {
 
             report(issueTitle, issueDescription, cleanup, results.get(0), results.get(1));
 
-            BurpExtender.hostsToSkip.putIfAbsent(service.getHost(), true);
+            BulkScan.hostsToSkip.putIfAbsent(service.getHost(), true);
 
             return true;
         }
