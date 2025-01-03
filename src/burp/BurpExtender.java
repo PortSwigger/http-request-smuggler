@@ -8,7 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class BurpExtender implements IBurpExtender, IExtensionStateListener, BurpExtension {
     static final String name = "HTTP Request Smuggler";
-    private static final String version = "2.16";
+    private static final String version = "2.17";
     public boolean unloaded = false;
     static ConcurrentHashMap<String, Boolean> hostsToSkip = BulkScan.hostsToSkip;
 
@@ -16,7 +16,9 @@ public class BurpExtender implements IBurpExtender, IExtensionStateListener, Bur
     public void initialize(MontoyaApi api) {
         Utilities.montoyaApi = api;
         Utils.montoyaApi = api;
+        BulkUtilities.registerContextMenu();
     }
+
     @Override
     public void registerExtenderCallbacks(final IBurpExtenderCallbacks callbacks) {
         HashMap<String, Object> settings = new HashMap<>();

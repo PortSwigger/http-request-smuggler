@@ -51,16 +51,17 @@ public class ClientDesyncScan extends Scan {
 //            }
 
             int burpTimeout = Integer.parseInt(Utilities.getSetting("project_options.connections.timeouts.normal_timeout")) / 1000;
+            burpTimeout = 10; //Utilities.globalSettings.getInt("timeout");
             TurboHelper helper = new TurboHelper(service, true, burpTimeout);
             Resp r1 = helper.blockingRequest(base);
-            if (r1.failed() || Utilities.contains(r1, "Connection: close")) {
+            if ((r1.failed() && r1.getStatus() == 0) || Utilities.contains(r1, "Connection: close")) {
                 helper.waitFor(1);
                 continue;
             }
 
             Resp r2 = helper.blockingRequest(Utilities.helpers.stringToBytes(followup));
             helper.waitFor(1);
-            if (r2.failed()) {
+            if (r2.getStatus() == 0) {
                 continue;
             }
 
@@ -85,7 +86,7 @@ public class ClientDesyncScan extends Scan {
             }
 
             if (helper.getConnectionCount() > 1) {
-                //report("hmmmm", "", base, r1, r2);
+                Utilities.out("Connection died - no client-side desync");
                 return;
             }
 
