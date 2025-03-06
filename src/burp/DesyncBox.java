@@ -53,6 +53,12 @@ public class DesyncBox {
         sharedPermutations.register("options", true);
         sharedPermutations.register("head", true);
         sharedPermutations.register("range", true);
+        sharedPermutations.register("qencode", true);
+        sharedPermutations.register("qencodeutf", true);
+        sharedPermutations.register("nel", true);
+        sharedPermutations.register("nbsp", true);
+        sharedPermutations.register("shy", true);
+        sharedPermutations.register("shy2", true);
 
         for(int i: DesyncBox.getSpecialChars()) {
             sharedPermutations.register("spacefix1:"+i, true);
@@ -72,6 +78,7 @@ public class DesyncBox {
 
         h1Permutations.register("nospace1", true);
         h1Permutations.register("linewrapped1", true);
+        h1Permutations.register("doublewrapped", true);
         h1Permutations.register("gareth1", true);
         h1Permutations.register("badsetupCR", true);
         h1Permutations.register("badsetupLF", true);
@@ -157,6 +164,9 @@ public class DesyncBox {
             case "linewrapped1":
                 permuted = header.replace(" ", "\n ");
                 break;
+            case "doublewrapped":
+                permuted = header.replace(" ", "\r\n \r\n ");
+                break;
             case "gareth1":
                 permuted = header.replace(":", "\n :");
                 break;
@@ -195,6 +205,18 @@ public class DesyncBox {
             case "backslash":
                 // Technique from "HTTP Request Smuggling in 2020"  by Amit Klein
                 permuted = header.replace("-", "\\");
+                break;
+            case "nel":
+                permuted = header.replace(":", "\u0085:");
+                break;
+            case "nbsp":
+                permuted = header.replace(":", "\u00A0:");
+                break;
+            case "shy2":
+                permuted = header.replace(":", "\u00AD:");
+                break;
+            case "shy":
+                permuted = header.replace("-", "\u00AD");
                 break;
         }
         
@@ -337,6 +359,10 @@ public class DesyncBox {
                 transformed = Utilities.replace(request, header+value, header.toUpperCase()+value);
             } else if (technique.equals("h2prefix")) {
                 transformed = Utilities.replace(request, header+value, ":transfer-encoding: chunked");
+            } else if (technique.equals("qencode")) {
+                transformed = Utilities.replace(request, "Transfer-Encoding: chunked", "Transfer-Encoding: =?iso-8859-1?B?Y2h1bmtlZA==?=");
+            } if (technique.equals("qencodeutf")) {
+                transformed = Utilities.replace(request, "Transfer-Encoding: chunked", "Transfer-Encoding: =?UTF-8?B?Y2h1bmtlZA==?=");
             }
 
             if (technique.equals("accentTE")) {
