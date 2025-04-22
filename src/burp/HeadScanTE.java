@@ -46,6 +46,7 @@ public class HeadScanTE extends SmuggleScanBox implements IScannerCheck {
 
             //String foobar = "X\r\n\r\n";
             String foobar = "FOO BAR AAH\r\n\r\n";
+            String foo = "FOO\r\n\r\n";
 //            String foobar = "TRACE * HTTP/1.0\r\n\r\n";
 //            String originalReq = Utilities.helpers.bytesToString(Utilities.setMethod(Utilities.setPath(original, "/"), "GET"));
 
@@ -72,6 +73,7 @@ public class HeadScanTE extends SmuggleScanBox implements IScannerCheck {
 
                 ArrayList<String> attacks = new ArrayList<>();
                 attacks.add(foobar);
+                attacks.add(foo);
 //            attacks.put("invalid2", "GET / HTTP/1.2\r\nFoo: bar\r\n\r\n");
 //            attacks.put("unfinished", "GET / HTTP/1.1\r\nFoo: bar");
 
