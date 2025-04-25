@@ -3,11 +3,11 @@ ExtensionType: 1
 Name: HTTP Request Smuggler
 RepoName: http-request-smuggler
 ScreenVersion: 2.17
-SerialVersion: 41
-MinPlatformVersion: 0
+SerialVersion: 43
+MinPlatformVersion: 12
 ProOnly: False
-Author: James 'albinowax' Kettle, PortSwigger
+Author: James Kettle, PortSwigger
 ShortDescription: Helps you launch HTTP Request Smuggling attacks, supports scanning for Request Smuggling vulnerabilities and also aids exploitation by handling cumbersome offset-tweaking for you
-EntryPoint: build/libs/http-request-smuggler-all.jar
+EntryPoint: build/libs/desynchronize-all.jar
 BuildCommand: ./gradlew fatJar
 SupportedProducts: Pro, Community
