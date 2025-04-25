@@ -83,7 +83,7 @@ public class ImplicitZeroScan extends SmuggleScanBox {
         Resp lastResp = null;
 
         for (int i=0; i<attempts; i++) {
-            smuggle = String.format("%s HTTP/1.1\r\nX-"+justBodyReflectionCanary+": ", gadget.getLeft());
+            smuggle = String.format("%s\r\nX-"+justBodyReflectionCanary+": ", gadget.getLeft());
             byte[] attack = Utilities.setBody(req, smuggle);
             attack = Utilities.fixContentLength(attack);
             attack = DesyncBox.applyDesync(attack, "Content-Length", technique);
@@ -153,17 +153,18 @@ public class ImplicitZeroScan extends SmuggleScanBox {
 
         Resp untampered = request(service, base);
         Resp baseResp = request(service, req);
-        String basePath = Utilities.getMethod(req)+ " "+Utilities.getPathFromRequest(req);
+        String basePath = Utilities.getMethod(req)+ " "+Utilities.getPathFromRequest(req) + " HTTP/1.1";
         ArrayList<Pair<String, String>> mappings = new ArrayList<>();
         // remember the response will come from the back-end, so don't use malformed requests
 //        String collab = Utilities.globalSettings.getString("collab-domain");
 //        return new ImmutablePair<>("GET https://"+collab+"/?"+service.getHost(), collab);
 
-        mappings.add(new ImmutablePair<>("GET /robots.txt", "llow:"));
-        mappings.add(new ImmutablePair<>("GET /wrtztrw?wrtztrw=wrtztrw", "wrtztrw"));
-        mappings.add(new ImmutablePair<>("GET /favicon.ico", "Content-Type: image/"));
-        mappings.add(new ImmutablePair<>("GET /sitemap.xml", "Content-Type: application/xml"));
-        mappings.add(new ImmutablePair<>("TRACE /", "405 Method Not Allowed"));
+        mappings.add(new ImmutablePair<>("GET /robots.txt HTTP/1.1", "llow:"));
+        mappings.add(new ImmutablePair<>("GET /wrtztrw?wrtztrw=wrtztrw HTTP/1.1", "wrtztrw"));
+        mappings.add(new ImmutablePair<>("GET /favicon.ico HTTP/1.1", "Content-Type: image/"));
+        mappings.add(new ImmutablePair<>("GET /sitemap.xml HTTP/1.1", "Content-Type: application/xml"));
+        mappings.add(new ImmutablePair<>("TRACE / HTTP/1.1", "405 Method Not Allowed"));
+        mappings.add(new ImmutablePair<>("GET / HTTP/2.2", "505 HTTP"));
         //mappings.add(new ImmutablePair<>("X /", "405 Method Not Allowed"));
         //mappings.add(new ImmutablePair<>("GET /../", "400 Bad Request"));
 
