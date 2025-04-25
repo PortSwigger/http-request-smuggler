@@ -10,8 +10,8 @@ repositories {
 dependencies {
     implementation 'org.apache.commons:commons-lang3:3.5'
     implementation group: 'org.apache.commons', name: 'commons-collections4', version: '4.1'
+    implementation files('turbo-intruder.jar') // includes albinowaxUtils and Burp
     implementation files('bulkScan-all.jar') // includes albinowaxUtils and Burp
-    implementation files('turbo-intruder-all.jar') // includes albinowaxUtils and Burp
 }
 
 sourceSets {

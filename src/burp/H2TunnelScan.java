@@ -56,7 +56,7 @@ public class H2TunnelScan extends SmuggleScanBox implements IScannerCheck {
                 if (Utilities.globalSettings.getBoolean("strip CL")) {
                     attack = Utilities.replace(attack, "Content-Length", "fakecontentlength");
                 } else {
-                    attack = Utilities.setHeader(attack, "Content-Length", "0");
+                    attack = Utilities.addOrReplaceHeader(attack, "Content-Length", "0");
                 }
                 Resp resp = HTTP2Scan.h2request(service, attack);
                 if (HeadScanTE.mixedResponse(resp)) {

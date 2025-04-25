@@ -308,7 +308,7 @@ public class DesyncBox {
                 transformed = Utilities.addOrReplaceHeader(request, "Range", "bytes=0-0");
                 break;
             case "h2CL":
-                transformed = Utilities.setHeader(request, "Content-Length", "0");
+                transformed = Utilities.addOrReplaceHeader(request, "Content-Length", "0");
                 // we have to bypass the no-effect check
                 return transformed;
         }

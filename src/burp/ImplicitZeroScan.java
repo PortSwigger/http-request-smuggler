@@ -164,6 +164,7 @@ public class ImplicitZeroScan extends SmuggleScanBox {
         mappings.add(new ImmutablePair<>("GET /favicon.ico", "Content-Type: image/"));
         mappings.add(new ImmutablePair<>("GET /sitemap.xml", "Content-Type: application/xml"));
         mappings.add(new ImmutablePair<>("TRACE /", "405 Method Not Allowed"));
+        //mappings.add(new ImmutablePair<>("X /", "405 Method Not Allowed"));
         //mappings.add(new ImmutablePair<>("GET /../", "400 Bad Request"));
 
         for (Pair<String, String> known: mappings) {
