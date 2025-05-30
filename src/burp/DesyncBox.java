@@ -271,6 +271,7 @@ public class DesyncBox {
 
         if (technique.equals("http1.0")) {
             transformed = Utilities.replaceFirst(transformed, "HTTP/1.1", "HTTP/1.0");
+            transformed = Utilities.replaceFirst(transformed, "HTTP/2", "HTTP/1.0");
         }
 
         switch (technique) {

@@ -11,6 +11,7 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
 
     ChunkContentScan(String name) {
         super(name);
+        scanSettings.register("timeout", 10, "The time after quick a response is considered to have timed out. Tweak with caution.");
         scanSettings.importSettings(DesyncBox.h1Permutations);
         scanSettings.importSettings(DesyncBox.h1Settings);
     }
@@ -65,10 +66,10 @@ public class ChunkContentScan extends SmuggleScanBox implements IScannerCheck  {
                     }
                 }
 
-
-                if (truncatedChunk.getReq().getResponse() != null) {
-                    Utilities.out("Unexpected report with response");
-                }
+                // this is fine; we're happy to take a delayed response as evidence of a timeout.
+//                if (truncatedChunk.getReq().getResponse() != null) {
+//                    Utilities.out("Unexpected report with response");
+//                }
 
                 String title = "Possible HTTP Request Smuggling: CL.TE " + String.join("|", config.keySet());
 
