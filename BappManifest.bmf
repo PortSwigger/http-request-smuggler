@@ -3,7 +3,7 @@ ExtensionType: 1
 Name: HTTP Request Smuggler
 RepoName: http-request-smuggler
 ScreenVersion: 2.20
-SerialVersion: 44
+SerialVersion: 45
 MinPlatformVersion: 19
 ProOnly: False
 Author: James Kettle, PortSwigger
