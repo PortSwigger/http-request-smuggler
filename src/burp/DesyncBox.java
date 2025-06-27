@@ -113,6 +113,7 @@ public class DesyncBox {
         clPermutations.register("CL-commaprefix", true);
         clPermutations.register("CL-commasuffix", true);
         clPermutations.register("CL-expect", true);
+        clPermutations.register("CL-expect-obfs", true);
         clPermutations.register("CL-error", true);
         clPermutations.register("CL-spacepad", true);
 
@@ -420,6 +421,9 @@ public class DesyncBox {
                     break;
                 case "CL-expect":
                     transformed = Utilities.addOrReplaceHeader(request, "Expect", "100-continue");
+                    break;
+                case "CL-expect-obfs":
+                    transformed = Utilities.addOrReplaceHeader(request, "Expect", "x 100-continue");
                     break;
                 case "CL-error":
                     transformed =  Utilities.replace(request, "Content-Length: " + value, "X-Invalid Y: \r\nContent-Length: " + value);

@@ -8,7 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class BurpExtender implements IBurpExtender, IExtensionStateListener, BurpExtension {
     static final String name = "HTTP Request Smuggler";
-    private static final String version = "2.20";
+    private static final String version = "3.0.0";
     public boolean unloaded = false;
     static ConcurrentHashMap<String, Boolean> hostsToSkip = BulkScan.hostsToSkip;
 
@@ -30,6 +30,8 @@ public class BurpExtender implements IBurpExtender, IExtensionStateListener, Bur
 
         new DesyncBox();
 
+
+        new HeaderSmugglingScan("Header smuggling");
         new HeaderRemovalScan("Header removal");
 
         new ImplicitZeroScan("CL.0");
