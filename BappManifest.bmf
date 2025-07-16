@@ -2,7 +2,7 @@ Uuid: aaaa60ef945341e8a450217a54a11646
 ExtensionType: 1
 Name: HTTP Request Smuggler
 RepoName: http-request-smuggler
-ScreenVersion: 2.20
+ScreenVersion: 3.0.0
 SerialVersion: 44
 MinPlatformVersion: 19
 ProOnly: False

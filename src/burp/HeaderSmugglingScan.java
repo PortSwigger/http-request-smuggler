@@ -2,11 +2,15 @@ package burp;
 
 import burp.api.montoya.http.message.HttpHeader;
 import burp.api.montoya.http.message.requests.HttpRequest;
+import burp.api.montoya.scanner.AuditResult;
+import burp.api.montoya.scanner.audit.issues.AuditIssue;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class HeaderSmugglingScan extends Scan {
+
+    boolean insideScanner = false;
 
     public HeaderSmugglingScan(String name) {
         super(name);
@@ -35,13 +39,23 @@ public class HeaderSmugglingScan extends Scan {
 
     @Override
     List<IScanIssue> doScan(IHttpRequestResponse baseRequestResponse) {
-        HttpRequest original = Utilities.buildMontoyaReq(Utilities.convertToHttp1(baseRequestResponse.getRequest()), baseRequestResponse.getHttpService());
+        doScan(Utilities.buildMontoyaReq(baseRequestResponse.getRequest(), baseRequestResponse.getHttpService()));
+        return null;
+    }
+
+    Report doScan(HttpRequest original) {
+        original = Utilities.convertToHttp1(original);
         if (Utilities.globalSettings.getBoolean("rescan")) {
             original = stripToBase(original);
         }
         original = original.withUpdatedHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.6723.44 Safari/537.36");
 
         HttpRequest base = original.withMethod("POST").withHeader("Content-Type", "application/x-www-form-urlencoded").withHeader("Content-Length", "0").withBody("");;
+
+        boolean researchMode = Utilities.globalSettings.getBoolean("research mode");
+        if (insideScanner) {
+            researchMode = false;
+        }
 
         // todo don't send a body with GET
         //base = base.withMethod("OPTIONS");
@@ -53,7 +67,7 @@ public class HeaderSmugglingScan extends Scan {
         canaryHeaders.add(new SignificantHeader("Host-invalid", "Host", "foo/bar", true));
 
         // detect front-end sees
-        canaryHeaders.add(new SignificantHeader("Host-valid-missing", "Host", baseRequestResponse.getHttpService().getHost(), false));
+        canaryHeaders.add(new SignificantHeader("Host-valid-missing", "Host", original.httpService().host(), false));
 //        canaryHeaders.add(new SignificantHeader("Host-valid-dupe", "Host", baseRequestResponse.getHttpService().getHost(), true));
         //canaryHeaders.add(new SignificantHeader("Range-start", "Range", "bytes=0-10", false));
 
@@ -62,7 +76,7 @@ public class HeaderSmugglingScan extends Scan {
         canaryHeaders.add(new SignificantHeader("CL-invalid", "Content-Length", "Z", true)); // GET
 
         // this is effective, but causes timeouts & desync on vulnerable targets
-        if (Utilities.globalSettings.getBoolean("research mode")) {
+        if (researchMode) {
             canaryHeaders.add(new SignificantHeader("CL-valid", "Content-Length", "5", true));
         }
         //canaryHeaders.add(new SignificantHeader("Max-Forwards", "Max-Forwards", "X", true));
@@ -124,7 +138,7 @@ public class HeaderSmugglingScan extends Scan {
                 try {
                     PermutationResult result = new PermutationResult(base, canaryHeader, permutor);
                     if (result.isInteresting()) {
-                        if (!Utilities.globalSettings.getBoolean("research mode")) {
+                        if (!researchMode) {
                             if (result.consistent(3) != null) {
                                 // todo blacklist server
                                 return null;
@@ -180,9 +194,16 @@ public class HeaderSmugglingScan extends Scan {
             }
         }
 
-        results.report();
-
-        return null;
+        Report report = results.buildReport(researchMode);
+        if (!insideScanner && report != null) {
+            if (Utilities.globalSettings.getBoolean("report to organizer")) {
+                report.sendToOrganizer();
+            } else {
+                AuditIssue issue = report.getIssue();
+                Utilities.montoyaApi.siteMap().add(issue);
+            }
+        }
+        return report;
     }
 
     private static SplitOrNuke splitOrNuke(PermutationPair permutor, HttpRequest base) {

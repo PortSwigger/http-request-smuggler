@@ -88,10 +88,6 @@ class HiddenPair extends PermutationPair {
     @Override
     void probe(HttpRequest base, String details) {
 
-        if (!Utilities.globalSettings.getBoolean("research mode")) {
-            return;
-        }
-
         if (detect0CLwithExpect(base.withMethod("POST"))) {
             return;
         }
@@ -110,9 +106,8 @@ class HiddenPair extends PermutationPair {
             return;
         }
 
-        if (Utilities.globalSettings.getBoolean("research mode")) {
-            detectCL0(base.withMethod("POST"));
-        }
+        detectCL0(base.withMethod("POST"));
+
 
 
         //exploitCL0(base);

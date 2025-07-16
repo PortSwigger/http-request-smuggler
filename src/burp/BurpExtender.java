@@ -2,6 +2,11 @@ package burp;
 
 import burp.api.montoya.BurpExtension;
 import burp.api.montoya.MontoyaApi;
+import burp.api.montoya.core.BurpSuiteEdition;
+import burp.api.montoya.scanner.AuditResult;
+import burp.api.montoya.scanner.audit.insertionpoint.AuditInsertionPoint;
+import burp.api.montoya.scanner.audit.insertionpoint.AuditInsertionPointType;
+import burp.api.montoya.scanner.scancheck.ScanCheckType;
 
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
@@ -18,6 +23,7 @@ public class BurpExtender implements IBurpExtender, IExtensionStateListener, Bur
         Utils.montoyaApi = api;
         BulkUtilities.registerContextMenu();
         api.http().registerHttpHandler(new LiveScan());
+        api.scanner().registerActiveScanCheck(new BurpScanWrapper(), ScanCheckType.PER_REQUEST);
     }
 
     @Override
@@ -29,7 +35,6 @@ public class BurpExtender implements IBurpExtender, IExtensionStateListener, Bur
         Utilities.callbacks.registerExtensionStateListener(this);
 
         new DesyncBox();
-
 
         new HeaderSmugglingScan("Header smuggling");
         new HeaderRemovalScan("Header removal");
@@ -54,11 +59,11 @@ public class BurpExtender implements IBurpExtender, IExtensionStateListener, Bur
         new HTTP2FakePseudo("HTTP/2 fake-pseudo probe");
         new KitchenSink("Launch all scans");
 
-        new SmuggleMenu();
-        new BulkScanLauncher(BulkScan.scans);
-
-
-        callbacks.registerContextMenuFactory(new SuggestAttack());
+        if (!Utilities.isBurpDAST()) {
+            new SmuggleMenu();
+            new BulkScanLauncher(BulkScan.scans);
+            callbacks.registerContextMenuFactory(new SuggestAttack());
+        }
         Utils.setBurpPresent(callbacks);
 
         Utilities.out("Loaded " + name + " v" + version);

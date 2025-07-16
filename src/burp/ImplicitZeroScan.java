@@ -14,7 +14,7 @@ public class ImplicitZeroScan extends SmuggleScanBox {
 
     ImplicitZeroScan(String name) {
         super(name);
-        scanSettings.register("report mystery 400", false);
+        scanSettings.register("report potential 0.CL", true);
         scanSettings.importSettings(DesyncBox.sharedSettings);
         scanSettings.importSettings(DesyncBox.sharedPermutations);
         scanSettings.importSettings(DesyncBox.clPermutations);
@@ -115,7 +115,7 @@ public class ImplicitZeroScan extends SmuggleScanBox {
 
             if (i == 0) {
                 badFirstStatus = (resp.getStatus() == 400);
-            } else if (Utilities.globalSettings.getBoolean("report mystery 400") && !badFirstStatus && resp.getStatus() == 400 && status != 400 && !reportedStatus.contains(service.getHost())) {
+            } else if (Utilities.globalSettings.getBoolean("report potential 0.CL") && !badFirstStatus && resp.getStatus() == 400 && status != 400 && !reportedStatus.contains(service.getHost())) {
                 reportedStatus.add(service.getHost());
                 byte[] fakeAttack = Utilities.setBody(req, " ");
                 fakeAttack = Utilities.fixContentLength(fakeAttack);
@@ -134,7 +134,7 @@ public class ImplicitZeroScan extends SmuggleScanBox {
                     }
                 }
                 if (worked) {
-                    report("Mystery 400: " + technique + "| 400/" + status, i + " attempts", baseReq, lastResp, resp);
+                    report("Potential 0.CL: " + technique + "| 400/" + status, i + " attempts. Refer to https://portswigger.net/research/http1-must-die", baseReq, lastResp, resp);
                 }
             }
 

@@ -1,5 +1,6 @@
 package burp;
 
+import burp.api.montoya.http.message.HttpRequestResponse;
 import burp.api.montoya.http.message.requests.HttpRequest;
 
 import java.util.ArrayList;
@@ -284,20 +285,19 @@ public class PermutationResult {
         return description.toString();
     }
 
-    void report(String notes) {
-        Scan.reportToOrganiser(notes, canaryPresent, canaryMissing, hiddenCanaryPresent, hiddenCanaryMissing);
+    List<HttpRequestResponse> getRequests() {
+
+        List<HttpRequestResponse> responses = new ArrayList<>(List.of(canaryPresent, canaryMissing, hiddenCanaryPresent, hiddenCanaryMissing));
 
         if (surpriseResponse != null) {
-            surpriseResponse.annotations().setNotes(notes);
-            BulkUtilities.montoyaApi.organizer().sendToOrganizer(surpriseResponse);
+            responses.add(surpriseResponse);
         }
 
         if (contaminationResults != null) {
-            for (MontoyaRequestResponse response: contaminationResults) {
-                response.annotations().setNotes(notes);
-                BulkUtilities.montoyaApi.organizer().sendToOrganizer(response);
-            }
+            responses.addAll(contaminationResults);
         }
+
+        return responses;
     }
 
     private ArrayList<MontoyaRequestResponse> getResponses() {
