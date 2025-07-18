@@ -36,6 +36,8 @@ public class BurpExtender implements IBurpExtender, IExtensionStateListener, Bur
         new ClientDesyncScan("Client-side desync");
         new PauseDesyncScan("Pause-based desync");
         new ConnectionStateScan("Connection-state");
+        new ChunkedExtension("Chunked extension");
+
 
         //new OldClientDesyncScan("Old client desync");
         //new ClientDesyncScan("Client-desync probe");
