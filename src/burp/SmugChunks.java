@@ -3,28 +3,18 @@ package burp;
 import java.util.HashMap;
 import java.util.List;
 
-public class ChunkedExtension extends Scan {
+public class SmugChunks extends Scan {
 
-    // Track which hosts we've already scanned
-    private static HashMap<String, Boolean> scannedHosts = new HashMap<>();
-
-    ChunkedExtension(String name) {
+    SmugChunks(String name) {
         super(name);
     }
 
     @Override
     List<IScanIssue> doScan(byte[] baseReq, IHttpService service) {
-        // Only scan each host once
         String hostKey = service.getHost() + ":" + service.getPort();
-        if (scannedHosts.containsKey(hostKey)) {
-            Utilities.log("Skipping " + hostKey + " - already scanned");
-            return null;
-        }
-        
-        scannedHosts.put(hostKey, true);
         Utilities.log("Running TERM.EXT detection against " + hostKey);
         
-        // First, check if we can perform a normal GET request (connectivity test)
+        // (connectivity test)
         byte[] normalGetReq = buildNormalGetRequest(service);
         Resp connectivityTest = request(service, normalGetReq, 0, true);
         if (connectivityTest.timedOut()) {
@@ -37,23 +27,22 @@ public class ChunkedExtension extends Scan {
         if (baseReq[0] == 'G') {
             postReq = Utilities.setMethod(baseReq, "POST");
             postReq = Utilities.addOrReplaceHeader(postReq, "Content-Type", "application/x-www-form-urlencoded");
-            postReq = Utilities.setBody(postReq, "test=value");
         }
         
-        // Add Transfer-Encoding: chunked header
+        // Add TE header
         postReq = Utilities.addOrReplaceHeader(postReq, "Transfer-Encoding", "chunked");
         postReq = Utilities.addOrReplaceHeader(postReq, "Connection", "close");
         
-        // Test TERM.EXT (Terminator in Extension)
+        // Test TERM.EXT
         testTermExt(postReq, service);
         
-        // Test EXT.TERM (Extension Terminator)
+        // Test EXT.TERM
         testExtTerm(postReq, service);
         
-        // Test TERM.SPILL (Terminator Spill)
+        // Test TERM.SPILL
         testTermSpill(postReq, service);
         
-        // Test SPILL.TERM (Spill Terminator)
+        // Test SPILL.TERM
         testSpillTerm(postReq, service);
         
         // Test Length-based: ONE.TWO
@@ -71,7 +60,6 @@ public class ChunkedExtension extends Scan {
         return null;
     }
     
-    // TERM.EXT: Discrepancies in parsing of line terminators in chunk extensions
     private void testTermExt(byte[] baseReq, IHttpService service) {
         String[] lineTerminators = {"\n", "\r", "\rX", "\r\r"};
         
@@ -86,19 +74,19 @@ public class ChunkedExtension extends Scan {
                 Utilities.log("TERM.EXT potential vulnerability detected with terminator: " + 
                             terminator.replace("\n", "\\n").replace("\r", "\\r"));
                 
-                // Create a follow-up request to confirm
-                byte[] normalReq = buildNormalChunkedRequest(baseReq);
-                Resp normalResponse = request(service, normalReq, 0, true);
+                // Re-run the same payload to confirm
+                Resp normalResponse = request(service, testReq, 0, true);
                 
-                if (!normalResponse.timedOut()) {
+                if (normalResponse.timedOut()) {
                     // This suggests a parsing discrepancy
                     String title = "Possible HTTP Request Smuggling: TERM.EXT (Chunk Extension Parsing)";
                     String description = "A timeout was observed when using line terminator '" + 
                                        terminator.replace("\n", "\\n").replace("\r", "\\r") + 
-                                       "' in chunk extensions, while normal chunked requests work fine. " +
+                                       "' in chunk extensions, and the timeout was reproducible. " +
                                        "This suggests a discrepancy in how the front-end and back-end parse " +
                                        "line terminators in chunk extensions, which could be exploitable " +
-                                       "for HTTP request smuggling attacks.";
+                                       "for HTTP request smuggling attacks. " +
+                                       "For more information about this technique, see: https://w4ke.info/2025/06/18/funky-chunks.html";
                     
                     report(title, description, response, normalResponse);
                 }
@@ -106,7 +94,6 @@ public class ChunkedExtension extends Scan {
         }
     }
     
-    // EXT.TERM: Discrepancies in parsing of line terminators in chunk extensions (different payload)
     private void testExtTerm(byte[] baseReq, IHttpService service) {
         String[] lineTerminators = {"\n", "\r", "\rX", "\r\r"};
         
@@ -121,19 +108,19 @@ public class ChunkedExtension extends Scan {
                 Utilities.log("EXT.TERM potential vulnerability detected with terminator: " + 
                             terminator.replace("\n", "\\n").replace("\r", "\\r"));
                 
-                // Create a follow-up request to confirm
-                byte[] normalReq = buildNormalChunkedRequest(baseReq);
-                Resp normalResponse = request(service, normalReq, 0, true);
+                // Re-run the same payload to confirm
+                Resp normalResponse = request(service, testReq, 0, true);
                 
-                if (!normalResponse.timedOut()) {
+                if (normalResponse.timedOut()) {
                     // This suggests a parsing discrepancy
                     String title = "Possible HTTP Request Smuggling: EXT.TERM (Chunk Extension Parsing)";
                     String description = "A timeout was observed when using line terminator '" + 
                                        terminator.replace("\n", "\\n").replace("\r", "\\r") + 
-                                       "' in chunk extensions with different chunk sizes, while normal chunked requests work fine. " +
+                                       "' in chunk extensions with different chunk sizes, and the timeout was reproducible. " +
                                        "This suggests a discrepancy in how the front-end and back-end parse " +
                                        "line terminators in chunk extensions, which could be exploitable " +
-                                       "for HTTP request smuggling attacks.";
+                                       "for HTTP request smuggling attacks. " +
+                                       "For more information about this technique, see: https://w4ke.info/2025/06/18/funky-chunks.html";
                     
                     report(title, description, response, normalResponse);
                 }
@@ -141,7 +128,6 @@ public class ChunkedExtension extends Scan {
         }
     }
     
-    // TERM.SPILL: Discrepancies in parsing of line terminators in oversized chunks
     private void testTermSpill(byte[] baseReq, IHttpService service) {
         String[] lineTerminators = {"\n", "\r", "", "XX", "\rX", "\r\r"};
         
@@ -156,19 +142,19 @@ public class ChunkedExtension extends Scan {
                 Utilities.log("TERM.SPILL potential vulnerability detected with terminator: " + 
                             terminator.replace("\n", "\\n").replace("\r", "\\r"));
                 
-                // Create a follow-up request to confirm
-                byte[] normalReq = buildNormalChunkedRequest(baseReq);
-                Resp normalResponse = request(service, normalReq, 0, true);
+                // Re-run the same payload to confirm
+                Resp normalResponse = request(service, testReq, 0, true);
                 
-                if (!normalResponse.timedOut()) {
+                if (normalResponse.timedOut()) {
                     // This suggests a parsing discrepancy
                     String title = "Possible HTTP Request Smuggling: TERM.SPILL (Terminator Spill)";
                     String description = "A timeout was observed when using line terminator '" + 
                                        terminator.replace("\n", "\\n").replace("\r", "\\r") + 
-                                       "' in oversized chunks, while normal chunked requests work fine. " +
+                                       "' in oversized chunks, and the timeout was reproducible. " +
                                        "This suggests a discrepancy in how the front-end and back-end parse " +
                                        "line terminators in chunk bodies, which could be exploitable " +
-                                       "for HTTP request smuggling attacks.";
+                                       "for HTTP request smuggling attacks. " +
+                                       "For more information about this technique, see: https://w4ke.info/2025/06/18/funky-chunks.html";
                     
                     report(title, description, response, normalResponse);
                 }
@@ -176,7 +162,6 @@ public class ChunkedExtension extends Scan {
         }
     }
     
-    // SPILL.TERM: Discrepancies in parsing of line terminators in oversized chunks (different payload)
     private void testSpillTerm(byte[] baseReq, IHttpService service) {
         String[] lineTerminators = {"\n", "\r", "", "XX", "\rX", "\r\r"};
         
@@ -191,19 +176,19 @@ public class ChunkedExtension extends Scan {
                 Utilities.log("SPILL.TERM potential vulnerability detected with terminator: " + 
                             terminator.replace("\n", "\\n").replace("\r", "\\r"));
                 
-                // Create a follow-up request to confirm
-                byte[] normalReq = buildNormalChunkedRequest(baseReq);
-                Resp normalResponse = request(service, normalReq, 0, true);
+                // Re-run the same payload to confirm
+                Resp normalResponse = request(service, testReq, 0, true);
                 
-                if (!normalResponse.timedOut()) {
+                if (normalResponse.timedOut()) {
                     // This suggests a parsing discrepancy
                     String title = "Possible HTTP Request Smuggling: SPILL.TERM (Spill Terminator)";
                     String description = "A timeout was observed when using line terminator '" + 
                                        terminator.replace("\n", "\\n").replace("\r", "\\r") + 
-                                       "' in oversized chunks with different chunk sizes, while normal chunked requests work fine. " +
+                                       "' in oversized chunks with different chunk sizes, and the timeout was reproducible. " +
                                        "This suggests a discrepancy in how the front-end and back-end parse " +
                                        "line terminators in chunk bodies, which could be exploitable " +
-                                       "for HTTP request smuggling attacks.";
+                                       "for HTTP request smuggling attacks. " +
+                                       "For more information about this technique, see: https://w4ke.info/2025/06/18/funky-chunks.html";
                     
                     report(title, description, response, normalResponse);
                 }
@@ -211,7 +196,6 @@ public class ChunkedExtension extends Scan {
         }
     }
     
-    // Length-based: ONE.TWO - Discrepancies in perceived length of line terminators in chunk bodies
     private void testOneTwo(byte[] baseReq, IHttpService service) {
         String[] lineTerminators = {"\n", "\r"};
         
@@ -226,19 +210,19 @@ public class ChunkedExtension extends Scan {
                 Utilities.log("ONE.TWO potential vulnerability detected with terminator: " + 
                             terminator.replace("\n", "\\n").replace("\r", "\\r"));
                 
-                // Create a follow-up request to confirm
-                byte[] normalReq = buildNormalChunkedRequest(baseReq);
-                Resp normalResponse = request(service, normalReq, 0, true);
+                // Re-run the same payload to confirm
+                Resp normalResponse = request(service, testReq, 0, true);
                 
-                if (!normalResponse.timedOut()) {
+                if (normalResponse.timedOut()) {
                     // This suggests a parsing discrepancy
                     String title = "Possible HTTP Request Smuggling: ONE.TWO (Length-based Chunk Body)";
                     String description = "A timeout was observed when using line terminator '" + 
                                        terminator.replace("\n", "\\n").replace("\r", "\\r") + 
-                                       "' in chunk bodies with specific length calculations, while normal chunked requests work fine. " +
+                                       "' in chunk bodies with specific length calculations, and the timeout was reproducible. " +
                                        "This suggests a discrepancy in how the front-end and back-end calculate " +
                                        "chunk lengths when line terminators are present, which could be exploitable " +
-                                       "for HTTP request smuggling attacks.";
+                                       "for HTTP request smuggling attacks. " +
+                                       "For more information about this technique, see: https://w4ke.info/2025/06/18/funky-chunks.html";
                     
                     report(title, description, response, normalResponse);
                 }
@@ -246,7 +230,6 @@ public class ChunkedExtension extends Scan {
         }
     }
     
-    // Length-based: TWO.ONE - Discrepancies in perceived length of line terminators in chunk bodies
     private void testTwoOne(byte[] baseReq, IHttpService service) {
         String[] lineTerminators = {"\n", "\r"};
         
@@ -261,19 +244,19 @@ public class ChunkedExtension extends Scan {
                 Utilities.log("TWO.ONE potential vulnerability detected with terminator: " + 
                             terminator.replace("\n", "\\n").replace("\r", "\\r"));
                 
-                // Create a follow-up request to confirm
-                byte[] normalReq = buildNormalChunkedRequest(baseReq);
-                Resp normalResponse = request(service, normalReq, 0, true);
+                // Re-run the same payload to confirm
+                Resp normalResponse = request(service, testReq, 0, true);
                 
-                if (!normalResponse.timedOut()) {
+                if (normalResponse.timedOut()) {
                     // This suggests a parsing discrepancy
                     String title = "Possible HTTP Request Smuggling: TWO.ONE (Length-based Chunk Body)";
                     String description = "A timeout was observed when using line terminator '" + 
                                        terminator.replace("\n", "\\n").replace("\r", "\\r") + 
-                                       "' in chunk bodies with different length calculations, while normal chunked requests work fine. " +
+                                       "' in chunk bodies with different length calculations, and the timeout was reproducible. " +
                                        "This suggests a discrepancy in how the front-end and back-end calculate " +
                                        "chunk lengths when line terminators are present, which could be exploitable " +
-                                       "for HTTP request smuggling attacks.";
+                                       "for HTTP request smuggling attacks. " +
+                                       "For more information about this technique, see: https://w4ke.info/2025/06/18/funky-chunks.html";
                     
                     report(title, description, response, normalResponse);
                 }
@@ -281,7 +264,6 @@ public class ChunkedExtension extends Scan {
         }
     }
     
-    // Length-based: ZERO.TWO - Discrepancies in perceived length of line terminators in chunk bodies
     private void testZeroTwo(byte[] baseReq, IHttpService service) {
         String[] lineTerminators = {""}; // Only empty string for ZERO.TWO
         
@@ -295,18 +277,18 @@ public class ChunkedExtension extends Scan {
             if (response.timedOut()) {
                 Utilities.log("ZERO.TWO potential vulnerability detected with empty terminator");
                 
-                // Create a follow-up request to confirm
-                byte[] normalReq = buildNormalChunkedRequest(baseReq);
-                Resp normalResponse = request(service, normalReq, 0, true);
+                // Re-run the same payload to confirm
+                Resp normalResponse = request(service, testReq, 0, true);
                 
-                if (!normalResponse.timedOut()) {
+                if (normalResponse.timedOut()) {
                     // This suggests a parsing discrepancy
                     String title = "Possible HTTP Request Smuggling: ZERO.TWO (Length-based Chunk Body)";
                     String description = "A timeout was observed when using an empty line terminator in chunk bodies " +
-                                       "with specific length calculations, while normal chunked requests work fine. " +
+                                       "with specific length calculations, and the timeout was reproducible. " +
                                        "This suggests a discrepancy in how the front-end and back-end calculate " +
                                        "chunk lengths when empty terminators are present, which could be exploitable " +
-                                       "for HTTP request smuggling attacks.";
+                                       "for HTTP request smuggling attacks. " +
+                                       "For more information about this technique, see: https://w4ke.info/2025/06/18/funky-chunks.html";
                     
                     report(title, description, response, normalResponse);
                 }
@@ -314,7 +296,6 @@ public class ChunkedExtension extends Scan {
         }
     }
     
-    // Length-based: TWO.ZERO - Discrepancies in perceived length of line terminators in chunk bodies
     private void testTwoZero(byte[] baseReq, IHttpService service) {
         String[] lineTerminators = {""}; // Only empty string for TWO.ZERO
         
@@ -328,18 +309,18 @@ public class ChunkedExtension extends Scan {
             if (response.timedOut()) {
                 Utilities.log("TWO.ZERO potential vulnerability detected with empty terminator");
                 
-                // Create a follow-up request to confirm
-                byte[] normalReq = buildNormalChunkedRequest(baseReq);
-                Resp normalResponse = request(service, normalReq, 0, true);
+                // Re-run the same payload to confirm
+                Resp normalResponse = request(service, testReq, 0, true);
                 
-                if (!normalResponse.timedOut()) {
+                if (normalResponse.timedOut()) {
                     // This suggests a parsing discrepancy
                     String title = "Possible HTTP Request Smuggling: TWO.ZERO (Length-based Chunk Body)";
                     String description = "A timeout was observed when using an empty line terminator in chunk bodies " +
-                                       "with different length calculations, while normal chunked requests work fine. " +
+                                       "with different length calculations, and the timeout was reproducible. " +
                                        "This suggests a discrepancy in how the front-end and back-end calculate " +
                                        "chunk lengths when empty terminators are present, which could be exploitable " +
-                                       "for HTTP request smuggling attacks.";
+                                       "for HTTP request smuggling attacks. " +
+                                       "For more information about this technique, see: https://w4ke.info/2025/06/18/funky-chunks.html";
                     
                     report(title, description, response, normalResponse);
                 }
@@ -383,25 +364,7 @@ public class ChunkedExtension extends Scan {
         return payload.toString().getBytes();
     }
     
-    private byte[] buildNormalChunkedRequest(byte[] baseReq) {
-        // Build a normal chunked request for comparison
-        String host = Utilities.getHeader(baseReq, "Host");
-        String path = Utilities.getPathFromRequest(baseReq);
-        String method = Utilities.getMethod(baseReq);
-        
-        StringBuilder payload = new StringBuilder();
-        payload.append(method).append(" ").append(path).append(" HTTP/1.1\r\n");
-        payload.append("Host: ").append(host).append("\r\n");
-        payload.append("Transfer-Encoding: chunked\r\n");
-        payload.append("Connection: close\r\n");
-        payload.append("\r\n");
-        payload.append("4\r\n");
-        payload.append("test\r\n");
-        payload.append("0\r\n");
-        payload.append("\r\n");
-        
-        return payload.toString().getBytes();
-    }
+
     
     private byte[] buildExtTermPayload(byte[] baseReq, String lineTerminator) {
         // Build the EXT.TERM payload based on smugchunks implementation
