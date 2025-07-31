@@ -5,7 +5,7 @@ import burp.api.montoya.http.message.requests.HttpRequest;
 import java.util.List;
 
 enum PermutationOutcome {
-    IGNORED, HIDDEN, BLOCKED, BLOCKED2, WEIRD, VISIBLE, DESYNC, NOTDESYNC
+    IGNORED, HIDDEN, BLOCKED, BLOCKED2, WEIRD, VISIBLE, DISCREPANCY, NODESYNC
 }
 
 public abstract class PermutationPair {
@@ -38,8 +38,8 @@ public abstract class PermutationPair {
     }
 
     boolean isExpectedOutcome(PermutationOutcome outcome) {
-        if (expectedOutcome == PermutationOutcome.NOTDESYNC) {
-            return outcome != PermutationOutcome.DESYNC;
+        if (expectedOutcome == PermutationOutcome.NODESYNC) {
+            return outcome != PermutationOutcome.DISCREPANCY;
         }
         return outcome == expectedOutcome;
     }

@@ -360,7 +360,7 @@ public class PermutationResult {
 
         // technique revealed a unique response
         if (hiddenCanaryPresentStatus != hiddenCanaryMissingStatus && hiddenCanaryMissingStatus == canaryMissingStatus && hiddenCanaryPresentStatus != canaryPresentStatus) {
-            return PermutationOutcome.DESYNC;
+            return PermutationOutcome.DISCREPANCY;
         }
 
         // technique changed the response but the header is ignored

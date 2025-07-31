@@ -2,10 +2,6 @@ package burp;
 
 import burp.api.montoya.BurpExtension;
 import burp.api.montoya.MontoyaApi;
-import burp.api.montoya.core.BurpSuiteEdition;
-import burp.api.montoya.scanner.AuditResult;
-import burp.api.montoya.scanner.audit.insertionpoint.AuditInsertionPoint;
-import burp.api.montoya.scanner.audit.insertionpoint.AuditInsertionPointType;
 import burp.api.montoya.scanner.scancheck.ScanCheckType;
 
 import java.util.HashMap;
@@ -36,7 +32,7 @@ public class BurpExtender implements IBurpExtender, IExtensionStateListener, Bur
 
         new DesyncBox();
 
-        new HeaderSmugglingScan("Header smuggling");
+        new ParserDiscrepancyScan("Parser discrepancy scan");
         new HeaderRemovalScan("Header removal");
 
         new ImplicitZeroScan("CL.0");

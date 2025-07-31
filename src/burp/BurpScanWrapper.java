@@ -27,7 +27,7 @@ public class BurpScanWrapper implements ActiveScanCheck {
         }
         keys.add(key);
 
-        HeaderSmugglingScan scan = new HeaderSmugglingScan("asdf");
+        ParserDiscrepancyScan scan = new ParserDiscrepancyScan("asdf");
         scan.insideScanner = true;
         Report report = scan.doScan(httpRequestResponse.request());
         if (report == null) {

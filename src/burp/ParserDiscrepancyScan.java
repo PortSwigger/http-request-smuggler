@@ -2,17 +2,16 @@ package burp;
 
 import burp.api.montoya.http.message.HttpHeader;
 import burp.api.montoya.http.message.requests.HttpRequest;
-import burp.api.montoya.scanner.AuditResult;
 import burp.api.montoya.scanner.audit.issues.AuditIssue;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class HeaderSmugglingScan extends Scan {
+public class ParserDiscrepancyScan extends Scan {
 
     boolean insideScanner = false;
 
-    public HeaderSmugglingScan(String name) {
+    public ParserDiscrepancyScan(String name) {
         super(name);
         scanSettings.register("rescan", false);
         scanSettings.register("research mode", true);
@@ -114,11 +113,11 @@ public class HeaderSmugglingScan extends Scan {
         //       permutors.add(new EarlyBodyPair("r2split", HttpHeader.httpHeader("Arrr", "foo\r\r\nbar"), PermutationOutcome.VISIBLE));
 
 
-        permutors.add(new HiddenPair("space", HideTechnique.SPACE, PermutationOutcome.NOTDESYNC));
-        permutors.add(new HiddenPair("tab", HideTechnique.TAB, PermutationOutcome.NOTDESYNC));
-        permutors.add(new HiddenPair("wrap", HideTechnique.WRAP, PermutationOutcome.NOTDESYNC));
-        permutors.add(new HiddenPair("hop", HideTechnique.HOP, PermutationOutcome.NOTDESYNC));
-        permutors.add(new HiddenPair("lpad", HideTechnique.LPAD, PermutationOutcome.NOTDESYNC));
+        permutors.add(new HiddenPair("space", HideTechnique.SPACE, PermutationOutcome.NODESYNC));
+        permutors.add(new HiddenPair("tab", HideTechnique.TAB, PermutationOutcome.NODESYNC));
+        permutors.add(new HiddenPair("wrap", HideTechnique.WRAP, PermutationOutcome.NODESYNC));
+        permutors.add(new HiddenPair("hop", HideTechnique.HOP, PermutationOutcome.NODESYNC));
+        permutors.add(new HiddenPair("lpad", HideTechnique.LPAD, PermutationOutcome.NODESYNC));
 
 //        permutors.add(new HiddenPair("underflip", HideTechnique.SPACE, PermutationOutcome.NOTDESYNC));
         //permutors.add(new HiddenPair("skiphop", HideTechnique.SKIPHOP, PermutationOutcome.NOTDESYNC));
@@ -196,7 +195,7 @@ public class HeaderSmugglingScan extends Scan {
 
         Report report = results.buildReport(researchMode);
         if (!insideScanner && report != null) {
-            if (Utilities.globalSettings.getBoolean("report to organizer")) {
+            if (Utilities.globalSettings.getBoolean("report to organizer") || !Utilities.isBurpPro()) {
                 report.sendToOrganizer();
             } else {
                 AuditIssue issue = report.getIssue();

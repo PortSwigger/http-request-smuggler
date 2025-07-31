@@ -45,7 +45,14 @@ public class PermutationResultGroup {
                                "https://portswigger.net/research/http1-must-die";
             String remediation = "If possible, configure all reverse proxies to use HTTP/2 for upstream connections.";
 
-            report = new Report("HTTP Parser Discrepancy", detail + "\n\n" + textDescription, background, remediation, AuditIssueSeverity.MEDIUM, reqs.toArray(new HttpRequestResponse[0]));
+            String fullDetail;
+            if (researchMode) {
+                fullDetail = textDescription + "\n\n" + detail;
+            } else {
+                fullDetail = detail + "\n\n" + textDescription;
+            }
+
+            report = new Report("HTTP Parser Discrepancy", fullDetail, background, remediation, AuditIssueSeverity.MEDIUM, reqs.toArray(new HttpRequestResponse[0]));
 
             if (researchMode && !bestResult.isUnstable()) {
                 bestResult.probe(textDescription.toString());
