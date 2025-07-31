@@ -1,4 +1,23 @@
-<p>This is an extension for Burp Suite designed to help you launch <a href="https://portswigger.net/research/http-desync-attacks">HTTP Request Smuggling</a> attacks. It supports scanning for Request Smuggling vulnerabilities, and also aids exploitation by handling cumbersome offset-tweaking for you.</p>
+<p>This extension automatically detects and exploits <a href="https://portswigger.net/web-security/request-smuggling">HTTP Request Smuggling</a> vulnerabilities using advanced desynchronization techniques developed by PortSwigger researcher James Kettle. It supports comprehensive scanning for HTTP/1.1 and HTTP/2-downgrade desync vulnerabilities, client-side desyncs, and connection state attacks.</p>
+
+<p>Version 3.0 landed in 2025 and adds parser discrepancy detection, which bypasses widespread desync defences and makes it significantly more effective. For further information on this, refer to the whitepaper <a href="https://portswigger.net/research/http1-must-die">HTTP/1.1 Must Die: The Desync Endgame</a>.</p>
+
+<p>It's fully compatible with Burp Suite DAST, Professional, and Community editions. Pro and Community editions have a "research mode" for exploring novel techniques, and the DAST integration is useful if you want recurring scans to flag novel threats as soon as they're released.</p>
+
+<h2>Features</h2>
+<ul>
+<li>Detection based on root-cause detection of underlying parsing discrepancies, which is significantly more reliable and resistant to target-specific quirks.</li>
+<li>Many permutation techniques for bypassing different server configurations</li>
+<li>HTTP/1.1 CL.TE and TE.CL desync detection with timeout-based confirmation</li>
+<li>HTTP/2 request smuggling including tunneling and header injection attacks</li>
+<li>Client-side desync detection for browser-powered attacks</li>
+<li>eader smuggling and removal vulnerability detection</li>
+<li>Connection state manipulation and pause-based desync techniques</li>
+<li>Automated exploit generation with Turbo Intruder integration</li>
+<li>False positive reduction through multiple validation techniques</li>
+</ul>
+
+
 
 <h2>Usage</h2>
 <p>Right click on a request and click 'Launch Smuggle probe', then watch the extension's output pane.

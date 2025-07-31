@@ -1,8 +1,22 @@
 # HTTP Request Smuggler
 
-This is an extension for Burp Suite designed to help you launch [HTTP Request Smuggling](https://portswigger.net/web-security/request-smuggling) attacks, originally created during [HTTP Desync Attacks](https://portswigger.net/blog/http-desync-attacks-request-smuggling-reborn) research. It supports scanning for Request Smuggling vulnerabilities, and also aids exploitation by handling cumbersome offset-tweaking for you.
+This Burp Suite extension automatically detects and exploits [HTTP Request Smuggling](https://portswigger.net/web-security/request-smuggling) vulnerabilities using advanced desynchronization techniques developed by PortSwigger researcher James Kettle. It supports comprehensive scanning for HTTP/1.1 and HTTP/2-downgrade desync vulnerabilities, client-side desyncs, and connection state attacks.
 
-This extension should not be confused with [Burp Suite HTTP Smuggler](https://github.com/nccgroup/BurpSuiteHTTPSmuggler), which uses similar techniques but is focused exclusively bypassing WAFs.
+Version 3.0 landed in 2025 and adds parser discrepancy detection, which bypasses widespread desync defences and makes it significantly more effective. For further information on this, refer to the whitepaper [HTTP/1.1 Must Die: The Desync Endgame](https://portswigger.net/research/http1-must-die).
+
+It's fully compatible with Burp Suite DAST, Professional, and Community editions. Pro and Community editions have a "research mode" for exploring novel techniques, and the DAST integration is useful if you want recurring scans to flag novel threats as soon as they're released.
+
+### Features
+- Detection based on root-cause detection of underlying parsing discrepancies, which is significantly more reliable and resistant to target-specific quirks.
+- Many permutation techniques for bypassing different server configurations
+- HTTP/1.1 CL.TE and TE.CL desync detection with timeout-based confirmation
+- HTTP/2 request smuggling including tunneling and header injection attacks
+- Client-side desync detection for browser-powered attacks
+- Header smuggling and removal vulnerability detection
+- Connection state manipulation and pause-based desync techniques
+- Automated exploit generation with Turbo Intruder integration
+- False positive reduction through multiple validation techniques
+
 
 ### Install
 The easiest way to install this is in Burp Suite, via `Extender -> BApp Store`.
@@ -21,7 +35,7 @@ Windows: `gradlew.bat build fatjar`
 Grab the output from `build/libs/desynchronize-all.jar`
 
 ### Use
-Right click on a request and click `Launch Smuggle probe`, then watch the extension's output pane under `Extender->Extensions->HTTP Request Smuggler`
+Right click on a request and click `Launch Smuggle probe`, then watch the Organizer and extension's output pane under `Extender->Extensions->HTTP Request Smuggler`
 
 If you're using Burp Pro, any findings will also be reported as scan issues.
 
