@@ -3,11 +3,11 @@ ExtensionType: 1
 Name: HTTP Request Smuggler
 RepoName: http-request-smuggler
 ScreenVersion: 3.0.0
-SerialVersion: 45
-MinPlatformVersion: 19
+SerialVersion: 46
+MinPlatformVersion: 23
 ProOnly: False
 Author: James Kettle, PortSwigger
-ShortDescription: Helps you launch HTTP Request Smuggling attacks, supports scanning for Request Smuggling vulnerabilities and also aids exploitation by handling cumbersome offset-tweaking for you
-EntryPoint: build/libs/desynchronize-all.jar
+ShortDescription: Helps you launch HTTP Request Smuggling attacks, supports scanning for Request Smuggling vulnerabilities and also aids exploitation by handling cumbersome offset-tweaking for you.
+EntryPoint: desynchronize-all.jar
 BuildCommand: ./gradlew fatJar
-SupportedProducts: Pro, Community
+SupportedProducts: Pro, Community, Enterprise
