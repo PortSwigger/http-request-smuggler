@@ -15,6 +15,8 @@ public class ParserDiscrepancyScan extends Scan {
         super(name);
         scanSettings.register("rescan", false);
         scanSettings.register("research mode", true);
+        scanSettings.register("method override", "POST");
+
     }
 
     static HttpRequest stripToBase(HttpRequest req) {
@@ -49,7 +51,7 @@ public class ParserDiscrepancyScan extends Scan {
         }
         original = original.withUpdatedHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.6723.44 Safari/537.36");
 
-        HttpRequest base = original.withMethod("POST").withHeader("Content-Type", "application/x-www-form-urlencoded").withHeader("Content-Length", "0").withBody("");;
+        HttpRequest base = original.withMethod(Utilities.globalSettings.getString("method override")).withHeader("Content-Type", "application/x-www-form-urlencoded").withHeader("Content-Length", "0").withBody("");;
 
         boolean researchMode = Utilities.globalSettings.getBoolean("research mode");
         if (insideScanner) {
