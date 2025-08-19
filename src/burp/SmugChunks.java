@@ -60,6 +60,33 @@ public class SmugChunks extends Scan {
         return null;
     }
     
+     // Helper method to perform repeated requests to confirm findings
+    private boolean confirmWithRepeats(byte[] testReq, IHttpService service, String terminator) {
+        int timeoutCount = 0;
+        int totalAttempts = 5;
+        
+        for (int i = 0; i < totalAttempts; i++) {
+            Resp response = request(service, testReq, 0, true);
+            if (response.timedOut()) {
+                timeoutCount++;
+            }
+            // Small delay between requests to avoid overwhelming the server
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+        
+        Utilities.log("Confirmation: " + timeoutCount + "/" + totalAttempts + " timeouts for terminator '" + 
+                     terminator.replace("\n", "\\n").replace("\r", "\\r") + "'");
+        
+        return timeoutCount == 5;
+        //alternatively, we can change the check to return true if 3 or more out of 5 requests timeout
+        //return timeoutCount >= 3;
+    }
+    
     private void testTermExt(byte[] baseReq, IHttpService service) {
         String[] lineTerminators = {"\n", "\r", "\rX", "\r\r"};
         
@@ -69,16 +96,13 @@ public class SmugChunks extends Scan {
             // Send the request
             Resp response = request(service, testReq, 0, true);
             
-            // Check for timeout or unusual behavior
+            // Check for timeout
             if (response.timedOut()) {
                 Utilities.log("TERM.EXT potential vulnerability detected with terminator: " + 
                             terminator.replace("\n", "\\n").replace("\r", "\\r"));
                 
-                // Re-run the same payload to confirm
-                Resp normalResponse = request(service, testReq, 0, true);
-                
-                if (normalResponse.timedOut()) {
-                    // This suggests a parsing discrepancy
+                // Confirm with 5 repeated requests
+                if (confirmWithRepeats(testReq, service, terminator)) {
                     String title = "Possible HTTP Request Smuggling: TERM.EXT (Chunk Extension Parsing)";
                     String description = "A timeout was observed when using line terminator '" + 
                                        terminator.replace("\n", "\\n").replace("\r", "\\r") + 
@@ -88,7 +112,7 @@ public class SmugChunks extends Scan {
                                        "for HTTP request smuggling attacks. " +
                                        "For more information about this technique, see: https://w4ke.info/2025/06/18/funky-chunks.html";
                     
-                    report(title, description, response, normalResponse);
+                    report(title, description, response);
                 }
             }
         }
@@ -108,10 +132,8 @@ public class SmugChunks extends Scan {
                 Utilities.log("EXT.TERM potential vulnerability detected with terminator: " + 
                             terminator.replace("\n", "\\n").replace("\r", "\\r"));
                 
-                // Re-run the same payload to confirm
-                Resp normalResponse = request(service, testReq, 0, true);
-                
-                if (normalResponse.timedOut()) {
+                // Confirm with 5 repeated requests
+                if (confirmWithRepeats(testReq, service, terminator)) {
                     // This suggests a parsing discrepancy
                     String title = "Possible HTTP Request Smuggling: EXT.TERM (Chunk Extension Parsing)";
                     String description = "A timeout was observed when using line terminator '" + 
@@ -122,7 +144,7 @@ public class SmugChunks extends Scan {
                                        "for HTTP request smuggling attacks. " +
                                        "For more information about this technique, see: https://w4ke.info/2025/06/18/funky-chunks.html";
                     
-                    report(title, description, response, normalResponse);
+                    report(title, description, response);
                 }
             }
         }
@@ -142,10 +164,8 @@ public class SmugChunks extends Scan {
                 Utilities.log("TERM.SPILL potential vulnerability detected with terminator: " + 
                             terminator.replace("\n", "\\n").replace("\r", "\\r"));
                 
-                // Re-run the same payload to confirm
-                Resp normalResponse = request(service, testReq, 0, true);
-                
-                if (normalResponse.timedOut()) {
+                // Confirm with 5 repeated requests
+                if (confirmWithRepeats(testReq, service, terminator)) {
                     // This suggests a parsing discrepancy
                     String title = "Possible HTTP Request Smuggling: TERM.SPILL (Terminator Spill)";
                     String description = "A timeout was observed when using line terminator '" + 
@@ -156,7 +176,7 @@ public class SmugChunks extends Scan {
                                        "for HTTP request smuggling attacks. " +
                                        "For more information about this technique, see: https://w4ke.info/2025/06/18/funky-chunks.html";
                     
-                    report(title, description, response, normalResponse);
+                    report(title, description, response);
                 }
             }
         }
@@ -176,10 +196,8 @@ public class SmugChunks extends Scan {
                 Utilities.log("SPILL.TERM potential vulnerability detected with terminator: " + 
                             terminator.replace("\n", "\\n").replace("\r", "\\r"));
                 
-                // Re-run the same payload to confirm
-                Resp normalResponse = request(service, testReq, 0, true);
-                
-                if (normalResponse.timedOut()) {
+                // Confirm with 5 repeated requests
+                if (confirmWithRepeats(testReq, service, terminator)) {
                     // This suggests a parsing discrepancy
                     String title = "Possible HTTP Request Smuggling: SPILL.TERM (Spill Terminator)";
                     String description = "A timeout was observed when using line terminator '" + 
@@ -190,7 +208,7 @@ public class SmugChunks extends Scan {
                                        "for HTTP request smuggling attacks. " +
                                        "For more information about this technique, see: https://w4ke.info/2025/06/18/funky-chunks.html";
                     
-                    report(title, description, response, normalResponse);
+                    report(title, description, response);
                 }
             }
         }
@@ -210,10 +228,8 @@ public class SmugChunks extends Scan {
                 Utilities.log("ONE.TWO potential vulnerability detected with terminator: " + 
                             terminator.replace("\n", "\\n").replace("\r", "\\r"));
                 
-                // Re-run the same payload to confirm
-                Resp normalResponse = request(service, testReq, 0, true);
-                
-                if (normalResponse.timedOut()) {
+                // Confirm with 5 repeated requests
+                if (confirmWithRepeats(testReq, service, terminator)) {
                     // This suggests a parsing discrepancy
                     String title = "Possible HTTP Request Smuggling: ONE.TWO (Length-based Chunk Body)";
                     String description = "A timeout was observed when using line terminator '" + 
@@ -224,7 +240,7 @@ public class SmugChunks extends Scan {
                                        "for HTTP request smuggling attacks. " +
                                        "For more information about this technique, see: https://w4ke.info/2025/06/18/funky-chunks.html";
                     
-                    report(title, description, response, normalResponse);
+                    report(title, description, response);
                 }
             }
         }
@@ -244,10 +260,8 @@ public class SmugChunks extends Scan {
                 Utilities.log("TWO.ONE potential vulnerability detected with terminator: " + 
                             terminator.replace("\n", "\\n").replace("\r", "\\r"));
                 
-                // Re-run the same payload to confirm
-                Resp normalResponse = request(service, testReq, 0, true);
-                
-                if (normalResponse.timedOut()) {
+                // Confirm with 5 repeated requests
+                if (confirmWithRepeats(testReq, service, terminator)) {
                     // This suggests a parsing discrepancy
                     String title = "Possible HTTP Request Smuggling: TWO.ONE (Length-based Chunk Body)";
                     String description = "A timeout was observed when using line terminator '" + 
@@ -258,7 +272,7 @@ public class SmugChunks extends Scan {
                                        "for HTTP request smuggling attacks. " +
                                        "For more information about this technique, see: https://w4ke.info/2025/06/18/funky-chunks.html";
                     
-                    report(title, description, response, normalResponse);
+                    report(title, description, response);
                 }
             }
         }
@@ -277,10 +291,8 @@ public class SmugChunks extends Scan {
             if (response.timedOut()) {
                 Utilities.log("ZERO.TWO potential vulnerability detected with empty terminator");
                 
-                // Re-run the same payload to confirm
-                Resp normalResponse = request(service, testReq, 0, true);
-                
-                if (normalResponse.timedOut()) {
+                // Confirm with 5 repeated requests
+                if (confirmWithRepeats(testReq, service, terminator)) {
                     // This suggests a parsing discrepancy
                     String title = "Possible HTTP Request Smuggling: ZERO.TWO (Length-based Chunk Body)";
                     String description = "A timeout was observed when using an empty line terminator in chunk bodies " +
@@ -290,7 +302,7 @@ public class SmugChunks extends Scan {
                                        "for HTTP request smuggling attacks. " +
                                        "For more information about this technique, see: https://w4ke.info/2025/06/18/funky-chunks.html";
                     
-                    report(title, description, response, normalResponse);
+                    report(title, description, response);
                 }
             }
         }
@@ -309,10 +321,8 @@ public class SmugChunks extends Scan {
             if (response.timedOut()) {
                 Utilities.log("TWO.ZERO potential vulnerability detected with empty terminator");
                 
-                // Re-run the same payload to confirm
-                Resp normalResponse = request(service, testReq, 0, true);
-                
-                if (normalResponse.timedOut()) {
+                // Confirm with 5 repeated requests
+                if (confirmWithRepeats(testReq, service, terminator)) {
                     // This suggests a parsing discrepancy
                     String title = "Possible HTTP Request Smuggling: TWO.ZERO (Length-based Chunk Body)";
                     String description = "A timeout was observed when using an empty line terminator in chunk bodies " +
@@ -322,7 +332,7 @@ public class SmugChunks extends Scan {
                                        "for HTTP request smuggling attacks. " +
                                        "For more information about this technique, see: https://w4ke.info/2025/06/18/funky-chunks.html";
                     
-                    report(title, description, response, normalResponse);
+                    report(title, description, response);
                 }
             }
         }
