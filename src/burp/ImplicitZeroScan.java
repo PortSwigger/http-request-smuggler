@@ -1,15 +1,11 @@
 package burp;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.MutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 
 public class ImplicitZeroScan extends SmuggleScanBox {
-    HashMap<String, Pair<String,String>> recordedGasget = new HashMap<>();
+    HashMap<String, Mapping> recordedGadget = new HashMap<>();
     HashSet<String> reportedStatus = new HashSet<>();
 
     ImplicitZeroScan(String name) {
@@ -57,8 +53,8 @@ public class ImplicitZeroScan extends SmuggleScanBox {
             forceHTTP2 = true;
         }
 
+        req = Utilities.replaceFirst(req, " HTTP/2\r\n", " HTTP/1.1\r\n");
         if (h2 && !forceHTTP1) {
-            req = Utilities.replaceFirst(req, " HTTP/2\r\n", " HTTP/1.1\r\n");
             //req = Utilities.replaceFirst(req, "Content-Length: ", "X-CL: ");
             req = Utilities.replaceFirst(req, "Connection: ", "X-Connection: ");
         } else {
@@ -71,7 +67,7 @@ public class ImplicitZeroScan extends SmuggleScanBox {
         //req = Utilities.addOrReplaceHeader(req, "Content-Length", ""+smuggle.length());
         //req = Utilities.addOrReplaceHeader(req, "Connection", "Content-Length");
 
-        Pair<String, String> gadget = selectGadget(service, req, baseReq);
+        Mapping gadget = selectGadget(service, req, baseReq);
 
         if (gadget == null) {
             return false;
@@ -83,7 +79,7 @@ public class ImplicitZeroScan extends SmuggleScanBox {
         Resp lastResp = null;
 
         for (int i=0; i<attempts; i++) {
-            smuggle = String.format("%s\r\nX-"+justBodyReflectionCanary+": ", gadget.getLeft());
+            smuggle = String.format("%s\r\nX-"+justBodyReflectionCanary+": ", gadget.payload);
             byte[] attack = Utilities.setBody(req, smuggle);
             attack = Utilities.fixContentLength(attack);
             attack = DesyncBox.applyDesync(attack, "Content-Length", technique);
@@ -99,8 +95,8 @@ public class ImplicitZeroScan extends SmuggleScanBox {
                 return false;
             }
 
-            if (Utilities.contains(resp, gadget.getRight())) {
-                if ("wrtztrw".equals(gadget.getRight()) && Utilities.contains(resp, justBodyReflectionCanary) ) {
+            if (gadget.worked(resp)) {
+                if ("wrtztrw".equals(gadget.payload) && Utilities.contains(resp, justBodyReflectionCanary) ) {
                     return false;
                 }
 
@@ -109,7 +105,7 @@ public class ImplicitZeroScan extends SmuggleScanBox {
                     return false;
                 }
 
-                report("CL.0 desync: "+technique+"|"+gadget.getLeft(), "HTTP Request Smuggler repeatedly issued the attached request. After "+i+ " attempts, it got a response that appears to have been poisoned by the body of the previous request. For further details and information on remediation, please refer to https://portswigger.net/research/browser-powered-desync-attacks", baseReq, lastResp, resp);
+                report("CL.0 desync: "+technique+"|"+gadget.payload, "HTTP Request Smuggler repeatedly issued the attached request. After "+i+ " attempts, it got a response that appears to have been poisoned by the body of the previous request. For further details and information on remediation, please refer to https://portswigger.net/research/browser-powered-desync-attacks", baseReq, lastResp, resp);
                 return true;
             }
 
@@ -145,32 +141,32 @@ public class ImplicitZeroScan extends SmuggleScanBox {
         return false;
     }
 
-    Pair<String, String> selectGadget(IHttpService service, byte[] req, byte[] base) {
+    Mapping selectGadget(IHttpService service, byte[] req, byte[] base) {
         String host = service.getHost();
-        if (recordedGasget.containsKey(host)) {
-            return recordedGasget.get(host);
+        if (recordedGadget.containsKey(host)) {
+            return recordedGadget.get(host);
         }
 
         Resp untampered = request(service, base);
         Resp baseResp = request(service, req);
         String basePath = Utilities.getMethod(req)+ " "+Utilities.getPathFromRequest(req) + " HTTP/1.1";
-        ArrayList<Pair<String, String>> mappings = new ArrayList<>();
+        ArrayList<Mapping> mappings = new ArrayList<>();
         // remember the response will come from the back-end, so don't use malformed requests
 //        String collab = Utilities.globalSettings.getString("collab-domain");
 //        return new ImmutablePair<>("GET https://"+collab+"/?"+service.getHost(), collab);
 
-        mappings.add(new ImmutablePair<>("GET /robots.txt HTTP/1.1", "llow:"));
-        mappings.add(new ImmutablePair<>("GET /wrtztrw?wrtztrw=wrtztrw HTTP/1.1", "wrtztrw"));
-        mappings.add(new ImmutablePair<>("GET /favicon.ico HTTP/1.1", "Content-Type: image/"));
-        mappings.add(new ImmutablePair<>("GET /sitemap.xml HTTP/1.1", "Content-Type: application/xml"));
-        mappings.add(new ImmutablePair<>("TRACE / HTTP/1.1", "405 Method Not Allowed"));
-        mappings.add(new ImmutablePair<>("GET / HTTP/2.2", "505 HTTP"));
+        mappings.add(new Mapping("GET /robots.txt HTTP/1.1", "llow:"));
+        mappings.add(new Mapping("GET /wrtztrw?wrtztrw=wrtztrw HTTP/1.1", "wrtztrw"));
+        mappings.add(new Mapping("GET /favicon.ico HTTP/1.1", "Content-Type: image/", true));
+        mappings.add(new Mapping("GET /sitemap.xml HTTP/1.1", "Content-Type: application/xml", true));
+        mappings.add(new Mapping("TRACE / HTTP/1.1", "405 Method Not Allowed", true));
+        mappings.add(new Mapping("GET / HTTP/2.2", "505 HTTP", true));
         //mappings.add(new ImmutablePair<>("X /", "405 Method Not Allowed"));
         //mappings.add(new ImmutablePair<>("GET /../", "400 Bad Request"));
 
-        for (Pair<String, String> known: mappings) {
-            String knownPath = known.getLeft();
-            String knownContent = known.getRight();
+        for (Mapping known: mappings) {
+            String knownPath = known.payload;
+            String knownContent = known.lookFor;
             if (knownPath.equals(basePath)) {
                 continue;
             }
@@ -179,6 +175,7 @@ public class ImplicitZeroScan extends SmuggleScanBox {
                 continue;
             }
 
+            // fixme fails when request-line ends in HTTP/2
             byte[] attack = Utilities.replaceFirst(req, basePath, knownPath);
             attack = Utilities.setBody(attack, ""); // required to avoid poisoning the socket during gadget detection
             attack = Utilities.fixContentLength(attack);
@@ -188,7 +185,7 @@ public class ImplicitZeroScan extends SmuggleScanBox {
                 return null;
             }
 
-            if (!Utilities.contains(resp, knownContent)) {
+            if (!known.worked(resp)) {
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
@@ -197,14 +194,39 @@ public class ImplicitZeroScan extends SmuggleScanBox {
                 continue;
             }
 
-            recordedGasget.put(host, known);
+            recordedGadget.put(host, known);
             return known;
         }
 
-        recordedGasget.put(host, null);
+        recordedGadget.put(host, null);
         return null;
     }
 
 }
 
+class Mapping {
+    String payload = "";
+    String lookFor = "";
+    boolean onlyLookInHeader = false;
+
+    public Mapping(String payload, String lookFor, boolean onlyLookInHeader) {
+        this.payload = payload;
+        this.lookFor = lookFor;
+        this.onlyLookInHeader = onlyLookInHeader;
+    }
+
+    public Mapping(String payload, String lookFor) {
+        this.payload = payload;
+        this.lookFor = lookFor;
+    }
+
+    public boolean worked(Resp resp) {
+        byte[] contentToCheck = resp.getResponse();
+        if (this.onlyLookInHeader) {
+            contentToCheck = Utilities.getHeaders(contentToCheck).getBytes();
+        }
+
+        return Utilities.containsBytes(contentToCheck, lookFor.getBytes());
+    }
+}
 
