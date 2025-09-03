@@ -40,7 +40,7 @@ public class ImplicitZeroScan extends SmuggleScanBox {
 
         boolean forceHTTP1 = false;
         boolean forceHTTP2 = false;
-        if (DesyncBox.h1Permutations.contains(technique) || true) {
+        if (DesyncBox.h1Permutations.contains(technique)) {
             forceHTTP1 = true;
         } else if (DesyncBox.h2Permutations.contains(technique)) {
             if (!h2) {
