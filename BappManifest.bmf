@@ -3,8 +3,8 @@ ExtensionType: 1
 Name: HTTP Request Smuggler
 RepoName: http-request-smuggler
 ScreenVersion: 3.0.1
-SerialVersion: 47
-MinPlatformVersion: 19
+SerialVersion: 48
+MinPlatformVersion: 2
 ProOnly: False
 Author: James Kettle, PortSwigger
 ShortDescription: Helps you launch HTTP Request Smuggling attacks, supports scanning for Request Smuggling vulnerabilities and also aids exploitation by handling cumbersome offset-tweaking for you.
