@@ -70,7 +70,9 @@ public class ImplicitZeroScan extends SmuggleScanBox {
         Mapping gadget = selectGadget(service, req, baseReq);
 
         if (gadget == null) {
-            return false;
+            //Utilities.out("No viable gadgets, skipping endpoint");
+            gadget = new Mapping("GET / HTTP/2.2", "505 HTTP", true);
+            //return false;
         }
 
         int attempts = 9;
@@ -164,6 +166,7 @@ public class ImplicitZeroScan extends SmuggleScanBox {
         //mappings.add(new ImmutablePair<>("X /", "405 Method Not Allowed"));
         //mappings.add(new ImmutablePair<>("GET /../", "400 Bad Request"));
 
+        // fixme something is wrong in here
         for (Mapping known: mappings) {
             String knownPath = known.payload;
             String knownContent = known.lookFor;
@@ -182,7 +185,7 @@ public class ImplicitZeroScan extends SmuggleScanBox {
 
             Resp resp = request(service, attack);
             if (resp.failed()) {
-                return null;
+                continue;
             }
 
             if (!known.worked(resp)) {
