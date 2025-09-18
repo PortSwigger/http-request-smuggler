@@ -66,8 +66,8 @@ public class ChunkExtensionScan extends Scan {
         
         for (int i = 0; i < totalAttempts; i++) {
             Resp response = request(service, testReq, 0, true);
-            if (response.timedOut()) {
-                timeoutCount++;
+            if (!response.timedOut()) {
+                return false;
             }
             // Small delay between requests to avoid overwhelming the server
             try {
@@ -81,7 +81,7 @@ public class ChunkExtensionScan extends Scan {
         Utilities.log("Confirmation: " + timeoutCount + "/" + totalAttempts + " timeouts for terminator '" + 
                      terminator.replace("\n", "\\n").replace("\r", "\\r") + "'");
         
-        return timeoutCount == 5;
+        return true;
         //alternatively, we can change the check to return true if 3 or more out of 5 requests timeout
         //return timeoutCount >= 3;
     }
