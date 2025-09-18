@@ -2,9 +2,9 @@ package burp;
 
 import java.util.List;
 
-public class ChunkExtensionScan extends Scan {
+public class ChunkSizeScan extends Scan {
 
-    ChunkExtensionScan(String name) {
+    ChunkSizeScan(String name) {
         super(name);
     }
 
