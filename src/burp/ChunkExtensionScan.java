@@ -1,11 +1,10 @@
 package burp;
 
-import java.util.HashMap;
 import java.util.List;
 
-public class SmugChunks extends Scan {
+public class ChunkExtensionScan extends Scan {
 
-    SmugChunks(String name) {
+    ChunkExtensionScan(String name) {
         super(name);
     }
 

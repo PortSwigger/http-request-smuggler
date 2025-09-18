@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class BurpExtender implements IBurpExtender, IExtensionStateListener, BurpExtension {
     static final String name = "HTTP Request Smuggler";
-    private static final String version = "3.0.1";
+    private static final String version = "3.0.2";
     public boolean unloaded = false;
     static ConcurrentHashMap<String, Boolean> hostsToSkip = BulkScan.hostsToSkip;
 
@@ -39,7 +39,7 @@ public class BurpExtender implements IBurpExtender, IExtensionStateListener, Bur
         new ClientDesyncScan("Client-side desync");
         new PauseDesyncScan("Pause-based desync");
         new ConnectionStateScan("Connection-state");
-        new SmugChunks("Smug Chunks");
+        new ChunkExtensionScan("Chunk extension");
 
         //new OldClientDesyncScan("Old client desync");
         //new ClientDesyncScan("Client-desync probe");
