@@ -61,7 +61,6 @@ public class ChunkExtensionScan extends Scan {
     
      // Helper method to perform repeated requests to confirm findings
     private boolean confirmWithRepeats(byte[] testReq, IHttpService service, String terminator) {
-        int timeoutCount = 0;
         int totalAttempts = 5;
         
         for (int i = 0; i < totalAttempts; i++) {
@@ -78,12 +77,7 @@ public class ChunkExtensionScan extends Scan {
             }
         }
         
-        Utilities.log("Confirmation: " + timeoutCount + "/" + totalAttempts + " timeouts for terminator '" + 
-                     terminator.replace("\n", "\\n").replace("\r", "\\r") + "'");
-        
         return true;
-        //alternatively, we can change the check to return true if 3 or more out of 5 requests timeout
-        //return timeoutCount >= 3;
     }
     
     private void testTermExt(byte[] baseReq, IHttpService service) {
