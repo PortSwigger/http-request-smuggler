@@ -71,7 +71,8 @@ public class ImplicitZeroScan extends SmuggleScanBox {
 
         if (gadget == null) {
             //Utilities.out("No viable gadgets, skipping endpoint");
-            gadget = new Mapping("GET / HTTP/2.2", "505 HTTP", true);
+            gadget = new Mapping("TRACE / HTTP/1.1", "405 Method Not Allowed", true);
+            //gadget = new Mapping("GET / HTTP/2.2", "505 HTTP", true);
             //return false;
         }
 
