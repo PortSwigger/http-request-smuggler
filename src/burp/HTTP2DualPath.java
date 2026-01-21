@@ -26,7 +26,7 @@ public class HTTP2DualPath extends Scan {
             if (Utilities.contains(break1, canary)) {
                 detail += "X";
             }
-            if (Utilities.contains(break1, canary)) {
+            if (Utilities.contains(break2, canary)) {
                 detail += "Y";
             }
 
