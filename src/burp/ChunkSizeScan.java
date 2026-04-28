@@ -264,18 +264,22 @@ public class ChunkSizeScan extends Scan {
         String[] lineTerminators = {"\n", "\r"};
         
         for (String terminator : lineTerminators) {
-            byte[] testReq = buildTwoOnePayload(baseReq, terminator);
+            PayloadPair testReq = buildTwoOnePayload(baseReq, terminator);
             
             // Send the request
-            Resp response = request(service, testReq, 0, true);
+            Resp response = request(service, testReq.forward, 0, true);
             
             // Check for timeout or unusual behavior
             if (response.timedOut()) {
                 Utilities.log("TWO.ONE potential vulnerability detected with terminator: " + 
                             terminator.replace("\n", "\\n").replace("\r", "\\r"));
-                
+                //add invert check
+                Resp respInverted = request(service, testReq.inverted, 0, true);
+                if (respInverted.timedOut()){
+                    return;
+                }
                 // Confirm with 5 repeated requests
-                if (confirmWithRepeats(testReq, service, terminator)) {
+                if (confirmWithRepeats(testReq.forward, service, terminator)) {
                     // This suggests a parsing discrepancy
                     String title = "Possible HTTP Request Smuggling: TWO.ONE (Length-based Chunk Body)";
                     String description = "A timeout was observed when using line terminator '" + 
@@ -296,17 +300,21 @@ public class ChunkSizeScan extends Scan {
         String[] lineTerminators = {""}; // Only empty string for ZERO.TWO
         
         for (String terminator : lineTerminators) {
-            byte[] testReq = buildZeroTwoPayload(baseReq, terminator);
+            PayloadPair testReq = buildZeroTwoPayload(baseReq, terminator);
             
             // Send the request
-            Resp response = request(service, testReq, 0, true);
+            Resp response = request(service, testReq.forward, 0, true);
             
             // Check for timeout or unusual behavior
             if (response.timedOut()) {
                 Utilities.log("ZERO.TWO potential vulnerability detected with empty terminator");
-                
+                //add invert check
+                Resp respInverted = request(service, testReq.inverted, 0, true);
+                if (respInverted.timedOut()){
+                    return;
+                }
                 // Confirm with 5 repeated requests
-                if (confirmWithRepeats(testReq, service, terminator)) {
+                if (confirmWithRepeats(testReq.forward, service, terminator)) {
                     // This suggests a parsing discrepancy
                     String title = "Possible HTTP Request Smuggling: ZERO.TWO (Length-based Chunk Body)";
                     String description = "A timeout was observed when using an empty line terminator in chunk bodies " +
@@ -326,17 +334,21 @@ public class ChunkSizeScan extends Scan {
         String[] lineTerminators = {""}; // Only empty string for TWO.ZERO
         
         for (String terminator : lineTerminators) {
-            byte[] testReq = buildTwoZeroPayload(baseReq, terminator);
+            PayloadPair testReq = buildTwoZeroPayload(baseReq, terminator);
             
             // Send the request
-            Resp response = request(service, testReq, 0, true);
+            Resp response = request(service, testReq.forward, 0, true);
             
             // Check for timeout or unusual behavior
             if (response.timedOut()) {
                 Utilities.log("TWO.ZERO potential vulnerability detected with empty terminator");
-                
+                //add invert check
+                Resp respInverted = request(service, testReq.inverted, 0, true);
+                if (respInverted.timedOut()){
+                    return;
+                }
                 // Confirm with 5 repeated requests
-                if (confirmWithRepeats(testReq, service, terminator)) {
+                if (confirmWithRepeats(testReq.forward, service, terminator)) {
                     // This suggests a parsing discrepancy
                     String title = "Possible HTTP Request Smuggling: TWO.ZERO (Length-based Chunk Body)";
                     String description = "A timeout was observed when using an empty line terminator in chunk bodies " +
@@ -602,12 +614,13 @@ public class ChunkSizeScan extends Scan {
         return new PayloadPair(forward.toString().getBytes(), inverted.toString().getBytes());
     }
     
-    private byte[] buildTwoOnePayload(byte[] baseReq, String lineTerminator) {
+    private PayloadPair buildTwoOnePayload(byte[] baseReq, String lineTerminator) {
         // Build the TWO.ONE payload based on smugchunks implementation
         String host = Utilities.getHeader(baseReq, "Host");
         String path = Utilities.getPathFromRequest(baseReq);
         String method = Utilities.getMethod(baseReq);
-        //该情况下，前端实际能够携带的chunk body数据天然比后端少一位，无法满足后端倒转所需要的字节数，因此该场景先不做逆转分析
+        //In this scenario, the chunk body data the frontend can carry is naturally an order of magnitude smaller than the backend's.
+        // We have no choice but to ignore 0\r\n\r\n for direct testing, which at least filters out certain special endpoints.
         // TWO.ONE payload structure:
         // 2\r\n
         // XX{line_terminator}
@@ -617,29 +630,36 @@ public class ChunkSizeScan extends Scan {
         // 0\r\n
         // \r\n
         
-        StringBuilder payload = new StringBuilder();
-        payload.append(method).append(" ").append(path).append(" HTTP/1.1\r\n");
-        payload.append("Host: ").append(host).append("\r\n");
-        payload.append("Transfer-Encoding: chunked\r\n");
-        payload.append("Connection: close\r\n");
-        payload.append("\r\n");
-        payload.append("2\r\n");
-        payload.append("XX").append(lineTerminator);
-        payload.append("10\r\n");
-        payload.append("\r\n");
-        payload.append("AAAABBBBCCCCDD\r\n");
-        payload.append("0\r\n");
-        payload.append("\r\n");
-        
-        return payload.toString().getBytes();
+        StringBuilder forward = new StringBuilder();
+        forward.append(method).append(" ").append(path).append(" HTTP/1.1\r\n");
+        forward.append("Host: ").append(host).append("\r\n");
+        forward.append("Transfer-Encoding: chunked\r\n");
+        forward.append("Connection: close\r\n");
+        forward.append("\r\n");
+        forward.append("2\r\n");
+        forward.append("XX").append(lineTerminator);
+        forward.append("10\r\n");
+        forward.append("\r\n");
+        forward.append("AAAABBBBCCCCDD\r\n");
+        forward.append("0\r\n");
+        forward.append("\r\n");
+        StringBuilder inverted = new StringBuilder();
+        inverted.append(method).append(" ").append(path).append(" HTTP/1.1\r\n");
+        inverted.append("Host: ").append(host).append("\r\n");
+        inverted.append("Transfer-Encoding: chunked\r\n");
+        inverted.append("Connection: close\r\n");
+        inverted.append("\r\n");
+        inverted.append("0\r\n");
+        inverted.append("\r\n");
+        return new PayloadPair(forward.toString().getBytes(), inverted.toString().getBytes());
     }
     
-    private byte[] buildZeroTwoPayload(byte[] baseReq, String lineTerminator) {
+    private PayloadPair buildZeroTwoPayload(byte[] baseReq, String lineTerminator) {
         // Build the ZERO.TWO payload based on smugchunks implementation
         String host = Utilities.getHeader(baseReq, "Host");
         String path = Utilities.getPathFromRequest(baseReq);
         String method = Utilities.getMethod(baseReq);
-        //lineTerminator 为空字符串，不存在lineTerminator引起的timeout
+        //Given that lineTerminator is an empty string , we will use 0\r\n\r\n for direct verification.
         // ZERO.TWO payload structure:
         // 2\r\n
         // XX{line_terminator}
@@ -653,33 +673,41 @@ public class ChunkSizeScan extends Scan {
         // 0\r\n
         // \r\n
         
-        StringBuilder payload = new StringBuilder();
-        payload.append(method).append(" ").append(path).append(" HTTP/1.1\r\n");
-        payload.append("Host: ").append(host).append("\r\n");
-        payload.append("Transfer-Encoding: chunked\r\n");
-        payload.append("Connection: close\r\n");
-        payload.append("\r\n");
-        payload.append("2\r\n");
-        payload.append("XX").append(lineTerminator);
-        payload.append("012\r\n");
-        payload.append("XX\r\n");
-        payload.append("19\r\n");
-        payload.append("XXAAAABBBB\r\n");
-        payload.append("0\r\n");
-        payload.append("\r\n");
-        payload.append("CCCCDDDD\r\n");
-        payload.append("0\r\n");
-        payload.append("\r\n");
+        StringBuilder forward = new StringBuilder();
+        forward.append(method).append(" ").append(path).append(" HTTP/1.1\r\n");
+        forward.append("Host: ").append(host).append("\r\n");
+        forward.append("Transfer-Encoding: chunked\r\n");
+        forward.append("Connection: close\r\n");
+        forward.append("\r\n");
+        forward.append("2\r\n");
+        forward.append("XX").append(lineTerminator);
+        forward.append("012\r\n");
+        forward.append("XX\r\n");
+        forward.append("19\r\n");
+        forward.append("XXAAAABBBB\r\n");
+        forward.append("0\r\n");
+        forward.append("\r\n");
+        forward.append("CCCCDDDD\r\n");
+        forward.append("0\r\n");
+        forward.append("\r\n");
+        StringBuilder inverted = new StringBuilder();
+        inverted.append(method).append(" ").append(path).append(" HTTP/1.1\r\n");
+        inverted.append("Host: ").append(host).append("\r\n");
+        inverted.append("Transfer-Encoding: chunked\r\n");
+        inverted.append("Connection: close\r\n");
+        inverted.append("\r\n");
+        inverted.append("0\r\n");
+        inverted.append("\r\n");
+        return new PayloadPair(forward.toString().getBytes(), inverted.toString().getBytes());
         
-        return payload.toString().getBytes();
     }
     
-    private byte[] buildTwoZeroPayload(byte[] baseReq, String lineTerminator) {
+    private PayloadPair buildTwoZeroPayload(byte[] baseReq, String lineTerminator) {
         // Build the TWO.ZERO payload based on smugchunks implementation
         String host = Utilities.getHeader(baseReq, "Host");
         String path = Utilities.getPathFromRequest(baseReq);
         String method = Utilities.getMethod(baseReq);
-        //lineTerminator 为空字符串，不存在lineTerminator引起的timeout
+        //Given that lineTerminator is an empty string , we will use 0\r\n\r\n for direct verification.
         // TWO.ZERO payload structure:
         // 2\r\n
         // xx{line_terminator}
@@ -689,21 +717,29 @@ public class ChunkSizeScan extends Scan {
         // 0\r\n
         // \r\n
         
-        StringBuilder payload = new StringBuilder();
-        payload.append(method).append(" ").append(path).append(" HTTP/1.1\r\n");
-        payload.append("Host: ").append(host).append("\r\n");
-        payload.append("Transfer-Encoding: chunked\r\n");
-        payload.append("Connection: close\r\n");
-        payload.append("\r\n");
-        payload.append("2\r\n");
-        payload.append("xx").append(lineTerminator);
-        payload.append("010\r\n");
-        payload.append("\r\n");
-        payload.append("AAAABBBBCCCCDD\r\n");
-        payload.append("0\r\n");
-        payload.append("\r\n");
-        
-        return payload.toString().getBytes();
+        StringBuilder forward = new StringBuilder();
+        forward.append(method).append(" ").append(path).append(" HTTP/1.1\r\n");
+        forward.append("Host: ").append(host).append("\r\n");
+        forward.append("Transfer-Encoding: chunked\r\n");
+        forward.append("Connection: close\r\n");
+        forward.append("\r\n");
+        forward.append("2\r\n");
+        forward.append("xx").append(lineTerminator);
+        forward.append("010\r\n");
+        forward.append("\r\n");
+        forward.append("AAAABBBBCCCCDD\r\n");
+        forward.append("0\r\n");
+        forward.append("\r\n");
+
+        StringBuilder inverted = new StringBuilder();
+        inverted.append(method).append(" ").append(path).append(" HTTP/1.1\r\n");
+        inverted.append("Host: ").append(host).append("\r\n");
+        inverted.append("Transfer-Encoding: chunked\r\n");
+        inverted.append("Connection: close\r\n");
+        inverted.append("\r\n");
+        inverted.append("0\r\n");
+        inverted.append("\r\n");
+        return new PayloadPair(forward.toString().getBytes(), inverted.toString().getBytes());
     }
     
     private byte[] buildNormalGetRequest(IHttpService service) {
