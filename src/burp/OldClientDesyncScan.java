@@ -79,7 +79,7 @@ public class OldClientDesyncScan extends Scan {
                 prefix = "h2-blocked";
                 Resp h2test2 = HTTP2Scan.h2request(service, attack, false);
                 if (h2test.getStatus() != h2test2.getStatus()) {
-                    report("Client-side h2 desnyc? ", "", first, second, h2test, h2test2);
+                    report("Client-side h2 desync? ", "", first, second, h2test, h2test2);
                     return null;
                 }
             }
